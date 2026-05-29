@@ -20,13 +20,22 @@ SECTIONS = [
 ]
 
 TASK1_IMAGES = [
+    "task1_vol_strip.png",
     "task1_vol_t0000.png",
     "task1_vol_t0050.png",
     "task1_vol_t0099.png",
 ]
 
-TASK3_IMAGES = ["task3_hist_overlay.png", "task3_metrics_timeline.png"]
-TASK4_IMAGES = ["task4_brush_top1.png"]
+TASK3_IMAGES = [
+    "task3_hist_overlay.png",
+    "task3_metrics_timeline.png",
+    "task3_evolution_metrics.png",
+]
+TASK4_IMAGES = [
+    "task4_brush_triptych.png",
+    "task4_hist_brush_top1.png",
+    "task4_brush_top1.png",
+]
 
 
 def resolve_image(name: str) -> Path | None:
@@ -98,9 +107,10 @@ def main() -> int:
     extras = {
         "task1_volume.md": TASK1_IMAGES,
         "task2_evolution.md": [
+            "task2_evolution_story.png",
+            "task3_hist_overlay.png",
             "task1_vol_t0000.png",
             "task1_vol_t0099.png",
-            "task3_hist_overlay.png",
         ],
         "task3_histogram.md": TASK3_IMAGES,
         "task4_brush.md": TASK4_IMAGES,

@@ -2,19 +2,26 @@ import { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 import type { TimelineData } from '@/data/types';
 import { useAppStore } from '@/store/useAppStore';
+import { useChartSize } from '@/hooks/useChartSize';
+import { AXIS_FILL, LABEL_FILL, styleAxisText, styleGrid } from './chartTheme';
 
 interface DensityHistogramProps {
   timeline: TimelineData;
-  width?: number;
-  height?: number;
 }
 
-export function DensityHistogram({
-  timeline,
-  width = 480,
-  height = 220,
-}: DensityHistogramProps) {
+export function DensityHistogram({ timeline }: DensityHistogramProps) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const { width, height } = useChartSize(wrapRef, 260, 2.1);
   const svgRef = useRef<SVGSVGElement>(null);
+  const chartRef = useRef<{
+    x: d3.ScaleLog<number, number>;
+    innerH: number;
+    g: d3.Selection<SVGGElement, unknown, null, undefined>;
+    selection: d3.Selection<SVGRectElement, unknown, null, undefined> | null;
+    bars: d3.Selection<SVGRectElement, number, SVGGElement, unknown>;
+    centers: number[];
+  } | null>(null);
+
   const timestep = useAppStore((s) => s.timestep);
   const setBrushRange = useAppStore((s) => s.setBrushRange);
   const brushRange = useAppStore((s) => s.brushRange);
@@ -27,15 +34,17 @@ export function DensityHistogram({
     const innerW = width - margin.left - margin.right;
     const innerH = height - margin.top - margin.bottom;
 
-    const stats = timeline.timesteps[timestep];
     const hist = timeline.histograms[timestep];
-    if (!stats || !hist) return;
+    if (!hist) return;
 
     const edges = timeline.logBinEdges;
     const centers = edges.slice(0, -1).map((e, i) => {
       const e2 = edges[i + 1]!;
       return Math.sqrt(e * e2);
     });
+
+    const total = d3.sum(hist) || 1;
+    const pct = hist.map((v) => (v / total) * 100);
 
     const x = d3
       .scaleLog()
@@ -44,7 +53,7 @@ export function DensityHistogram({
 
     const y = d3
       .scaleLinear()
-      .domain([0, d3.max(hist) ?? 0])
+      .domain([0, d3.max(pct) ?? 0])
       .nice()
       .range([innerH, 0]);
 
@@ -52,46 +61,72 @@ export function DensityHistogram({
     svg.selectAll('*').remove();
     svg.attr('width', width).attr('height', height);
 
+    const defs = svg.append('defs');
+    const grad = defs
+      .append('linearGradient')
+      .attr('id', 'hist-bar-grad')
+      .attr('x1', '0%')
+      .attr('y1', '0%')
+      .attr('x2', '0%')
+      .attr('y2', '100%');
+    grad.append('stop').attr('offset', '0%').attr('stop-color', '#7c6cf0');
+    grad.append('stop').attr('offset', '100%').attr('stop-color', '#3dd6c6');
+
     const g = svg
       .append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
 
-    const barW = innerW / hist.length;
-    g.selectAll('rect')
-      .data(hist)
+    const gridG = g.append('g').attr('class', 'grid');
+    gridG
+      .call(
+        d3
+          .axisLeft(y)
+          .ticks(5)
+          .tickSize(-innerW)
+          .tickFormat(() => ''),
+      );
+    styleGrid(gridG);
+
+    const barW = innerW / pct.length;
+    const bars = g
+      .selectAll('rect.bar')
+      .data(pct)
       .join('rect')
+      .attr('class', 'bar')
       .attr('x', (_, i) => x(centers[i]!) - barW / 2)
       .attr('y', (d) => y(d))
       .attr('width', Math.max(1, barW * 0.9))
       .attr('height', (d) => innerH - y(d))
-      .attr('fill', '#5b8def')
-      .attr('opacity', 0.85);
+      .attr('fill', 'url(#hist-bar-grad)')
+      .attr('opacity', 0.92);
 
-    if (brushRange) {
-      g.append('rect')
-        .attr('x', x(brushRange.min))
-        .attr('y', 0)
-        .attr('width', Math.max(2, x(brushRange.max) - x(brushRange.min)))
-        .attr('height', innerH)
-        .attr('fill', '#f0c040')
-        .attr('opacity', 0.25);
-    }
+    const selection = g
+      .append('rect')
+      .attr('class', 'brush-selection')
+      .attr('y', 0)
+      .attr('height', innerH)
+      .attr('fill', 'rgba(245, 200, 66, 0.22)')
+      .attr('stroke', '#f5c842')
+      .attr('stroke-width', 2)
+      .attr('opacity', 0)
+      .attr('pointer-events', 'none');
 
-    g.append('g')
-      .attr('transform', `translate(0,${innerH})`)
-      .call(d3.axisBottom(x).ticks(6, '.2f'))
-      .selectAll('text')
-      .attr('fill', '#aab');
-
-    g.append('g').call(d3.axisLeft(y).ticks(5)).selectAll('text').attr('fill', '#aab');
+    styleAxisText(
+      g
+        .append('g')
+        .attr('transform', `translate(0,${innerH})`)
+        .call(d3.axisBottom(x).ticks(6, '.2f')),
+    );
+    styleAxisText(g.append('g').call(d3.axisLeft(y).ticks(5)));
 
     g.append('text')
+      .attr('class', 'step-label')
       .attr('x', innerW / 2)
       .attr('y', innerH + 30)
       .attr('text-anchor', 'middle')
-      .attr('fill', '#ccd')
+      .attr('fill', LABEL_FILL)
       .attr('font-size', 11)
-      .text(`密度 (log 轴) — 时间步 ${timestep}`);
+      .text(`密度 (log) — 时间步 ${timestep} · Y=占比 %`);
 
     const brush = d3
       .brushX()
@@ -108,7 +143,60 @@ export function DensityHistogram({
       });
 
     g.append('g').attr('class', 'brush').call(brush);
-  }, [timeline, timestep, width, height, brushRange, setBrushRange]);
 
-  return <svg ref={svgRef} className="density-histogram" />;
+    chartRef.current = { x, innerH, g, selection, bars, centers };
+  }, [timeline, timestep, width, height, setBrushRange]);
+
+  useEffect(() => {
+    const chart = chartRef.current;
+    const wrap = wrapRef.current;
+    if (!chart || !wrap) return;
+
+    let tip = wrap.querySelector('.histogram-tooltip') as HTMLDivElement | null;
+    if (!tip) {
+      tip = document.createElement('div');
+      tip.className = 'histogram-tooltip';
+      tip.style.display = 'none';
+      wrap.appendChild(tip);
+    }
+
+    chart.bars
+      .on('mouseenter', function (event, d) {
+        const i = chart.bars.nodes().indexOf(this);
+        tip!.textContent = `ρ≈${chart.centers[i]!.toExponential(2)} · ${d.toFixed(2)}%`;
+        tip!.style.display = 'block';
+        tip!.style.left = `${event.offsetX + 12}px`;
+        tip!.style.top = `${event.offsetY - 8}px`;
+        d3.select(this).attr('opacity', 1);
+      })
+      .on('mousemove', (event) => {
+        tip!.style.left = `${event.offsetX + 12}px`;
+        tip!.style.top = `${event.offsetY - 8}px`;
+      })
+      .on('mouseleave', function () {
+        tip!.style.display = 'none';
+        d3.select(this).attr('opacity', 0.92);
+      });
+  }, [timestep, width, height]);
+
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart?.selection) return;
+
+    if (!brushRange) {
+      chart.selection.attr('opacity', 0);
+      return;
+    }
+
+    chart.selection
+      .attr('x', chart.x(brushRange.min))
+      .attr('width', Math.max(2, chart.x(brushRange.max) - chart.x(brushRange.min)))
+      .attr('opacity', 1);
+  }, [brushRange]);
+
+  return (
+    <div ref={wrapRef} className="chart-responsive" style={{ position: 'relative' }}>
+      <svg ref={svgRef} className="density-histogram" width="100%" />
+    </div>
+  );
 }

@@ -1,0 +1,321 @@
+@import '../styles/theme.css';
+
+.results-page {
+  min-height: 100vh;
+  font-family: var(--font);
+  background: radial-gradient(ellipse at 30% 0%, #1a2240 0%, var(--bg-deep) 45%, #050810 100%);
+  color: var(--text);
+  line-height: 1.65;
+}
+
+.results-page .hero {
+  padding: 2.5rem 2rem 2rem;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(135deg, rgba(10, 14, 26, 0.95), rgba(26, 34, 64, 0.6));
+}
+
+.results-page .hero h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.85rem;
+  font-weight: 700;
+  background: linear-gradient(90deg, var(--accent-cyan), var(--accent), var(--accent-gold));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.results-page .hero .sub {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.results-page .hero .error {
+  color: var(--danger);
+}
+
+.results-page .toc {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: rgba(10, 14, 26, 0.92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+
+.results-page .toc a {
+  color: var(--accent-cyan);
+  text-decoration: none;
+  font-size: 0.85rem;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.results-page .toc a:hover {
+  background: rgba(124, 108, 240, 0.15);
+  border-color: var(--accent);
+}
+
+.results-page .toc a.toc-app {
+  margin-left: auto;
+  color: var(--accent-gold);
+  border-color: rgba(245, 200, 66, 0.4);
+}
+
+.results-page main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.results-page .panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 2rem;
+  backdrop-filter: blur(10px);
+}
+
+.results-page section h2 {
+  font-size: 1.35rem;
+  border-left: 4px solid var(--accent);
+  padding-left: 0.75rem;
+  margin: 0 0 1rem;
+}
+
+.results-page .report-body h3 {
+  color: #c9d1d9;
+  margin-top: 1.25rem;
+  font-size: 1.05rem;
+}
+
+.results-page .report-body h4 {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.results-page .report-body p,
+.results-page .report-body li {
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.results-page .report-body ul {
+  padding-left: 1.25rem;
+}
+
+.results-page .kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.results-page .kpi {
+  background: rgba(10, 14, 26, 0.5);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+}
+
+.results-page .kpi span {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.results-page .kpi strong {
+  font-size: 1.1rem;
+  color: var(--accent-cyan);
+}
+
+.results-page .gallery h4 {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin: 1.25rem 0 0.75rem;
+}
+
+.results-page .overview-hero {
+  margin: 1.25rem 0 0;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+
+.results-page .overview-hero img {
+  width: 100%;
+  max-height: 420px;
+  object-fit: contain;
+  display: block;
+  background: #0a0e1a;
+}
+
+.results-page .gallery-hero {
+  margin-bottom: 1rem;
+}
+
+.results-page .gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.results-page figure.shot {
+  margin: 0;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+
+.results-page figure.shot-hero .shot-btn img {
+  max-height: 480px;
+  object-fit: contain;
+}
+
+.results-page .shot-btn {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: #0a0e1a;
+  cursor: zoom-in;
+}
+
+.results-page figure.shot img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.results-page .lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(5, 8, 16, 0.92);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  cursor: zoom-out;
+}
+
+.results-page .lightbox img {
+  max-width: min(96vw, 1400px);
+  max-height: 78vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+.results-page .lightbox p {
+  margin-top: 1rem;
+  color: var(--text-muted);
+}
+
+.results-page .lightbox-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.5rem 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.results-page .shot-placeholder {
+  min-height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  padding: 1rem;
+  text-align: center;
+}
+
+.results-page figcaption {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.results-page .metrics-svg {
+  width: 100%;
+  max-width: 720px;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  margin-top: 0.5rem;
+}
+
+.results-page .table-wrap {
+  overflow: auto;
+  max-height: 420px;
+  margin-top: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.results-page table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.results-page th,
+.results-page td {
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+}
+
+.results-page th {
+  position: sticky;
+  top: 0;
+  background: #1a2038;
+  color: var(--text-muted);
+}
+
+.results-page tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.results-page code {
+  background: rgba(30, 36, 58, 0.8);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.results-page .app-link-panel .btn-primary {
+  display: inline-block;
+  margin-top: 0.75rem;
+  padding: 0.6rem 1.25rem;
+  background: linear-gradient(135deg, var(--accent), #5a4fd4);
+  color: #fff;
+  text-decoration: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.results-page footer {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  border-top: 1px solid var(--border);
+}

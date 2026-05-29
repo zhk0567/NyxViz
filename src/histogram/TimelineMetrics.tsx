@@ -1,25 +1,29 @@
 import { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 import type { TimelineData } from '@/data/types';
+import { useChartSize } from '@/hooks/useChartSize';
+import { LABEL_FILL, styleAxisText, styleGrid } from './chartTheme';
 
 interface TimelineMetricsProps {
   timeline: TimelineData;
-  width?: number;
-  height?: number;
 }
 
-export function TimelineMetrics({
-  timeline,
-  width = 520,
-  height = 200,
-}: TimelineMetricsProps) {
+const SERIES = [
+  { key: 'mean' as const, label: '均值', color: '#7c6cf0', fill: 'rgba(124, 108, 240, 0.14)' },
+  { key: 'p99' as const, label: 'p99', color: '#f5c842', fill: 'rgba(245, 200, 66, 0.1)' },
+  { key: 'std' as const, label: '标准差', color: '#3dd6c6', fill: 'rgba(61, 214, 198, 0.1)' },
+];
+
+export function TimelineMetrics({ timeline }: TimelineMetricsProps) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const { width, height } = useChartSize(wrapRef, 260, 2.4);
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
     const svgEl = svgRef.current;
     if (!svgEl) return;
 
-    const margin = { top: 16, right: 80, bottom: 32, left: 48 };
+    const margin = { top: 16, right: 88, bottom: 32, left: 48 };
     const innerW = width - margin.left - margin.right;
     const innerH = height - margin.top - margin.bottom;
 
@@ -34,11 +38,6 @@ export function TimelineMetrics({
       .nice()
       .range([innerH, 0]);
 
-    const line = d3
-      .line<typeof data[0]>()
-      .x((d) => x(d.timestep))
-      .y((d) => y(d.mean));
-
     const svg = d3.select(svgEl);
     svg.selectAll('*').remove();
     svg.attr('width', width).attr('height', height);
@@ -47,53 +46,45 @@ export function TimelineMetrics({
       .append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
 
-    g.append('path')
-      .datum(data)
-      .attr('fill', 'none')
-      .attr('stroke', '#5b8def')
-      .attr('stroke-width', 2)
-      .attr('d', line);
+    const gridG = g.append('g').attr('class', 'grid');
+    gridG.call(
+      d3
+        .axisLeft(y)
+        .ticks(6)
+        .tickSize(-innerW)
+        .tickFormat(() => ''),
+    );
+    styleGrid(gridG);
 
-    g.append('path')
-      .datum(data)
-      .attr('fill', 'none')
-      .attr('stroke', '#f0c040')
-      .attr('stroke-width', 1.5)
-      .attr(
-        'd',
-        d3
-          .line<typeof data[0]>()
-          .x((d) => x(d.timestep))
-          .y((d) => y(d.p99)),
-      );
+    SERIES.forEach((s) => {
+      const area = d3
+        .area<(typeof data)[0]>()
+        .x((d) => x(d.timestep))
+        .y0(innerH)
+        .y1((d) => y(d[s.key]));
+      g.append('path').datum(data).attr('fill', s.fill).attr('d', area);
 
-    g.append('path')
-      .datum(data)
-      .attr('fill', 'none')
-      .attr('stroke', '#6ad49b')
-      .attr('stroke-width', 1.5)
-      .attr(
-        'd',
-        d3
-          .line<typeof data[0]>()
-          .x((d) => x(d.timestep))
-          .y((d) => y(d.std)),
-      );
+      const line = d3
+        .line<(typeof data)[0]>()
+        .x((d) => x(d.timestep))
+        .y((d) => y(d[s.key]));
+      g.append('path')
+        .datum(data)
+        .attr('fill', 'none')
+        .attr('stroke', s.color)
+        .attr('stroke-width', s.key === 'mean' ? 2.2 : 1.6)
+        .attr('d', line);
+    });
 
-    g.append('g')
-      .attr('transform', `translate(0,${innerH})`)
-      .call(d3.axisBottom(x).ticks(10))
-      .selectAll('text')
-      .attr('fill', '#aab');
+    styleAxisText(
+      g
+        .append('g')
+        .attr('transform', `translate(0,${innerH})`)
+        .call(d3.axisBottom(x).ticks(10)),
+    );
+    styleAxisText(g.append('g').call(d3.axisLeft(y)));
 
-    g.append('g').call(d3.axisLeft(y)).selectAll('text').attr('fill', '#aab');
-
-    const legend = [
-      { label: '均值', color: '#5b8def' },
-      { label: 'p99', color: '#f0c040' },
-      { label: '标准差', color: '#6ad49b' },
-    ];
-    legend.forEach((item, i) => {
+    SERIES.forEach((item, i) => {
       g.append('line')
         .attr('x1', innerW + 8)
         .attr('x2', innerW + 28)
@@ -103,11 +94,15 @@ export function TimelineMetrics({
       g.append('text')
         .attr('x', innerW + 32)
         .attr('y', 12 + i * 16)
-        .attr('fill', '#ccd')
+        .attr('fill', LABEL_FILL)
         .attr('font-size', 10)
         .text(item.label);
     });
   }, [timeline, width, height]);
 
-  return <svg ref={svgRef} className="timeline-metrics" />;
+  return (
+    <div ref={wrapRef} className="chart-responsive">
+      <svg ref={svgRef} className="timeline-metrics" width="100%" />
+    </div>
+  );
 }

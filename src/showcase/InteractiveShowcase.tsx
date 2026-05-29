@@ -1,22 +1,32 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { VolumeScene } from '@/volume/VolumeScene';
-import { BrushedPoints } from '@/spatial/BrushedPoints';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { DensityHistogram } from '@/histogram/DensityHistogram';
+import { DensityProjection } from '@/spatial/DensityProjection';
 import { TransferFunctionControls } from '@/volume/TransferFunctionControls';
+import { scanBrushRangeAsync } from '@/data/brushScan';
 import {
   loadTimestep,
   loadTimelineStats,
-  scanBrushRange,
 } from '@/data/nyxLoader';
 import { useAppStore } from '@/store/useAppStore';
 import type { BrushedVoxel, TimelineData } from '@/data/types';
 import { TIMESTEP_COUNT } from '@/data/types';
 import '@/dashboard/dashboard.css';
 
+const VolumeScene = lazy(() =>
+  import('@/volume/VolumeScene').then((m) => ({ default: m.VolumeScene })),
+);
+const BrushedPoints = lazy(() =>
+  import('@/spatial/BrushedPoints').then((m) => ({ default: m.BrushedPoints })),
+);
+
 export function InteractiveShowcase() {
   const [timeline, setTimeline] = useState<TimelineData | null>(null);
   const [brushedPoints, setBrushedPoints] = useState<BrushedVoxel[]>([]);
   const [initError, setInitError] = useState<string | null>(null);
+  const [sliderStep, setSliderStep] = useState(0);
+  const [highQuality, setHighQuality] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [show3dPoints, setShow3dPoints] = useState(false);
 
   const timestep = useAppStore((s) => s.timestep);
   const densityData = useAppStore((s) => s.densityData);
@@ -71,7 +81,12 @@ export function InteractiveShowcase() {
     };
   }, [timestep, setDensityData, setLoading, setError]);
 
+  useEffect(() => {
+    setSliderStep(timestep);
+  }, [timestep]);
+
   const stats = timeline?.timesteps[timestep];
+  const volumeQuality = highQuality ? 'high' : 'interactive';
   const dataMin = stats?.min ?? 7.5;
   const dataMax = stats?.max ?? 15;
 
@@ -89,19 +104,34 @@ export function InteractiveShowcase() {
     if (!densityData || !brushRange) {
       setBrushedPoints([]);
       setBrushedCount(0);
+      setScanning(false);
       return;
     }
+
+    let cancelled = false;
+    setScanning(true);
     const h = window.setTimeout(() => {
-      const found = scanBrushRange(
+      scanBrushRangeAsync(
         densityData,
         brushRange.min,
         brushRange.max,
-        50000,
-      );
-      setBrushedPoints(found);
-      setBrushedCount(found.length);
-    }, 80);
-    return () => window.clearTimeout(h);
+        12000,
+      )
+        .then((found) => {
+          if (!cancelled) {
+            setBrushedPoints(found);
+            setBrushedCount(found.length);
+            setScanning(false);
+          }
+        })
+        .catch(() => {
+          if (!cancelled) setScanning(false);
+        });
+    }, 150);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(h);
+    };
   }, [densityData, brushRange, setBrushedCount]);
 
   const highlight = useMemo(() => {
@@ -120,14 +150,32 @@ export function InteractiveShowcase() {
     <div className="dashboard showcase-embedded">
       <div className="controls">
         <label>
-          时间步 {timestep}
+          时间步 {sliderStep}
           <input
             type="range"
             min={0}
             max={TIMESTEP_COUNT - 1}
-            value={timestep}
-            onChange={(e) => setTimestep(Number(e.target.value))}
+            value={sliderStep}
+            onChange={(e) => setSliderStep(Number(e.target.value))}
+            onMouseUp={() => setTimestep(sliderStep)}
+            onTouchEnd={() => setTimestep(sliderStep)}
           />
+        </label>
+        <label className="checkbox-label">
+          <input
+            type="checkbox"
+            checked={highQuality}
+            onChange={(e) => setHighQuality(e.target.checked)}
+          />
+          高质量体渲染
+        </label>
+        <label className="checkbox-label">
+          <input
+            type="checkbox"
+            checked={show3dPoints}
+            onChange={(e) => setShow3dPoints(e.target.checked)}
+          />
+          显示 3D 点云
         </label>
         <button type="button" onClick={applyTop1}>
           Top 1%
@@ -139,7 +187,8 @@ export function InteractiveShowcase() {
           清除刷选
         </button>
         {loading && <span className="badge">加载中…</span>}
-        {brushRange && (
+        {scanning && <span className="badge">扫描刷选体素…</span>}
+        {brushRange && !scanning && (
           <span className="badge">
             刷选 {brushedCount} 体素 [{brushRange.min.toFixed(2)},{' '}
             {brushRange.max.toFixed(2)}]
@@ -155,19 +204,41 @@ export function InteractiveShowcase() {
           </div>
           <div className="vtk-card">
             <h3>体渲染</h3>
-            <VolumeScene
+            <Suspense fallback={<div className="vtk-skeleton">加载 3D…</div>}>
+              <VolumeScene
+                data={densityData}
+                dataMin={dataMin}
+                dataMax={dataMax}
+                tfParams={tfParams}
+                quality={volumeQuality}
+                renderActive
+                {...highlight}
+                className="vtk-panel"
+              />
+            </Suspense>
+          </div>
+          <div className="chart-card wide">
+            <h3>最大密度投影 (XY)</h3>
+            <DensityProjection
               data={densityData}
-              dataMin={dataMin}
-              dataMax={dataMax}
-              tfParams={tfParams}
-              {...highlight}
-              className="vtk-panel"
+              brushRange={brushRange}
+              axis="xy"
             />
           </div>
-          <div className="vtk-card wide">
-            <h3>刷选体素点云</h3>
-            <BrushedPoints points={brushedPoints} className="vtk-panel" />
-          </div>
+          {show3dPoints && (
+            <div className="vtk-card wide">
+              <h3>刷选体素点云</h3>
+              {brushedPoints.length > 0 ? (
+                <Suspense fallback={<div className="vtk-skeleton">加载点云…</div>}>
+                  <BrushedPoints points={brushedPoints} className="vtk-panel" />
+                </Suspense>
+              ) : (
+                <p className="placeholder-3d">
+                  {scanning ? '正在扫描…' : '框选直方图或 Top 1% 后显示点云'}
+                </p>
+              )}
+            </div>
+          )}
         </section>
       ) : (
         <p>等待体数据…（需通过 HTTP 提供 /Nyx/ 或使用内嵌时间步）</p>

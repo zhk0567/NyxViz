@@ -41,8 +41,11 @@ export function BrushedPoints({ points, className }: BrushedPointsProps) {
 
     const actor = vtkActor.newInstance();
     actor.setMapper(mapper);
-    actor.getProperty().setColor(1, 0.85, 0.35);
-    actor.getProperty().setPointSize(3);
+    const prop = actor.getProperty();
+    prop.setColor(0.96, 0.78, 0.26);
+    prop.setPointSize(4);
+    prop.setAmbient(0.35);
+    prop.setDiffuse(0.85);
     renderer.addActor(actor);
 
     const camera = renderer.getActiveCamera();
@@ -101,8 +104,6 @@ export function BrushedPoints({ points, className }: BrushedPointsProps) {
     ctx.polyData.getVerts().setData(verts, 1);
     ctx.polyData.modified();
 
-    const renderer = ctx.fullScreenRenderer.getRenderer();
-    renderer.resetCamera();
     ctx.fullScreenRenderer.getRenderWindow().render();
   }, [points]);
 

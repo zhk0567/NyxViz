@@ -43,19 +43,36 @@ FIGURE_GROUPS = [
     (
         "task1",
         "体渲染关键帧（vtk.js 光线投射，t = 0 / 25 / 50 / 75 / 99）",
-        None,
+        ["task1_vol_strip.png"],
     ),
     (
         "task2",
-        "演化规律配图（体渲染 + 直方图叠加）",
-        ["task1_vol_t0000.png", "task1_vol_t0099.png", "task3_hist_overlay.png"],
+        "演化规律配图（四联指标 + 体渲染对比）",
+        [
+            "task2_evolution_story.png",
+            "task1_vol_t0000.png",
+            "task1_vol_t0099.png",
+            "task3_hist_overlay.png",
+        ],
     ),
     (
         "task3",
-        "时序统计图",
-        ["task3_hist_overlay.png", "task3_metrics_timeline.png"],
+        "时序统计图（100 步）",
+        [
+            "task3_hist_overlay.png",
+            "task3_metrics_timeline.png",
+            "task3_evolution_metrics.png",
+        ],
     ),
-    ("task4", "刷选验证（Top 1% 高密度体素投影）", ["task4_brush_top1.png"]),
+    (
+        "task4",
+        "刷选联动验证",
+        [
+            "task4_brush_triptych.png",
+            "task4_hist_brush_top1.png",
+            "task4_brush_top1.png",
+        ],
+    ),
 ]
 
 

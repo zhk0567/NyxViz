@@ -14,6 +14,9 @@ const OUT_DIR = path.join(ROOT, 'docs', 'figures');
 const STEPS = [0, 25, 50, 75, 99];
 const PORT = Number(process.env.CAPTURE_PORT || 5174);
 const BASE = `http://127.0.0.1:${PORT}`;
+const VIEW_W = Number(process.env.CAPTURE_WIDTH || 1920);
+const VIEW_H = Number(process.env.CAPTURE_HEIGHT || 1080);
+const SETTLE_MS = Number(process.env.CAPTURE_SETTLE_MS || 2500);
 
 async function serverUp(url) {
   try {
@@ -86,15 +89,16 @@ async function main() {
     } else {
       console.log(`Using existing server at ${BASE}`);
     }
+    const gpuArgs = process.env.CAPTURE_USE_GPU === '1'
+      ? ['--enable-webgl']
+      : ['--enable-webgl', '--use-gl=angle', '--use-angle=swiftshader'];
     const browser = await chromium.launch({
       headless: true,
-      args: [
-        '--enable-webgl',
-        '--use-gl=angle',
-        '--use-angle=swiftshader',
-      ],
+      args: gpuArgs,
     });
-    const page = await browser.newPage({ viewport: { width: 800, height: 600 } });
+    const page = await browser.newPage({
+      viewport: { width: VIEW_W, height: VIEW_H },
+    });
     page.setDefaultTimeout(120000);
     page.on('console', (msg) => console.log(`[browser] ${msg.text()}`));
     page.on('pageerror', (err) => console.error(`[pageerror] ${err.message}`));
@@ -122,16 +126,25 @@ async function main() {
           `Capture not ready at t=${t}: ${state.status ?? 'unknown'}`,
         );
       }
-      await page.waitForTimeout(1500);
+      await page.waitForFunction(
+        ({ w, h }) => {
+          const canvas = document.querySelector('[data-vtk-volume] canvas');
+          return (
+            canvas instanceof HTMLCanvasElement &&
+            canvas.width >= w * 0.9 &&
+            canvas.height >= h * 0.9
+          );
+        },
+        { w: VIEW_W, h: VIEW_H },
+        { timeout: 60000 },
+      );
+      await page.waitForTimeout(SETTLE_MS);
       const outPath = path.join(OUT_DIR, `task1_vol_t${String(t).padStart(4, '0')}.png`);
-      const container = page.locator('[data-vtk-volume]').first();
-      await container.waitFor({ state: 'visible', timeout: 60000 });
-      const canvas = container.locator('canvas').first();
-      if ((await canvas.count()) > 0) {
-        await canvas.screenshot({ path: outPath });
-      } else {
-        await container.screenshot({ path: outPath });
-      }
+      // Screenshot full viewport to avoid canvas size quirks across platforms.
+      await page.screenshot({
+        path: outPath,
+        clip: { x: 0, y: 0, width: VIEW_W, height: VIEW_H },
+      });
       console.log(`Wrote ${outPath}`);
     }
 

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { VolumeScene } from '@/volume/VolumeScene';
-import { loadTimestep } from '@/data/nyxLoader';
+import { loadTimestep, loadTimelineStats } from '@/data/nyxLoader';
+import { getGlobalTfDomain } from '@/volume/transferFunction';
 
 declare global {
   interface Window {
@@ -11,32 +12,22 @@ declare global {
   }
 }
 
-function minMax(data: Float32Array) {
-  let min = Infinity;
-  let max = -Infinity;
-  for (let i = 0; i < data.length; i++) {
-    const v = data[i]!;
-    if (v < min) min = v;
-    if (v > max) max = v;
-  }
-  return { min, max };
-}
-
 function CaptureApp() {
   const params = new URLSearchParams(window.location.search);
   const timestep = Math.max(0, Math.min(99, Number(params.get('t') ?? 0)));
   const [data, setData] = useState<Float32Array | null>(null);
-  const [range, setRange] = useState({ min: 7.5, max: 15 });
+  const [domain, setDomain] = useState({ min: 7.5, max: 15 });
 
   useEffect(() => {
     window.__CAPTURE_READY__ = false;
     window.__CAPTURE_ERROR__ = undefined;
     window.__CAPTURE_TIMESTEP__ = timestep;
 
-    loadTimestep(timestep)
-      .then((vol) => {
+    Promise.all([loadTimestep(timestep), loadTimelineStats()])
+      .then(([vol, timeline]) => {
+        const { min, max } = getGlobalTfDomain(timeline);
+        setDomain({ min, max });
         setData(vol);
-        setRange(minMax(vol));
       })
       .catch((err: unknown) => {
         window.__CAPTURE_ERROR__ =
@@ -45,7 +36,12 @@ function CaptureApp() {
   }, [timestep]);
 
   const handleRendered = () => {
-    window.__CAPTURE_READY__ = true;
+    // Wait for layout + vtk resize so 16:9 capture is not half-height.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.__CAPTURE_READY__ = true;
+      });
+    });
   };
 
   if (window.__CAPTURE_ERROR__) {
@@ -67,8 +63,10 @@ function CaptureApp() {
   return (
     <VolumeScene
       data={data}
-      dataMin={range.min}
-      dataMax={range.max}
+      dataMin={domain.min}
+      dataMax={domain.max}
+      quality="presentation"
+      useLogScale
       onRendered={handleRendered}
       className="capture-volume"
     />

@@ -1,0 +1,18 @@
+:root {
+  color-scheme: dark;
+  --bg-deep: #0a0e1a;
+  --bg-mid: #12182b;
+  --bg-card: rgba(22, 28, 45, 0.85);
+  --border: rgba(124, 108, 240, 0.22);
+  --border-strong: rgba(61, 214, 198, 0.35);
+  --text: #e8ecf4;
+  --text-muted: #9aa3b8;
+  --accent: #7c6cf0;
+  --accent-cyan: #3dd6c6;
+  --accent-gold: #f5c842;
+  --accent-blue: #58a6ff;
+  --danger: #f85149;
+  --radius: 10px;
+  --shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  --font: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+}

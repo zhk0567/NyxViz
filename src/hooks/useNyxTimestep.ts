@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { loadTimestep } from '@/data/nyxLoader';
+import { getPrefetchedTimestep, loadTimestep } from '@/data/nyxLoader';
 import { useAppStore } from '@/store/useAppStore';
 
 export function useNyxTimestep() {
@@ -10,8 +10,16 @@ export function useNyxTimestep() {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
     setError(null);
+
+    const prefetched = getPrefetchedTimestep(timestep);
+    if (prefetched) {
+      setDensityData(prefetched);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
     loadTimestep(timestep)
       .then((data) => {
         if (!cancelled) {

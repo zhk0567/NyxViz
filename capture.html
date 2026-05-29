@@ -5,7 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Nyx Volume Capture</title>
     <style>
-      html, body, #root { margin: 0; width: 800px; height: 600px; overflow: hidden; background: #0d1117; }
+      html, body, #root {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #0a0e1a;
+      }
+
+      /* Ensure vtk root container has real layout height. */
+      #root,
+      .capture-volume,
+      .capture-volume > div {
+        width: 100%;
+        height: 100%;
+      }
     </style>
   </head>
   <body>

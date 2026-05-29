@@ -1,5 +1,15 @@
 import vtkColorTransferFunction from '@kitware/vtk.js/Rendering/Core/ColorTransferFunction';
 import vtkPiecewiseFunction from '@kitware/vtk.js/Common/DataModel/PiecewiseFunction';
+import {
+  COSMIC_COLOR_STOPS,
+  cosmicLegendGradient,
+  densityToUnit,
+  log10Safe,
+} from '@/viz/colormap';
+
+export type { TfDomain } from '@/viz/tfDomain';
+export { getGlobalTfDomain } from '@/viz/tfDomain';
+export { cosmicLegendGradient };
 
 export interface TfParams {
   opacityScale?: number;
@@ -12,26 +22,62 @@ export interface TransferFunctionOptions extends TfParams {
   dataMax: number;
   highlightMin?: number;
   highlightMax?: number;
+  useLogScale?: boolean;
 }
 
-export function buildColorTransferFunction(
-  opts: TransferFunctionOptions,
-): vtkColorTransferFunction {
-  const { dataMin, dataMax, densityGain = 0 } = opts;
+function valueAtNormT(
+  t: number,
+  dataMin: number,
+  dataMax: number,
+  useLog: boolean,
+): number {
+  if (useLog) {
+    const lo = log10Safe(dataMin);
+    const hi = log10Safe(dataMax);
+    return Math.pow(10, lo + t * (hi - lo));
+  }
+  return dataMin + t * (dataMax - dataMin);
+}
+
+function mapDensity(
+  rho: number,
+  dataMin: number,
+  dataMax: number,
+  useLog: boolean,
+): number {
+  const u = densityToUnit(rho, dataMin, dataMax, useLog);
+  return valueAtNormT(u, dataMin, dataMax, useLog);
+}
+
+function mapT(
+  t: number,
+  dataMin: number,
+  dataMax: number,
+  densityGain: number,
+  useLog: boolean,
+): number {
   const span = dataMax - dataMin || 1;
-  const shift = span * densityGain * 0.15;
-  const ctf = vtkColorTransferFunction.newInstance();
-  ctf.addRGBPoint(dataMin, 0.02, 0.02, 0.08);
-  ctf.addRGBPoint(dataMin + span * 0.35 - shift, 0.1, 0.15, 0.45);
-  ctf.addRGBPoint(dataMin + span * 0.65 - shift, 0.35, 0.2, 0.65);
-  ctf.addRGBPoint(dataMin + span * 0.85 - shift, 0.85, 0.55, 0.2);
-  ctf.addRGBPoint(dataMax, 1.0, 0.95, 0.85);
-  return ctf;
+  const gainShift = span * densityGain * 0.08;
+  return valueAtNormT(t, dataMin, dataMax, useLog) - gainShift;
 }
 
-export function buildOpacityTransferFunction(
+export function fillColorTransferFunction(
+  ctf: vtkColorTransferFunction,
   opts: TransferFunctionOptions,
-): vtkPiecewiseFunction {
+): void {
+  const { dataMin, dataMax, densityGain = 0, useLogScale = true } = opts;
+
+  ctf.removeAllPoints();
+  for (const [t, r, g, b] of COSMIC_COLOR_STOPS) {
+    const x = mapT(t, dataMin, dataMax, densityGain, useLogScale);
+    ctf.addRGBPoint(x, r, g, b);
+  }
+}
+
+export function fillOpacityTransferFunction(
+  pwf: vtkPiecewiseFunction,
+  opts: TransferFunctionOptions,
+): void {
   const {
     dataMin,
     dataMax,
@@ -40,28 +86,59 @@ export function buildOpacityTransferFunction(
     opacityScale = 1,
     densityGain = 0,
     highlightBoost = 1,
+    useLogScale = true,
   } = opts;
   const span = dataMax - dataMin || 1;
-  const gainShift = span * densityGain * 0.12;
   const scale = (v: number) => Math.min(1, v * opacityScale);
 
-  const pwf = vtkPiecewiseFunction.newInstance();
+  const at = (t: number) => mapT(t, dataMin, dataMax, densityGain, useLogScale);
+
+  pwf.removeAllPoints();
 
   if (highlightMin !== undefined && highlightMax !== undefined) {
     const boost = highlightBoost;
-    pwf.addPoint(dataMin, scale(0.01));
-    pwf.addPoint(highlightMin - span * 0.01, scale(0.02));
-    pwf.addPoint(highlightMin, scale(0.35 * boost));
-    pwf.addPoint(highlightMax, scale(0.9 * boost));
-    pwf.addPoint(highlightMax + span * 0.01, scale(0.15));
-    pwf.addPoint(dataMax, scale(0.2));
-    return pwf;
+    pwf.addPoint(dataMin, scale(0.002));
+    pwf.addPoint(
+      mapDensity(highlightMin - span * 0.008, dataMin, dataMax, useLogScale),
+      scale(0.015),
+    );
+    pwf.addPoint(
+      mapDensity(highlightMin, dataMin, dataMax, useLogScale),
+      scale(0.55 * boost),
+    );
+    pwf.addPoint(
+      mapDensity(highlightMax, dataMin, dataMax, useLogScale),
+      scale(0.98 * boost),
+    );
+    pwf.addPoint(
+      mapDensity(highlightMax + span * 0.008, dataMin, dataMax, useLogScale),
+      scale(0.15),
+    );
+    pwf.addPoint(dataMax, scale(0.22));
+    return;
   }
 
   pwf.addPoint(dataMin, 0.0);
-  pwf.addPoint(dataMin + span * 0.25 - gainShift, scale(0.02));
-  pwf.addPoint(dataMin + span * 0.55 - gainShift, scale(0.08));
-  pwf.addPoint(dataMin + span * 0.78 - gainShift, scale(0.25));
+  pwf.addPoint(at(0.12), scale(0.02));
+  pwf.addPoint(at(0.35), scale(0.06));
+  pwf.addPoint(at(0.55), scale(0.14));
+  pwf.addPoint(at(0.72), scale(0.32));
+  pwf.addPoint(at(0.88), scale(0.65));
   pwf.addPoint(dataMax, scale(0.95));
+}
+
+export function buildColorTransferFunction(
+  opts: TransferFunctionOptions,
+): vtkColorTransferFunction {
+  const ctf = vtkColorTransferFunction.newInstance();
+  fillColorTransferFunction(ctf, opts);
+  return ctf;
+}
+
+export function buildOpacityTransferFunction(
+  opts: TransferFunctionOptions,
+): vtkPiecewiseFunction {
+  const pwf = vtkPiecewiseFunction.newInstance();
+  fillOpacityTransferFunction(pwf, opts);
   return pwf;
 }

@@ -1,21 +1,19 @@
 import { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 import type { TimelineData } from '@/data/types';
+import { useChartSize } from '@/hooks/useChartSize';
+import { LABEL_FILL, styleAxisText, styleGrid } from './chartTheme';
 
 const REPRESENTATIVE_STEPS = [0, 25, 50, 75, 99];
-const COLORS = ['#5b8def', '#6ad49b', '#c678dd', '#f0c040', '#e06c75'];
+const COLORS = ['#7c6cf0', '#3dd6c6', '#5b9bd5', '#f5c842', '#e87a5a'];
 
 interface HistogramOverlayProps {
   timeline: TimelineData;
-  width?: number;
-  height?: number;
 }
 
-export function HistogramOverlay({
-  timeline,
-  width = 520,
-  height = 240,
-}: HistogramOverlayProps) {
+export function HistogramOverlay({ timeline }: HistogramOverlayProps) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const { width, height } = useChartSize(wrapRef, 260, 2.1);
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
@@ -54,6 +52,16 @@ export function HistogramOverlay({
       .append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
 
+    const gridG = g.append('g').attr('class', 'grid');
+    gridG.call(
+      d3
+        .axisLeft(y)
+        .ticks(5)
+        .tickSize(-innerW)
+        .tickFormat(() => ''),
+    );
+    styleGrid(gridG);
+
     REPRESENTATIVE_STEPS.forEach((t, idx) => {
       const hist = timeline.histograms[t];
       if (!hist) return;
@@ -61,18 +69,18 @@ export function HistogramOverlay({
         .datum(hist)
         .attr('fill', 'none')
         .attr('stroke', COLORS[idx])
-        .attr('stroke-width', 2)
-        .attr('opacity', 0.9)
+        .attr('stroke-width', 2.2)
+        .attr('opacity', 0.95)
         .attr('d', line);
     });
 
-    g.append('g')
-      .attr('transform', `translate(0,${innerH})`)
-      .call(d3.axisBottom(x).ticks(6, '.2f'))
-      .selectAll('text')
-      .attr('fill', '#aab');
-
-    g.append('g').call(d3.axisLeft(y).ticks(5)).selectAll('text').attr('fill', '#aab');
+    styleAxisText(
+      g
+        .append('g')
+        .attr('transform', `translate(0,${innerH})`)
+        .call(d3.axisBottom(x).ticks(6, '.2f')),
+    );
+    styleAxisText(g.append('g').call(d3.axisLeft(y).ticks(5)));
 
     REPRESENTATIVE_STEPS.forEach((t, idx) => {
       g.append('text')
@@ -84,5 +92,9 @@ export function HistogramOverlay({
     });
   }, [timeline, width, height]);
 
-  return <svg ref={svgRef} className="histogram-overlay" />;
+  return (
+    <div ref={wrapRef} className="chart-responsive">
+      <svg ref={svgRef} className="histogram-overlay" width="100%" />
+    </div>
+  );
 }

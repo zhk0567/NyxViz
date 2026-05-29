@@ -1,4 +1,6 @@
+import { useEffect, useRef, useState } from 'react';
 import type { TfParams } from './transferFunction';
+import { debounce } from '@/utils/debounce';
 
 export interface TransferFunctionControlsProps {
   params: TfParams;
@@ -9,9 +11,27 @@ export function TransferFunctionControls({
   params,
   onChange,
 }: TransferFunctionControlsProps) {
-  const opacityScale = params.opacityScale ?? 1;
-  const densityGain = params.densityGain ?? 0;
-  const highlightBoost = params.highlightBoost ?? 1;
+  const [local, setLocal] = useState<TfParams>(params);
+  const commitRef = useRef(debounce((p: TfParams) => onChange(p), 120));
+
+  useEffect(() => {
+    setLocal(params);
+  }, [params]);
+
+  useEffect(() => {
+    commitRef.current = debounce((p: TfParams) => onChange(p), 120);
+    return () => commitRef.current.cancel();
+  }, [onChange]);
+
+  const update = (patch: Partial<TfParams>) => {
+    const next = { ...local, ...patch };
+    setLocal(next);
+    commitRef.current(next);
+  };
+
+  const opacityScale = local.opacityScale ?? 1;
+  const densityGain = local.densityGain ?? 0;
+  const highlightBoost = local.highlightBoost ?? 1;
 
   return (
     <div className="tf-controls">
@@ -23,9 +43,7 @@ export function TransferFunctionControls({
           max={2}
           step={0.05}
           value={opacityScale}
-          onChange={(e) =>
-            onChange({ ...params, opacityScale: Number(e.target.value) })
-          }
+          onChange={(e) => update({ opacityScale: Number(e.target.value) })}
         />
       </label>
       <label>
@@ -36,9 +54,7 @@ export function TransferFunctionControls({
           max={1}
           step={0.05}
           value={densityGain}
-          onChange={(e) =>
-            onChange({ ...params, densityGain: Number(e.target.value) })
-          }
+          onChange={(e) => update({ densityGain: Number(e.target.value) })}
         />
       </label>
       <label>
@@ -49,9 +65,7 @@ export function TransferFunctionControls({
           max={2}
           step={0.05}
           value={highlightBoost}
-          onChange={(e) =>
-            onChange({ ...params, highlightBoost: Number(e.target.value) })
-          }
+          onChange={(e) => update({ highlightBoost: Number(e.target.value) })}
         />
       </label>
     </div>

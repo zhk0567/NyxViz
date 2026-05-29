@@ -20,18 +20,39 @@ Nyx/
 - Python 3.10+（预计算、出图、docx）
 - Playwright Chromium（体渲染截图，`npx playwright install chromium`）
 
-## 快速开始
+## 快速开始（唯一入口）
+
+将赛题数据放入 `Nyx/` 后，在项目根目录执行：
 
 ```powershell
 cd F:\commercial\NyxViz
-npm install
-npx playwright install chromium
 pip install -r scripts/requirements.txt
+python run.py
+```
+
+`run.py` 会自动：释放 5173/5174/4173 等占用端口 → 首次运行 `npm install` / `precompute` / 生成报告与配图 → 启动 Vite → 打开浏览器。
+
+**默认首页**为完整比赛成果（四任务报告 + 配图 + 100 步统计表），无 vtk 动画。实时体渲染与刷选请打开 [http://localhost:5173/app.html](http://localhost:5173/app.html)。
+
+可选环境变量：`NYXVIZ_PORT=5173` 指定端口。
+
+### 手动启动（开发）
+
+```powershell
+npm install
 npm run precompute
 npm run dev
 ```
 
-浏览器打开 http://localhost:5173（体渲染 / 时序统计 / 刷选联动）。
+浏览器访问 http://localhost:5173 查看完整成果；交互仪表盘见 `/app.html`（默认勾选「展板质量体渲染」，全局 log 色标与截图一致）。
+
+## 赛题交付（四任务成果）
+
+```powershell
+npm run submission-pack
+```
+
+生成：`docs/figures/` 全部配图、`docs/report/*.md`、`docs/report/Nyx_Submission.docx`、`docs/submission/submission_representative.jpg`（代表图 JPG）。正文可复制进官方 `1-II_answerSheet.docx`。
 
 ## 一键交付
 
@@ -39,14 +60,15 @@ npm run dev
 npm run deliver
 ```
 
-依次执行：预计算 → vtk 体渲染截图 → 静态图 → Markdown 报告 → docx → 单文件 Showcase HTML。
+依次执行：预计算 → vtk 体渲染截图 → 静态图 → 报告 → docx → submission-pack → 单文件 Showcase HTML。
 
 ## 命令一览
 
 | 命令 | 说明 |
 |------|------|
-| `npm run capture-volumes` | Playwright 导出 `docs/figures/task1_vol_*.png` |
-| `npm run figures` | 任务 2–4 静态图（任务一优先用 vol 图） |
+| `npm run capture-volumes` | Playwright **1920×1080** 展板体渲染 → `task1_vol_*.png`（可选 `CAPTURE_USE_GPU=1`） |
+| `npm run figures` | 任务 2–4 静态图（dark cosmic 主题、dpi 200） |
+| `npm run figures:hd` | `capture-volumes` + `figures` + `export-report`（展板配图一条龙） |
 | `npm run export-report` | `docs/report/*.md` |
 | `npm run export-docx` | `docs/report/Nyx_Submission.docx` |
 | `npm run showcase` | `NyxViz_Showcase.html`（静态 + 内嵌交互 bundle） |
@@ -65,9 +87,12 @@ npm run deliver
 
 ## 功能
 
-1. **体渲染**：传递函数滑块 + 双光源，时间步滑块
-2. **时序统计**：五步直方图叠加、mean/p99/std 曲线
-3. **刷选联动**：直方图框选 / Top1% / Bottom1% → 体渲染高亮 + 3D 点云
+1. **体渲染**：宇宙学 `cosmic` 色标、传递函数滑块、密度图例、双光源；默认交互采样，可勾选「高质量体渲染」
+2. **时序统计**：五步直方图叠加（主题色板）、mean/p99/std 曲线与淡填充
+3. **刷选联动**：直方图框选 / Top1% / Bottom1% → 体渲染高亮 + Canvas 2D 最大密度投影；**默认不加载第二个 VTK**，勾选「显示 3D 点云」后再挂载点云
+4. **性能**：刷选扫描在 Web Worker；VTK 按需 `lazy` 分包；相邻时间步 `requestIdleCallback` 预取（最多 3 步缓存）；非当前页签跳过 GPU 渲染
+
+页签可通过 URL hash 直达，例如 `http://localhost:5173/#volume`、`#stats`、`#brush`。
 
 ## 目录结构
 

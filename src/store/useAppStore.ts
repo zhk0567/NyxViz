@@ -26,7 +26,7 @@ export const useAppStore = create<AppState>((set) => ({
   error: null,
   brushRange: null,
   brushedCount: 0,
-  tfParams: { opacityScale: 1, densityGain: 0, highlightBoost: 1 },
+  tfParams: { opacityScale: 1.15, densityGain: 0.12, highlightBoost: 1.2 },
   setTimestep: (timestep) => set({ timestep }),
   setDensityData: (densityData) => set({ densityData }),
   setLoading: (loading) => set({ loading }),

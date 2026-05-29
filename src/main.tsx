@@ -1,10 +1,4 @@
-import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { App } from '@/dashboard/App';
-import '@/dashboard/dashboard.css';
+import { ResultsPage } from '@/results/ResultsPage';
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+createRoot(document.getElementById('root')!).render(<ResultsPage />);
