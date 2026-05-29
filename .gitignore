@@ -1,4 +1,7 @@
 node_modules
+__pycache__/
+*.py[cod]
+.cursor-challenge-*.html
 dist
 dist-showcase
 .DS_Store
