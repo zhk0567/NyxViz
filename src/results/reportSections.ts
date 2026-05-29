@@ -50,6 +50,7 @@ export const REPORT_SECTIONS: ReportSection[] = [
     mdFile: 'task4_brush.md',
     galleryTitle: '刷选联动：Top 1% / Bottom 1% 验证',
     figures: [
+      'task4_spatial_to_stats.png',
       'task4_brush_triptych.png',
       'task4_hist_brush_top1.png',
       'task4_brush_top1.png',

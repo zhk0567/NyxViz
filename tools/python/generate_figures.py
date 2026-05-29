@@ -11,7 +11,8 @@ import numpy as np
 from matplotlib import image as mpimg
 from matplotlib.colors import LogNorm
 
-from projection_render import render_xy_projection
+from projection_render import render_projection_rgb, render_xy_projection
+from spatial_to_stats import filament_density_band
 from viz_style import (
     COSMIC_CMAP,
     FIG_DPI,
@@ -269,6 +270,50 @@ def task4_histogram_brush(timeline: dict, t: int = 99) -> None:
     one_brush(s["min"], s["p01"], THEME["cyan"], f"Bottom 1%: ρ≤{s['p01']:.2f}", "task4_hist_brush_bottom1.png")
 
 
+def task4_spatial_to_stats(vol: np.ndarray, timeline: dict, t: int = 99) -> tuple[float, float]:
+    """Spatial → statistical: filament pixels on projection → density band on histogram."""
+    lo, hi, filament_mask = filament_density_band(vol)
+    vmin, vmax = global_projection_domain(timeline)
+    proj = np.max(vol, axis=2)
+    rgb = render_projection_rgb(proj, vmin, vmax)
+    gold = np.array([0.96, 0.78, 0.26])
+    rgb[filament_mask] = rgb[filament_mask] * 0.25 + gold * 0.75
+
+    edges = timeline["logBinEdges"]
+    centers = np.array([np.sqrt(edges[i] * edges[i + 1]) for i in range(len(edges) - 1)])
+    hist = np.array(timeline["histograms"][t])
+    total = hist.sum() or 1
+    pct = hist / total * 100
+
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4.6))
+    axes[0].imshow(rgb, origin="lower")
+    axes[0].set_title(f"空间：filament 亮脊 (t={t}, 投影 ≥ P88)")
+    axes[0].axis("off")
+
+    axes[1].bar(centers, pct, width=centers * 0.08, color=THEME["purple"], alpha=0.85, align="center")
+    bin_mask = (centers >= lo) & (centers <= hi * 1.01)
+    axes[1].bar(
+        centers[bin_mask],
+        pct[bin_mask],
+        width=centers[bin_mask] * 0.08,
+        color=THEME["gold"],
+        alpha=0.95,
+        align="center",
+        label=f"filament 带: ρ∈[{lo:.2f}, {hi:.2f}]",
+    )
+    axes[1].set_xscale("log")
+    axes[1].set_xlabel("密度 ρ (log)")
+    axes[1].set_ylabel("占比 %")
+    axes[1].set_title("统计：亮脊像素对应密度带")
+    axes[1].legend()
+    style_axes(axes[1])
+    fig.suptitle("空间→统计：识别 filament 后在直方图标出对应密度区间", fontsize=12, color="#e6edf3")
+    fig.tight_layout()
+    fig.savefig(OUT / "task4_spatial_to_stats.png", dpi=FIG_DPI)
+    plt.close(fig)
+    return lo, hi
+
+
 def task4_triptych(timeline: dict) -> None:
     paths = [
         OUT / "task4_hist_brush_top1.png",
@@ -371,6 +416,7 @@ def main() -> int:
         OUT / "task4_brush_bottom1.png",
     )
     task4_histogram_brush(timeline, 99)
+    task4_spatial_to_stats(vol99, timeline, 99)
     task4_triptych(timeline)
     representative_poster(timeline)
 

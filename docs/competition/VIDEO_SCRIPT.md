@@ -6,7 +6,7 @@
 |------|----------|------|
 | 0:00–0:25 | Nyx 128³、100 步、z-fast float32；四任务：体渲染、演化、统计、刷选 | 首页成果页概览 KPI |
 | 0:25–1:20 | 任务1：cosmic 传递函数、五时刻宇宙网形成 | `task1_vol_strip` 或体渲染页切换 t=0/50/99 |
-| 1:20–2:10 | 任务3：100 步 log 直方图，σ 与右尾增厚 | 时序统计页 / 静态图 task3_metrics |
+| 1:20–2:10 | 任务3：100 步 log 直方图，σ 与右尾增厚 | 时序统计页 / `task3_metrics_timeline.png` / **`task3_hist_evolution.gif`** |
 | 2:10–3:30 | 任务4：框选 Top 1% → 体渲染高亮 → 2D 投影金斑 | **录屏** app 刷选流程一次 |
 | 3:30–4:15 | 任务2：分位跨度↑、IGM 占体积、宇宙网验证 | task2_evolution_story 图 |
 | 4:15–4:50 | 工具：vtk.js、D3、Python 预计算、Worker 刷选 | 代表图 submission_representative.jpg |

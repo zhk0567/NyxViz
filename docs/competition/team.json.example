@@ -1,0 +1,10 @@
+{
+  "team_name": "学校-姓名-赛道1-II",
+  "member_line_1": "张三，某某大学，zhang@example.edu.cn，队长",
+  "member_lines_extra": "\t\t\t李四，某某大学，li@example.edu.cn",
+  "consistent_with_registration": "是",
+  "student_team": "是",
+  "tools": "Vite、React、TypeScript、vtk.js、D3.js、Python（precompute/generate_figures）、Playwright 体渲染截图；NyxViz 自研交互仪表盘",
+  "person_days": "30人天",
+  "publish_ok": "是"
+}

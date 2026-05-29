@@ -52,7 +52,7 @@ npm run dev
 npm run submission-pack
 ```
 
-生成：`docs/figures/` 全部配图、`docs/report/*.md`、`docs/report/Nyx_Submission.docx`、`docs/submission/submission_representative.jpg`（代表图 JPG）。正文可复制进官方 `1-II_answerSheet.docx`。
+生成：`docs/submission/Nyx_answerSheet_filled.docx`（官方答卷，推荐提交）、`docs/report/Nyx_Submission.docx`、`docs/submission/Nyx_Submission.pdf`、代表图 JPG 等。填写 `docs/competition/team.json` 后运行 `npm run fill-answer-sheet`。
 
 ## 一键交付
 
@@ -70,7 +70,10 @@ npm run deliver
 | `npm run figures` | 任务 2–4 静态图（dark cosmic 主题、dpi 200） |
 | `npm run figures:hd` | `capture-volumes` + `figures` + `export-report`（展板配图一条龙） |
 | `npm run export-report` | `docs/report/*.md` |
+| `npm run fill-answer-sheet` | `docs/submission/Nyx_answerSheet_filled.docx`（官方模板） |
+| `npm run hist-animation` | `docs/figures/task3_hist_evolution.gif`（视频 B-roll） |
 | `npm run export-docx` | `docs/report/Nyx_Submission.docx` |
+| `npm run export-pdf` | `docs/submission/Nyx_Submission.pdf`（需 Word 或 LibreOffice） |
 | `npm run showcase` | `NyxViz_Showcase.html`（静态 + 内嵌交互 bundle） |
 | `npm run showcase:offline` | 同上，并 gzip 内嵌 t=0,99 体数据 |
 | `npm run build:showcase` | 仅构建 `dist-showcase/showcase.iife.js` |

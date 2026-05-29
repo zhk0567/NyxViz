@@ -66,11 +66,13 @@ FIGURE_GROUPS = [
     ),
     (
         "task4",
-        "刷选联动验证",
+        "刷选联动验证（统计↔空间）",
         [
+            "task4_spatial_to_stats.png",
             "task4_brush_triptych.png",
             "task4_hist_brush_top1.png",
             "task4_brush_top1.png",
+            "task4_brush_bottom1.png",
         ],
     ),
 ]

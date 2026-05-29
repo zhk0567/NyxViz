@@ -18,8 +18,13 @@
     "showcase:offline": "python tools/python/build_showcase_html.py --embed-steps 0,99",
     "capture-volumes": "node tools/node/capture_volumes.mjs",
     "export-docx": "python tools/python/export_docx.py",
+    "export-pdf": "python tools/python/export_docx_pdf.py",
+    "fill-answer-sheet": "python tools/python/fill_answer_sheet.py",
+    "hist-animation": "python tools/python/generate_hist_animation.py --copy-broll",
     "deliver": "npm run precompute && npm run capture-volumes && npm run figures && npm run export-report && npm run export-docx && npm run submission-pack && npm run showcase",
     "test:loader": "python tools/python/verify_loader.py",
+    "test:report": "python tools/python/verify_report_stats.py",
+    "test:words": "python tools/python/count_report_chars.py --exclude-tools --strict",
     "test": "vitest run"
   },
   "dependencies": {

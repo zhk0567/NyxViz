@@ -20,6 +20,14 @@ def main() -> int:
     run([sys.executable, str(PY / "generate_figures.py")])
     run([sys.executable, str(PY / "export_report.py")])
     run([sys.executable, str(PY / "export_docx.py")])
+    try:
+        run([sys.executable, str(PY / "fill_answer_sheet.py")])
+    except subprocess.CalledProcessError:
+        print("Warning: answer sheet fill skipped — see fill_answer_sheet.py", file=sys.stderr)
+    try:
+        run([sys.executable, str(PY / "export_docx_pdf.py")])
+    except subprocess.CalledProcessError:
+        print("Warning: PDF export skipped — Word/LibreOffice unavailable", file=sys.stderr)
 
     OUT.mkdir(parents=True, exist_ok=True)
     rep = OUT / "submission_representative.jpg"
@@ -36,7 +44,9 @@ def main() -> int:
         print(f"Copied {OUT / 'Nyx_Submission.docx'}")
 
     print("\nSubmission pack ready under docs/submission/")
-    print("  - Nyx_Submission.docx  (paste into official answer sheet)")
+    print("  - Nyx_answerSheet_filled.docx  (official template, auto-filled)")
+    print("  - Nyx_Submission.docx  (full report docx)")
+    print("  - Nyx_Submission.pdf     (PDF backup for upload)")
     print("  - submission_representative.jpg")
     print("  - Full figures: docs/figures/")
     return 0
