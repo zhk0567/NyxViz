@@ -1,0 +1,39 @@
+{
+  "name": "nyx-viz",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "figures": "python scripts/generate_figures.py",
+    "preview": "vite preview",
+    "precompute": "python scripts/precompute.py",
+    "export-report": "python scripts/export_report.py",
+    "build:showcase": "vite build --config vite.showcase.config.ts",
+    "showcase": "python scripts/build_showcase_html.py",
+    "showcase:offline": "python scripts/build_showcase_html.py --embed-steps 0,99",
+    "capture-volumes": "node scripts/capture_volumes.mjs",
+    "export-docx": "python scripts/export_docx.py",
+    "deliver": "npm run precompute && npm run capture-volumes && npm run figures && npm run export-report && npm run export-docx && npm run showcase",
+    "test:loader": "python scripts/verify_loader.py",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@kitware/vtk.js": "^33.0.1",
+    "d3": "^7.9.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@types/d3": "^7.4.3",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "~5.7.2",
+    "vite": "^6.2.0",
+    "vitest": "^3.0.8",
+    "playwright": "^1.51.0"
+  }
+}

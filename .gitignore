@@ -1,0 +1,11 @@
+node_modules
+dist
+dist-showcase
+.DS_Store
+*.local
+.vite
+public/Nyx
+Nyx/
+*.dat
+NyxViz_Showcase.html
+1-II_answerSheet.docx
