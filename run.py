@@ -20,6 +20,7 @@ import webbrowser
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
+PY = ROOT / "tools" / "python"
 NYX_DATA = ROOT / "Nyx"
 STATS_FILE = ROOT / "public" / "stats" / "timeline.json"
 FIGURES_DIR = ROOT / "docs" / "figures"
@@ -128,7 +129,7 @@ def ensure_stats() -> None:
     if STATS_FILE.is_file():
         return
     log("Precomputing timeline stats (first run)…")
-    subprocess.run([sys.executable, str(ROOT / "scripts" / "precompute.py")], cwd=ROOT, check=True)
+    subprocess.run([sys.executable, str(PY / "precompute.py")], cwd=ROOT, check=True)
 
 
 def ensure_deliverables() -> None:
@@ -136,14 +137,14 @@ def ensure_deliverables() -> None:
     if not (REPORT_DIR / "task1_volume.md").is_file():
         log("Generating report sections…")
         subprocess.run(
-            [sys.executable, str(ROOT / "scripts" / "export_report.py")],
+            [sys.executable, str(PY / "export_report.py")],
             cwd=ROOT,
             check=True,
         )
     if not any(FIGURES_DIR.glob("*.png")):
         log("Generating static figures (slice / charts; vtk capture optional)…")
         subprocess.run(
-            [sys.executable, str(ROOT / "scripts" / "generate_figures.py")],
+            [sys.executable, str(PY / "generate_figures.py")],
             cwd=ROOT,
             check=True,
         )

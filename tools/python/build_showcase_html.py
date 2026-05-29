@@ -10,11 +10,11 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 FIGURES = ROOT / "docs" / "figures"
 STATS = ROOT / "public" / "stats" / "timeline.json"
 REPORT_DIR = ROOT / "docs" / "report"
-OUT = ROOT / "NyxViz_Showcase.html"
+OUT = ROOT / "docs" / "showcase" / "NyxViz_Showcase.html"
 
 TASK_SECTIONS = [
     ("task1", "任务一：体数据渲染与密度演化", "task1_volume.md"),
@@ -498,7 +498,7 @@ def main() -> int:
     {"".join(sections_html)}
     <section id="stats" class="panel">
       <h2>100 时间步密度统计（预计算）</h2>
-      <p>下表为 <code>scripts/precompute.py</code> 对每步全域密度的汇总；上图为由相同数据绘制的 SVG 时序曲线。</p>
+      <p>下表为 <code>tools/python/precompute.py</code> 对每步全域密度的汇总；上图为由相同数据绘制的 SVG 时序曲线。</p>
       {build_metrics_svg(timesteps)}
       <div class="table-wrap" style="margin-top:1rem">
         <table>
@@ -526,13 +526,14 @@ def main() -> int:
     </section>
   </main>
   <footer>
-    NyxViz · 数据来源：赛题指定 Nyx 宇宙学模拟密度场 · scripts/build_showcase_html.py
+    NyxViz · 数据来源：赛题指定 Nyx 宇宙学模拟密度场 · tools/python/build_showcase_html.py
   </footer>
   {f"<script>{bundle_js}</script>" if bundle_js else "<p><!-- showcase bundle missing: npm run build:showcase --></p>"}
 </body>
 </html>
 """
 
+    OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(page, encoding="utf-8")
     size_mb = OUT.stat().st_size / (1024 * 1024)
     print(f"Wrote {OUT} ({size_mb:.2f} MB)")

@@ -59,7 +59,7 @@
 ## 方法
 - 对 **全部 100 个时间步** 的气体密度做 **log 等距分箱**（128 bins），边界 `[7.7533, 14.5231]`（全域 min/max）。
 - 分箱中心 ρᵢ = √(edgeᵢ · edgeᵢ₊₁)，直方图为归一化频数 Σcount/N。
-- 同步预计算每步 mean、σ、p01/p50/p99、偏度 skew，用于时序曲线（`scripts/precompute.py` → `timeline.json`）。
+- 同步预计算每步 mean、σ、p01/p50/p99、偏度 skew，用于时序曲线（`tools/python/precompute.py` → `timeline.json`）。
 
 ## 演化规律
 - **团块化**：σ 由 0.4318 → 0.4983，物质分布由相对均匀转向强烈聚敛。

@@ -23,7 +23,7 @@ from viz_style import (
 
 apply_dark_theme()
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 NYX = ROOT / "Nyx"
 STATS = ROOT / "public" / "stats" / "timeline.json"
 OUT = ROOT / "docs" / "figures"

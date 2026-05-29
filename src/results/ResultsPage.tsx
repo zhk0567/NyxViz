@@ -285,7 +285,7 @@ export function ResultsPage() {
         <section id="stats" className="panel">
           <h2>100 时间步密度统计（预计算）</h2>
           <p>
-            下表由 <code>scripts/precompute.py</code> 对每步全域密度汇总；上图为相同数据的时序曲线。
+            下表由 <code>tools/python/precompute.py</code> 对每步全域密度汇总；上图为相同数据的时序曲线。
           </p>
           <MetricsSvg timesteps={timeline.timesteps} />
           <div className="table-wrap">

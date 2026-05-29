@@ -25,7 +25,7 @@
 | `docs/report/Nyx_Submission.docx` | 四题 Word 汇总（贴官方答卷前稿） |
 | `docs/report/full_report.md` | 完整 Markdown |
 | `docs/submission/submission_representative.jpg` | 代表图 JPG（≤20MB） |
-| `docs/VIDEO_SCRIPT.md` | 5 分钟视频分镜 |
+| `docs/competition/VIDEO_SCRIPT.md` | 5 分钟视频分镜 |
 | 首页 `/` | 静态成果展示（报告 + 配图 + 100 步表） |
 | `/app.html` | 交互演示（体渲染 / 刷选 / Worker） |
 
@@ -45,7 +45,7 @@ npm run deliver           # 含 showcase 全流程
 | 材料 | 规格 | 状态 |
 |------|------|------|
 | 答卷 | 官方 [`1-II_answerSheet.docx`](https://chinavis.org/2026/challenge/1-II_answerSheet.docx)，四题 **≤800 字 / ≤5 图** | 待粘贴 `docs/report` + 配图 |
-| 视频 | MP4，**≤5 分钟、≤50MB** | 待录制（脚本见 `docs/VIDEO_SCRIPT.md`） |
+| 视频 | MP4，**≤5 分钟、≤50MB** | 待录制（脚本见 `docs/competition/VIDEO_SCRIPT.md`） |
 | 代表图 | JPG **1 张**，≤20MB | 已有 `docs/submission/submission_representative.jpg` |
 | 摘要 | **100 字** | 待写 |
 | 上传 | [赛道1 提交入口](https://s99x45wjic.jiandaoyun.com/f/6a0ae5b7d2ebb735eedc664e) 截止 **6-20** | 待办 |
@@ -58,7 +58,7 @@ npm run deliver           # 含 showcase 全流程
 
 - [ ] **A1** 将 `docs/report/task*.md` 四题内容 + 配图嵌入官方 **answerSheet**，每题裁剪至 ≤800 字、≤5 图
 - [ ] **A2** 撰写 **100 字作品摘要**（100 步统计 + 体渲染 + 刷选闭环 + vtk/D3）
-- [ ] **A3** 按 `docs/VIDEO_SCRIPT.md` 录制解说视频，H.264 压至 **<50MB**，含 `/app.html` 刷选录屏一段
+- [ ] **A3** 按 `docs/competition/VIDEO_SCRIPT.md` 录制解说视频，H.264 压至 **<50MB**，含 `/app.html` 刷选录屏一段
 - [ ] **A4** 终检代表图：确认 `submission_representative.jpg` 清晰、<20MB，必要时 `npm run submission-pack` 重生
 - [ ] **A5** **6月18–19** 上传答卷 PDF/Word + 视频 + 代表图（避免截止日高峰）
 

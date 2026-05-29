@@ -1,6 +1,6 @@
 /**
  * Capture vtk.js volume renders via Playwright.
- * Usage: node scripts/capture_volumes.mjs
+ * Usage: node tools/node/capture_volumes.mjs
  */
 import { spawn } from 'node:child_process';
 import { mkdir } from 'node:fs/promises';
@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(__dirname, '..', '..');
 const OUT_DIR = path.join(ROOT, 'docs', 'figures');
 const STEPS = [0, 25, 50, 75, 99];
 const PORT = Number(process.env.CAPTURE_PORT || 5174);

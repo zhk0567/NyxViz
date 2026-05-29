@@ -5,9 +5,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "docs" / "submission"
-FIGURES = ROOT / "docs" / "figures"
+PY = ROOT / "tools" / "python"
 
 
 def run(cmd: list[str]) -> None:
@@ -16,22 +16,17 @@ def run(cmd: list[str]) -> None:
 
 
 def main() -> int:
-    run([sys.executable, str(ROOT / "scripts" / "precompute.py")])
-    run([sys.executable, str(ROOT / "scripts" / "generate_figures.py")])
-    run([sys.executable, str(ROOT / "scripts" / "export_report.py")])
-    run([sys.executable, str(ROOT / "scripts" / "export_docx.py")])
+    run([sys.executable, str(PY / "precompute.py")])
+    run([sys.executable, str(PY / "generate_figures.py")])
+    run([sys.executable, str(PY / "export_report.py")])
+    run([sys.executable, str(PY / "export_docx.py")])
 
     OUT.mkdir(parents=True, exist_ok=True)
     rep = OUT / "submission_representative.jpg"
-    if not rep.exists():
-        rep = FIGURES / "submission_representative.jpg"
-    if rep.exists() and rep.parent.resolve() != OUT.resolve():
-        import shutil
-
-        shutil.copy2(rep, OUT / "submission_representative.jpg")
-        print(f"Copied {OUT / 'submission_representative.jpg'}")
-    elif rep.exists():
+    if rep.exists():
         print(f"Representative image: {rep}")
+    else:
+        print("Warning: submission_representative.jpg missing — run generate_figures.py", file=sys.stderr)
 
     docx = ROOT / "docs" / "report" / "Nyx_Submission.docx"
     if docx.exists():

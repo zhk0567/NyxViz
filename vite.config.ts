@@ -69,13 +69,17 @@ function nyxDataPlugin(): Plugin {
 }
 
 export default defineConfig({
+  root: path.resolve(__dirname, 'pages'),
+  publicDir: path.resolve(__dirname, 'public'),
   plugins: [react(), nyxDataPlugin()],
   build: {
+    outDir: path.resolve(__dirname, 'dist'),
+    emptyOutDir: true,
     rollupOptions: {
       input: {
-        main: path.resolve(__dirname, 'index.html'),
-        app: path.resolve(__dirname, 'app.html'),
-        capture: path.resolve(__dirname, 'capture.html'),
+        main: path.resolve(__dirname, 'pages/index.html'),
+        app: path.resolve(__dirname, 'pages/app.html'),
+        capture: path.resolve(__dirname, 'pages/capture.html'),
       },
       output: {
         manualChunks: {

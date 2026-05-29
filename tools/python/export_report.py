@@ -5,7 +5,7 @@ import json
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 STATS = ROOT / "public" / "stats" / "timeline.json"
 REPORT = ROOT / "docs" / "report"
 
@@ -89,7 +89,7 @@ def task3_md(timeline: dict) -> str:
 ## 方法
 - 对 **全部 100 个时间步** 的气体密度做 **log 等距分箱**（{bc} bins），边界 `[{gmin:.4f}, {gmax:.4f}]`（全域 min/max）。
 - 分箱中心 ρᵢ = √(edgeᵢ · edgeᵢ₊₁)，直方图为归一化频数 Σcount/N。
-- 同步预计算每步 mean、σ、p01/p50/p99、偏度 skew，用于时序曲线（`scripts/precompute.py` → `timeline.json`）。
+- 同步预计算每步 mean、σ、p01/p50/p99、偏度 skew，用于时序曲线（`tools/python/precompute.py` → `timeline.json`）。
 
 ## 演化规律
 - **团块化**：σ 由 {s0['std']:.4f} → {s99['std']:.4f}，物质分布由相对均匀转向强烈聚敛。

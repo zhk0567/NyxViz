@@ -26,7 +26,7 @@ Nyx/
 
 ```powershell
 cd F:\commercial\NyxViz
-pip install -r scripts/requirements.txt
+pip install -r tools/python/requirements.txt
 python run.py
 ```
 
@@ -78,7 +78,7 @@ npm run deliver
 
 ## 单文件展示页
 
-生成 [`NyxViz_Showcase.html`](NyxViz_Showcase.html) 后：
+生成 [`docs/showcase/NyxViz_Showcase.html`](docs/showcase/NyxViz_Showcase.html) 后：
 
 - **静态部分**：四任务报告、配图、100 步统计表（可 `file://` 打开）
 - **交互部分**：内嵌 vtk.js 刷选仪表盘
@@ -97,15 +97,21 @@ npm run deliver
 ## 目录结构
 
 ```
-src/volume/       体渲染与传递函数
-src/histogram/    直方图与时序图
-src/showcase/     嵌入 Showcase 的交互组件
-capture.html      vtk 截图专用页
-scripts/          Python / Playwright 工具链
-docs/figures/     配图
-docs/report/      报告与 docx
-NyxViz_Showcase.html
+pages/              Vite HTML 入口（index / app / capture）
+src/                React + vtk.js 源码
+tools/python/       预计算、配图、报告、docx、submission-pack
+tools/node/         Playwright 体渲染截图
+public/stats/       timeline.json（precompute 生成）
+docs/figures/       任务配图 PNG
+docs/report/        Markdown 报告与 docx 源
+docs/submission/    赛题交付副本
+docs/competition/   赛题清单与视频脚本
+docs/showcase/      单文件 Showcase HTML
+Nyx/                赛题体数据（本地，不入库）
+run.py              一键启动
 ```
+
+详见 [`docs/README.md`](docs/README.md)。
 
 ## 赛题对应
 
