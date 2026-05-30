@@ -1,0 +1,47 @@
+NyxViz — 提交用文件（Word 整理入口）
+更新：运行 npm run submission-pack 后自动再生
+
+═══════════════════════════════════════════════════════════
+docs/submission/  （上传 / Word 只认这一夹）
+═══════════════════════════════════════════════════════════
+
+  NyxViz_报告终稿.docx          论文格式 Word（推荐打开此文件）
+  Nyx_answerSheet_filled.docx   官方答卷（已填四题）
+  NyxViz_报告终稿.pdf           PDF 备份（npm run export-pdf）
+  submission_representative.jpg 代表图（<20MB）
+  SUBMISSION_PACK.txt           本清单
+
+═══════════════════════════════════════════════════════════
+docs/report/  （纯 Markdown 正文，改字后 export-report + fill-answer-sheet）
+═══════════════════════════════════════════════════════════
+
+  task1_volume.md  task2_evolution.md  task3_histogram.md  task4_brush.md
+  full_report.md
+
+═══════════════════════════════════════════════════════════
+docs/figures/  （配图，每题 ≤5 张）
+═══════════════════════════════════════════════════════════
+
+  任务一：task1_vol_strip.png, task1_vol_t0000/0050/0099.png
+  任务二：task2_evolution_story.png, task3_hist_overlay.png, task1_vol_t0000/0099.png
+  任务三：task3_hist_overlay/metrics_timeline/evolution_metrics/peak_drift.png
+  任务四：task4_spatial_to_stats.png, task4_brush_triptych.png,
+          task4_hist_brush_top1.png, task4_brush_top1.png
+  视频 B-roll：task3_hist_evolution.gif
+
+═══════════════════════════════════════════════════════════
+队名（填一次）
+═══════════════════════════════════════════════════════════
+
+  复制 docs/competition/team.json.example → team.json
+  编辑后：npm run fill-answer-sheet
+
+  官方空白模板：docs/competition/1-II_answerSheet.docx
+
+═══════════════════════════════════════════════════════════
+命令
+═══════════════════════════════════════════════════════════
+
+  npm run submission-pack    一键再生 submission + figures + report
+  npm run test:words         字数 ≤800/题
+  npm run test:report        数字校验

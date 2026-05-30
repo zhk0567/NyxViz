@@ -20,6 +20,7 @@ from viz_style import (
     apply_dark_theme,
     global_projection_domain,
     style_axes,
+    save_figure,
 )
 
 apply_dark_theme()
@@ -58,9 +59,7 @@ def slice_figure(vol: np.ndarray, timestep: int, out: Path, vmin: float, vmax: f
     cbar.ax.yaxis.label.set_color("#9aa3b8")
     cbar.ax.tick_params(colors="#9aa3b8")
     fig.suptitle(f"Nyx gas density — timestep {timestep} (slice fallback)", fontsize=12)
-    fig.tight_layout()
-    fig.savefig(out, dpi=FIG_DPI, bbox_inches="tight")
-    plt.close(fig)
+    save_figure(fig, out, has_suptitle=True)
 
 
 def resolve_vol_image(t: int, timeline: dict) -> Path:
@@ -106,8 +105,7 @@ def task1_strip(timeline: dict) -> None:
         color="#e6edf3",
         y=1.02,
     )
-    fig.savefig(OUT / "task1_vol_strip.png", dpi=FIG_DPI, bbox_inches="tight")
-    plt.close(fig)
+    save_figure(fig, OUT / "task1_vol_strip.png", has_suptitle=True, pad=0.18)
 
 
 def task2_evolution_story(timeline: dict) -> None:
@@ -133,9 +131,7 @@ def task2_evolution_story(timeline: dict) -> None:
         style_axes(ax)
 
     fig.suptitle("任务二：100 步全域统计揭示的演化规律", fontsize=12)
-    fig.tight_layout()
-    fig.savefig(OUT / "task2_evolution_story.png", dpi=FIG_DPI)
-    plt.close(fig)
+    save_figure(fig, OUT / "task2_evolution_story.png", has_suptitle=True)
 
 
 def task3_figures(timeline: dict) -> None:
@@ -154,9 +150,7 @@ def task3_figures(timeline: dict) -> None:
     ax.set_title("对数等距分箱直方图叠加（代表步）")
     ax.legend()
     style_axes(ax)
-    fig.tight_layout()
-    fig.savefig(OUT / "task3_hist_overlay.png", dpi=FIG_DPI)
-    plt.close(fig)
+    save_figure(fig, OUT / "task3_hist_overlay.png")
 
     ts = [s["timestep"] for s in steps]
     fig, ax = plt.subplots(figsize=(9, 4))
@@ -170,9 +164,7 @@ def task3_figures(timeline: dict) -> None:
     ax.set_title("100 时间步时序指标")
     ax.legend()
     style_axes(ax)
-    fig.tight_layout()
-    fig.savefig(OUT / "task3_metrics_timeline.png", dpi=FIG_DPI)
-    plt.close(fig)
+    save_figure(fig, OUT / "task3_metrics_timeline.png")
 
     fig, axes = plt.subplots(1, 3, figsize=(12, 3.8))
     axes[0].plot(ts, [s["std"] for s in steps], color=THEME["cyan"], lw=2)
@@ -185,9 +177,7 @@ def task3_figures(timeline: dict) -> None:
         ax.set_xlabel("t")
         style_axes(ax)
     fig.suptitle("任务三：两极分化与涨落增强", fontsize=11)
-    fig.tight_layout()
-    fig.savefig(OUT / "task3_evolution_metrics.png", dpi=FIG_DPI)
-    plt.close(fig)
+    save_figure(fig, OUT / "task3_evolution_metrics.png", has_suptitle=True)
 
     peak_t = []
     for t in range(100):
@@ -200,9 +190,7 @@ def task3_figures(timeline: dict) -> None:
     ax.set_ylabel("主峰中心密度 (log)")
     ax.set_title("直方图主峰位置随时间的漂移")
     style_axes(ax)
-    fig.tight_layout()
-    fig.savefig(OUT / "task3_peak_drift.png", dpi=FIG_DPI)
-    plt.close(fig)
+    save_figure(fig, OUT / "task3_peak_drift.png")
 
 
 def brush_projection(
@@ -230,9 +218,7 @@ def brush_projection(
     axes[1].set_title(f"刷选高亮：ρ ∈ [{lo:.2f}, {hi:.2f}]")
     axes[1].axis("off")
     fig.suptitle(title)
-    fig.tight_layout()
-    fig.savefig(out, dpi=FIG_DPI)
-    plt.close(fig)
+    save_figure(fig, out, has_suptitle=True)
 
 
 def task4_histogram_brush(timeline: dict, t: int = 99) -> None:
@@ -262,9 +248,7 @@ def task4_histogram_brush(timeline: dict, t: int = 99) -> None:
         ax.set_title(f"任务四：直方图刷选区间 (t={t})")
         ax.legend()
         style_axes(ax)
-        fig.tight_layout()
-        fig.savefig(OUT / fname, dpi=FIG_DPI)
-        plt.close(fig)
+        save_figure(fig, OUT / fname, pad=0.18)
 
     one_brush(s["p99"], s["max"], THEME["gold"], f"Top 1%: ρ≥{s['p99']:.2f}", "task4_hist_brush_top1.png")
     one_brush(s["min"], s["p01"], THEME["cyan"], f"Bottom 1%: ρ≤{s['p01']:.2f}", "task4_hist_brush_bottom1.png")
@@ -308,9 +292,7 @@ def task4_spatial_to_stats(vol: np.ndarray, timeline: dict, t: int = 99) -> tupl
     axes[1].legend()
     style_axes(axes[1])
     fig.suptitle("空间→统计：识别 filament 后在直方图标出对应密度区间", fontsize=12, color="#e6edf3")
-    fig.tight_layout()
-    fig.savefig(OUT / "task4_spatial_to_stats.png", dpi=FIG_DPI)
-    plt.close(fig)
+    save_figure(fig, OUT / "task4_spatial_to_stats.png", has_suptitle=True, pad=0.16)
     return lo, hi
 
 
@@ -328,9 +310,7 @@ def task4_triptych(timeline: dict) -> None:
         ax.set_title(labels[i], fontsize=11, color="#e6edf3", pad=6)
         ax.axis("off")
     fig.suptitle("相空间联动：Top 1% 高密度尾 → 宇宙网节点", fontsize=12, color="#e6edf3")
-    fig.tight_layout()
-    fig.savefig(OUT / "task4_brush_triptych.png", dpi=FIG_DPI, bbox_inches="tight")
-    plt.close(fig)
+    save_figure(fig, OUT / "task4_brush_triptych.png", has_suptitle=True, pad=0.16)
 
 
 def representative_poster(timeline: dict) -> None:
@@ -362,8 +342,7 @@ def representative_poster(timeline: dict) -> None:
     )
     sub = OUT.parent / "submission"
     sub.mkdir(parents=True, exist_ok=True)
-    fig.savefig(sub / "submission_representative.jpg", dpi=FIG_DPI, bbox_inches="tight")
-    plt.close(fig)
+    save_figure(fig, sub / "submission_representative.jpg", has_suptitle=True, pad=0.12)
 
 
 def main() -> int:
@@ -403,9 +382,7 @@ def main() -> int:
     ax.imshow(highlight, origin="lower")
     ax.set_title(f"Top 1% 体素 XY 投影 (t=99, ρ≥{s99['p99']:.2f})")
     ax.axis("off")
-    fig.tight_layout()
-    fig.savefig(OUT / "task4_brush_top1.png", dpi=FIG_DPI)
-    plt.close(fig)
+    save_figure(fig, OUT / "task4_brush_top1.png", pad=0.16)
 
     brush_projection(
         vol99,

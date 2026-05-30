@@ -1,11 +1,11 @@
-# NyxViz 文档目录
+# 文档目录
 
-| 目录 | 内容 | 生成方式 |
-|------|------|----------|
-| [`figures/`](figures/) | 任务 1–4 静态配图（PNG） | `npm run figures` / `npm run capture-volumes` |
-| [`report/`](report/) | Markdown 报告 + 权威 `Nyx_Submission.docx` | `npm run export-report` / `export-docx` |
-| [`submission/`](submission/) | 赛题交付副本（答卷 docx + 报告 pdf + 代表图） | `fill-answer-sheet` / `submission-pack` |
-| [`showcase/`](showcase/) | 单文件 `NyxViz_Showcase.html` | `npm run showcase` |
-| [`competition/`](competition/) | 赛题清单、视频脚本（人工维护） | — |
+| 目录 | 内容 | 命令 |
+|------|------|------|
+| [`submission/`](submission/) | **提交物**（答卷 docx、报告 docx/pdf、代表图、清单） | `npm run submission-pack` |
+| [`report/`](report/) | 四题 **Markdown 正文**（单一文字源） | `npm run export-report` |
+| [`figures/`](figures/) | 全部 **PNG / GIF** 配图 | `npm run figures` |
+| [`competition/`](competition/) | 任务清单、视频脚本、team 模板、官方答卷模板 | — |
+| [`showcase/`](showcase/) | 单文件离线 HTML（本地生成，不入库） | `npm run showcase` |
 
-**单一事实来源**：报告正文以 `report/` 为准；代表图 JPG 仅维护在 `submission/`，不在 `figures/` 重复存放。
+**整理 Word 时**：只打开 `submission/`，正文修改走 `report/*.md` → 重跑 `submission-pack`。

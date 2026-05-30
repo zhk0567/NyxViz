@@ -20,7 +20,7 @@
     "export-docx": "python tools/python/export_docx.py",
     "export-pdf": "python tools/python/export_docx_pdf.py",
     "fill-answer-sheet": "python tools/python/fill_answer_sheet.py",
-    "hist-animation": "python tools/python/generate_hist_animation.py --copy-broll",
+    "hist-animation": "python tools/python/generate_hist_animation.py",
     "deliver": "npm run precompute && npm run capture-volumes && npm run figures && npm run export-report && npm run export-docx && npm run submission-pack && npm run showcase",
     "test:loader": "python tools/python/verify_loader.py",
     "test:report": "python tools/python/verify_report_stats.py",

@@ -36,19 +36,13 @@ def main() -> int:
     else:
         print("Warning: submission_representative.jpg missing — run generate_figures.py", file=sys.stderr)
 
-    docx = ROOT / "docs" / "report" / "Nyx_Submission.docx"
-    if docx.exists():
-        import shutil
-
-        shutil.copy2(docx, OUT / "Nyx_Submission.docx")
-        print(f"Copied {OUT / 'Nyx_Submission.docx'}")
-
     print("\nSubmission pack ready under docs/submission/")
-    print("  - Nyx_answerSheet_filled.docx  (official template, auto-filled)")
-    print("  - Nyx_Submission.docx  (full report docx)")
-    print("  - Nyx_Submission.pdf     (PDF backup for upload)")
+    print("  - NyxViz_报告终稿.docx        (论文格式，上表下图)")
+    print("  - Nyx_answerSheet_filled.docx (官方答卷)")
+    print("  - NyxViz_报告终稿.pdf           (PDF，若已导出)")
     print("  - submission_representative.jpg")
-    print("  - Full figures: docs/figures/")
+    print("  - SUBMISSION_PACK.txt")
+    print("  - Figures: docs/figures/")
     return 0
 
 

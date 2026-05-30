@@ -166,6 +166,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1rem;
+  align-items: start;
 }
 
 .results-page figure.shot {
@@ -173,7 +174,7 @@
   background: var(--bg-deep);
   border: 1px solid var(--border);
   border-radius: 10px;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
 }
 
@@ -185,16 +186,19 @@
 .results-page .shot-btn {
   display: block;
   width: 100%;
-  padding: 0;
+  padding: 0.35rem 0.35rem 0;
   border: none;
   background: #0a0e1a;
   cursor: zoom-in;
+  border-radius: 10px 10px 0 0;
+  overflow: hidden;
 }
 
 .results-page figure.shot img {
   width: 100%;
   height: auto;
   display: block;
+  object-fit: contain;
 }
 
 .results-page .lightbox {

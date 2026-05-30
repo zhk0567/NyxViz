@@ -1,9 +1,12 @@
 """Shared matplotlib styling for NyxViz submission figures."""
 from __future__ import annotations
 
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.figure import Figure
 
 FIG_DPI = 200
 VIZ_BG = "#0a0e1a"
@@ -58,6 +61,29 @@ def apply_dark_theme() -> None:
 def style_axes(ax) -> None:
     ax.set_facecolor(PANEL_BG)
     ax.grid(True, alpha=GRID_ALPHA)
+
+
+def save_figure(
+    fig: Figure,
+    path: Path | str,
+    *,
+    has_suptitle: bool = False,
+    pad: float = 0.14,
+) -> None:
+    """Save with bbox_inches=tight so titles and suptitles are not clipped."""
+    if has_suptitle:
+        fig.tight_layout(rect=[0, 0, 1, 0.90])
+    else:
+        fig.tight_layout()
+    fig.savefig(
+        path,
+        dpi=FIG_DPI,
+        bbox_inches="tight",
+        pad_inches=pad,
+        facecolor=fig.get_facecolor(),
+        edgecolor="none",
+    )
+    plt.close(fig)
 
 
 def global_projection_domain(timeline: dict) -> tuple[float, float]:

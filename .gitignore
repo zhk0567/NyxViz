@@ -14,3 +14,8 @@ NyxViz_Showcase.html
 docs/showcase/NyxViz_Showcase.html
 1-II_answerSheet.docx
 docs/competition/team.json
+docs/report/*.docx
+docs/figures/task1_t*.png
+docs/figures/task1_slice_*.png
+docs/figures/submission_representative.jpg
+.cursor-challenge-*.html

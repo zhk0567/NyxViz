@@ -68,10 +68,26 @@ function nyxDataPlugin(): Plugin {
   };
 }
 
+function resolveProjectSrcPlugin(): Plugin {
+  const srcDir = path.resolve(__dirname, 'src');
+  return {
+    name: 'resolve-project-src',
+    resolveId(source) {
+      if (source.startsWith('/src/')) {
+        return path.join(srcDir, source.slice('/src/'.length));
+      }
+      if (source.startsWith('../src/')) {
+        return path.join(srcDir, source.slice('../src/'.length));
+      }
+      return null;
+    },
+  };
+}
+
 export default defineConfig({
   root: path.resolve(__dirname, 'pages'),
   publicDir: path.resolve(__dirname, 'public'),
-  plugins: [react(), nyxDataPlugin()],
+  plugins: [react(), nyxDataPlugin(), resolveProjectSrcPlugin()],
   build: {
     outDir: path.resolve(__dirname, 'dist'),
     emptyOutDir: true,
