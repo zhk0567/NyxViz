@@ -59,11 +59,15 @@ def main() -> int:
         path = NYX / f"{t:04d}.dat"
         vol = load_volume(path)
         flat = vol.ravel()
-        p01, p50, p99, p999 = np.percentile(flat, [1, 50, 99, 99.9])
+        p01, p50, p90, p99, p999 = np.percentile(flat, [1, 50, 90, 99, 99.9])
         counts, _ = np.histogram(flat, bins=log_edges)
         hist = (counts / counts.sum()).tolist()
         histograms.append(hist)
-        tail = float((flat >= p99).mean())
+        tail_above = float((flat >= p99).mean())
+        tail_below = float((flat <= p01).mean())
+        total_mass = float(flat.sum())
+        mass_above = float(flat[flat >= p99].sum()) if total_mass > 0 else 0.0
+        mass_below = float(flat[flat <= p01].sum()) if total_mass > 0 else 0.0
         timesteps_stats.append(
             {
                 "timestep": t,
@@ -74,9 +78,13 @@ def main() -> int:
                 "skewness": skewness(flat),
                 "p01": float(p01),
                 "p50": float(p50),
+                "p90": float(p90),
                 "p99": float(p99),
                 "p999": float(p999),
-                "tailMassAboveP99": tail,
+                "tailMassAboveP99": tail_above,
+                "tailMassBelowP01": tail_below,
+                "massFractionAboveP99": mass_above / total_mass,
+                "massFractionBelowP01": mass_below / total_mass,
             }
         )
         print(f"Processed timestep {t:04d}")

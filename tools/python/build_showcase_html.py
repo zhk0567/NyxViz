@@ -284,16 +284,17 @@ def main() -> int:
             print(f"Warning: showcase bundle failed: {e}", file=sys.stderr)
 
     s0, s99 = timesteps[0], timesteps[99]
+    sigma_pct = (s99["std"] - s0["std"]) / s0["std"] * 100
     overview = f"""
-    <p>本页汇总 Nyx 赛题 II 全部可视化成果：128³ 气体密度、100 演化时间步、体渲染/统计/刷选联动。
-    数据路径 <code>Nyx/0000.dat–0099.dat</code>，小端 float32，z→y→x 列优先。</p>
+    <p><strong>从涨落到宇宙网 · 宇宙网诞生记</strong>：Nyx 128³ 重子气体密度、100 步（t=0…99）。
+    叙事 01–06：引言 → 演化 → 统计 → 刷选 → 发现 → 流程。数据 <code>Nyx/0000.dat–0099.dat</code>。</p>
     <div class="kpi-grid">
       <div class="kpi"><span>网格</span><strong>128³</strong></div>
-      <div class="kpi"><span>时间步</span><strong>100</strong></div>
-      <div class="kpi"><span>t=0 σ</span><strong>{s0['std']:.4f}</strong></div>
-      <div class="kpi"><span>t=99 σ</span><strong>{s99['std']:.4f}</strong></div>
-      <div class="kpi"><span>全局密度范围</span><strong>{timeline['globalMin']:.2f} – {timeline['globalMax']:.2f}</strong></div>
-      <div class="kpi"><span>p99 跨度变化</span><strong>{s0['p99']-s0['p01']:.3f} → {s99['p99']-s99['p01']:.3f}</strong></div>
+      <div class="kpi"><span>σ 变化</span><strong>+{sigma_pct:.1f}%</strong></div>
+      <div class="kpi"><span>p99−p01</span><strong>{s0['p99']-s0['p01']:.3f}→{s99['p99']-s99['p01']:.3f}</strong></div>
+      <div class="kpi"><span>≥p99 体积</span><strong>{s99['tailMassAboveP99']*100:.2f}%</strong></div>
+      <div class="kpi"><span>纤维带</span><strong>ρ∈[{s99['p90']:.2f},{s99['p99']:.2f}]</strong></div>
+      <div class="kpi"><span>交互</span><strong>三栏仪表盘</strong></div>
     </div>
     """
 
@@ -476,8 +477,8 @@ def main() -> int:
 </head>
 <body>
   <header class="hero">
-    <h1>Nyx 宇宙学密度可视化 — 完整成果展示</h1>
-    <p class="sub">赛题 II · 科学可视化挑战赛 · 体渲染 / 时序统计 / 相空间刷选联动</p>
+    <h1>从涨落到宇宙网 · 宇宙网诞生记</h1>
+    <p class="sub">Nyx 128³ 重子气体密度 · 体渲染 / 百步统计 / 相空间刷选 · 赛题 II</p>
   </header>
   <nav class="toc">
     <a href="#overview">概览</a>
@@ -516,9 +517,9 @@ def main() -> int:
       </div>
     </section>
     <section id="interactive" class="panel">
-      <h2>交互演示（体渲染 + 直方图刷选 + 点云联动）</h2>
+      <h2>交互演示（三栏：统计 / 体渲染 / 刷选）</h2>
       <div class="app-note">
-        <p>下方为内嵌 vtk.js 仪表盘。全部 100 步数据需通过 HTTP 访问 <code>/Nyx/####.dat</code>
+        <p>内嵌 v2 仪表盘：左栏统计与切片，中栏体渲染常驻，右栏刷选与投影。100 步需 HTTP 访问 <code>/Nyx/####.dat</code>
         （运行 <code>npm run preview</code> 后打开本页同源访问）。
         {"已内嵌时间步: " + ", ".join(str(s) for s in embed_steps) + "（可 file:// 离线试用）。" if embed_steps else "生成时加 <code>--embed-steps 0,99</code> 可内嵌代表步。"}</p>
       </div>

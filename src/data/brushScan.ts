@@ -37,8 +37,8 @@ export function scanBrushRangeAsync(
     w.addEventListener('message', onMessage);
     w.addEventListener('error', onError);
 
-    const copy = data.slice();
     void id;
+    const copy = new Float32Array(data);
     w.postMessage(
       {
         buffer: copy.buffer,

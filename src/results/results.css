@@ -323,3 +323,167 @@
   font-size: 0.85rem;
   border-top: 1px solid var(--border);
 }
+
+.results-page .story-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.25rem;
+  border-left: none;
+  padding-left: 0;
+}
+
+.results-page .section-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 4px;
+  background: rgba(124, 108, 240, 0.25);
+  font-size: 0.75rem;
+  color: var(--accent-cyan);
+}
+
+.results-page .story-subtitle {
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  margin: 0 0 1rem;
+}
+
+.results-page .story-hero-fig {
+  margin: 0 0 1rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.results-page .story-hero-fig img {
+  width: 100%;
+  max-height: 400px;
+  object-fit: contain;
+  background: #0a0e1a;
+}
+
+.results-page .phase-bands-static {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 1rem;
+}
+
+.results-page .phase-chip {
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  font-size: 0.78rem;
+}
+
+.results-page .phase-chip strong {
+  display: block;
+  color: var(--accent-cyan);
+}
+
+.results-page .phase-chip span {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.results-page .phase-chip small {
+  display: block;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.results-page .story-kpi-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.82rem;
+  color: var(--accent-gold);
+  margin: 0.75rem 0;
+}
+
+.results-page .verify-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 1rem;
+}
+
+.results-page .verify-cols h4 {
+  margin: 0 0 4px;
+  color: var(--accent-cyan);
+  font-size: 0.85rem;
+}
+
+.results-page .verify-cols p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.results-page .discovery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+
+.results-page .discovery-card {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(10, 14, 26, 0.6);
+}
+
+.results-page .discovery-icon {
+  display: inline-block;
+  font-size: 0.7rem;
+  color: var(--accent-gold);
+  margin-bottom: 4px;
+}
+
+.results-page .discovery-card h4 {
+  margin: 0 0 6px;
+  font-size: 0.88rem;
+}
+
+.results-page .discovery-card p {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.results-page .gallery-grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.results-page .gallery-grid-5 {
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+}
+
+.results-page .reports-toggle {
+  width: 100%;
+  padding: 10px;
+  background: rgba(124, 108, 240, 0.15);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--accent-cyan);
+  cursor: pointer;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.results-page .reports-collapsible .task-section {
+  margin-top: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .results-page .phase-bands-static,
+  .results-page .verify-cols {
+    grid-template-columns: 1fr;
+  }
+}

@@ -63,6 +63,9 @@ def slice_figure(vol: np.ndarray, timestep: int, out: Path, vmin: float, vmax: f
 
 
 def resolve_vol_image(t: int, timeline: dict) -> Path:
+    evo = OUT / f"task1_evo_t{t:04d}.png"
+    if evo.exists():
+        return evo
     vol = OUT / f"task1_vol_t{t:04d}.png"
     if vol.exists():
         return vol
@@ -74,6 +77,33 @@ def resolve_vol_image(t: int, timeline: dict) -> Path:
     vmin, vmax = global_projection_domain(timeline)
     slice_figure(load_volume(NYX / f"{t:04d}.dat"), t, sl, vmin, vmax)
     return sl
+
+
+def task1_evo_frames(timeline: dict) -> None:
+    """Adaptive-threshold XY max projection — early sparse peaks → late cosmic web."""
+    vmin, vmax = global_projection_domain(timeline)
+    for t in REP_STEPS:
+        dat = NYX / f"{t:04d}.dat"
+        if not dat.exists():
+            print(f"Skip evo frame t={t}: missing {dat}", file=sys.stderr)
+            continue
+        vol = load_volume(dat)
+        proj = np.max(vol, axis=2)
+        t_norm = t / 99.0
+        # Loosen visibility: t=0 only top ~8% peaks; t=99 ~45% of projection
+        quantile = 0.92 - 0.47 * t_norm
+        thresh = float(np.quantile(proj, quantile))
+        display = np.where(proj >= thresh, proj, vmin)
+        rgb = render_projection_rgb(display, vmin, vmax)
+
+        fig = plt.figure(figsize=(5.6, 3.5), facecolor="#03060e")
+        ax = fig.add_axes([0, 0, 1, 1])
+        ax.imshow(rgb, origin="lower", interpolation="bilinear")
+        ax.axis("off")
+        out = OUT / f"task1_evo_t{t:04d}.png"
+        save_figure(fig, out, pad=0.02)
+        s = timeline["timesteps"][t]
+        print(f"Evo frame t={t} q={quantile:.2f} σ={s['std']:.4f} -> {out.name}")
 
 
 def task1_strip(timeline: dict) -> None:
@@ -313,35 +343,384 @@ def task4_triptych(timeline: dict) -> None:
     save_figure(fig, OUT / "task4_brush_triptych.png", has_suptitle=True, pad=0.16)
 
 
+def _ratio_label(v0: float, v99: float) -> str:
+    if abs(v0) < 1e-12:
+        return "—"
+    return f"+{(v99 - v0) / v0 * 100:.1f}%"
+
+
+def task4_brush_rows(timeline: dict) -> None:
+    """Section 04: Top/Bottom 1% rows — hist | projection | KPI | inset."""
+    s99 = timeline["timesteps"][99]
+    rows = [
+        (
+            "Top 1% 高密度尾 → 宇宙网节点",
+            [
+                OUT / "task4_hist_brush_top1.png",
+                OUT / "task4_brush_top1.png",
+            ],
+            THEME["gold"],
+            [
+                f"ρ ≥ p99 = {s99['p99']:.2f}",
+                f"体积占比 {s99['tailMassAboveP99'] * 100:.2f}%",
+                f"质量占比 {s99.get('massFractionAboveP99', 0) * 100:.1f}%",
+                "空间：丝状节点聚集",
+            ],
+        ),
+        (
+            "Bottom 1% 低密度 → IGM 空洞",
+            [
+                OUT / "task4_hist_brush_bottom1.png",
+                OUT / "task4_brush_bottom1.png",
+            ],
+            THEME["cyan"],
+            [
+                f"ρ ≤ p01 = {s99['p01']:.2f}",
+                f"体积占比 {s99['tailMassBelowP01'] * 100:.2f}%",
+                f"质量占比 {s99.get('massFractionBelowP01', 0) * 100:.1f}%",
+                "空间：弥散空洞背景",
+            ],
+        ),
+    ]
+    fig = plt.figure(figsize=(18, 9), facecolor="#0a0e1a")
+    gs = gridspec.GridSpec(2, 4, wspace=0.06, hspace=0.14)
+    col_titles = ["统计刷选", "XY 投影", "结构要点", "局部放大"]
+    for row_i, (row_title, paths, accent, bullets) in enumerate(rows):
+        for col_i in range(4):
+            ax = fig.add_subplot(gs[row_i, col_i])
+            ax.set_facecolor("#0a0e1a")
+            if col_i < 2:
+                ax.imshow(mpimg.imread(paths[col_i]))
+                ax.axis("off")
+                if row_i == 0:
+                    ax.set_title(col_titles[col_i], fontsize=10, color="#9aa3b8", pad=4)
+            elif col_i == 2:
+                ax.axis("off")
+                y = 0.88
+                ax.text(
+                    0.05,
+                    y,
+                    row_title,
+                    fontsize=11,
+                    color=accent,
+                    fontweight="bold",
+                    transform=ax.transAxes,
+                )
+                for line in bullets:
+                    y -= 0.2
+                    ax.text(0.05, y, f"• {line}", fontsize=9.5, color="#e6edf3", transform=ax.transAxes)
+            else:
+                ax.axis("off")
+                if row_i == 0:
+                    img = mpimg.imread(paths[1])
+                    h, w = img.shape[:2]
+                    cx, cy = w // 2, h // 2
+                    half = min(w, h) // 5
+                    crop = img[
+                        max(0, cy - half) : min(h, cy + half),
+                        max(0, cx - half) : min(w, cx + half),
+                    ]
+                    ax.imshow(crop)
+                    if row_i == 0:
+                        ax.set_title(col_titles[3], fontsize=10, color="#9aa3b8", pad=4)
+                else:
+                    ax.axis("off")
+    fig.suptitle("04 · 统计↔空间：Top 1% / Bottom 1% 双向验证 (t=99)", fontsize=13, color="#e6edf3")
+    save_figure(fig, OUT / "task4_brush_rows.png", has_suptitle=True, pad=0.14)
+
+
+def task3_story_panel(timeline: dict) -> None:
+    """Section 03: overlay + sparklines with real ratios + t=99 KPI strip."""
+    steps = timeline["timesteps"]
+    s0, s99 = steps[0], steps[99]
+    ts = [s["timestep"] for s in steps]
+    std = [s["std"] for s in steps]
+    span = [s["p99"] - s["p01"] for s in steps]
+    tail = [s["tailMassAboveP99"] * 100 for s in steps]
+
+    fig = plt.figure(figsize=(14, 7.5), facecolor="#0a0e1a")
+    gs = gridspec.GridSpec(2, 2, height_ratios=[1.2, 0.35], width_ratios=[1.1, 1], hspace=0.22, wspace=0.1)
+
+    ax_hist = fig.add_subplot(gs[0, 0])
+    ax_hist.imshow(mpimg.imread(OUT / "task3_hist_overlay.png"))
+    ax_hist.axis("off")
+    ax_hist.set_title("多时刻 log 直方图叠加", fontsize=11, color="#e6edf3", pad=6)
+
+    specs = [
+        (std, THEME["cyan"], "σ(t)", _ratio_label(s0["std"], s99["std"])),
+        (span, THEME["purple"], "p99−p01", _ratio_label(span[0], span[-1])),
+        (tail, THEME["gold"], "≥p99 体积%", _ratio_label(tail[0], tail[-1])),
+    ]
+    inner = gridspec.GridSpecFromSubplotSpec(3, 1, subplot_spec=gs[0, 1], hspace=0.35)
+    for i, (y, color, title, badge) in enumerate(specs):
+        sub = fig.add_subplot(inner[i])
+        sub.plot(ts, y, color=color, lw=2)
+        sub.fill_between(ts, y, alpha=0.12, color=color)
+        sub.set_title(f"{title}  t=0→99  {badge}", fontsize=9, color="#e6edf3")
+        sub.set_xlim(0, 99)
+        style_axes(sub)
+
+    kpi_gs = gridspec.GridSpecFromSubplotSpec(1, 4, subplot_spec=gs[1, :], wspace=0.12)
+    kpis = [
+        ("均值 μ", f"{s99['mean']:.3f}"),
+        ("标准差 σ", f"{s99['std']:.4f}"),
+        ("p99", f"{s99['p99']:.3f}"),
+        ("≥p99 体积", f"{s99['tailMassAboveP99'] * 100:.2f}%"),
+    ]
+    for i, (label, val) in enumerate(kpis):
+        ax_k = fig.add_subplot(kpi_gs[i])
+        ax_k.set_facecolor("#1a2240")
+        ax_k.axis("off")
+        ax_k.text(0.5, 0.62, label, ha="center", fontsize=10, color="#9aa3b8", transform=ax_k.transAxes)
+        ax_k.text(0.5, 0.28, val, ha="center", fontsize=13, color="#e6edf3", fontweight="bold", transform=ax_k.transAxes)
+        for spine in ax_k.spines.values():
+            spine.set_edgecolor("#3a4558")
+    fig.suptitle("03 · 定量：密度两极化 (t=99 KPI)", fontsize=13, color="#e6edf3", y=0.98)
+    save_figure(fig, OUT / "task3_story_panel.png", has_suptitle=True, pad=0.12)
+
+
+def task1_hero_poster(timeline: dict) -> None:
+    """Section 01: hero volume + vertical colorbar + metadata strip."""
+    vmin, vmax = global_projection_domain(timeline)
+    hero_path = resolve_vol_image(99, timeline)
+    fig = plt.figure(figsize=(14, 6.5), facecolor="#0a0e1a")
+    gs = gridspec.GridSpec(1, 3, width_ratios=[0.12, 1, 0.06], wspace=0.04)
+
+    ax_meta = fig.add_subplot(gs[0, 0])
+    ax_meta.set_facecolor("#0a0e1a")
+    ax_meta.axis("off")
+    meta_lines = ["128³", "100 步", "t=0…99", "气体密度 ρ", "Nyx 模拟"]
+    for i, line in enumerate(meta_lines):
+        ax_meta.text(
+            0.5,
+            0.88 - i * 0.16,
+            line,
+            ha="center",
+            fontsize=11,
+            color="#3dd6c6",
+            transform=ax_meta.transAxes,
+            bbox=dict(boxstyle="round,pad=0.35", facecolor="#1a2240", edgecolor="#3a4558"),
+        )
+
+    ax_img = fig.add_subplot(gs[0, 1])
+    ax_img.imshow(mpimg.imread(hero_path))
+    ax_img.axis("off")
+    s99 = timeline["timesteps"][99]
+    ax_img.set_title(f"01 · 宇宙网诞生 (t=99, σ={s99['std']:.3f})", fontsize=13, color="#e6edf3", pad=8)
+
+    ax_cb = fig.add_subplot(gs[0, 2])
+    sm = plt.cm.ScalarMappable(
+        cmap=COSMIC_CMAP,
+        norm=LogNorm(vmin=max(vmin, 1e-6), vmax=max(vmax, 1e-6)),
+    )
+    cb = fig.colorbar(sm, cax=ax_cb)
+    cb.set_label("log₁₀ ρ\n(p01–p99)", color="#9aa3b8", fontsize=9)
+    cb.ax.tick_params(colors="#9aa3b8", labelsize=8)
+    save_figure(fig, OUT / "task1_hero_poster.png", pad=0.1)
+
+
+def task5_mass_pie(timeline: dict) -> None:
+    """Section 05: volume vs mass fraction for top/bottom tails (t=99)."""
+    s99 = timeline["timesteps"][99]
+    vol_top = s99["tailMassAboveP99"] * 100
+    vol_bot = s99["tailMassBelowP01"] * 100
+    mass_top = s99.get("massFractionAboveP99", 0) * 100
+    mass_bot = s99.get("massFractionBelowP01", 0) * 100
+
+    fig, axes = plt.subplots(1, 2, figsize=(10, 4.5))
+    pies = [
+        (axes[0], vol_top, mass_top, "≥p99 尾区 (t=99)"),
+        (axes[1], vol_bot, mass_bot, "≤p01 尾区 (t=99)"),
+    ]
+    for ax, vol_pct, mass_pct, title in pies:
+        sizes = [vol_pct, 100 - vol_pct]
+        colors = [THEME["gold"], "#2a3348"]
+        ax.pie(
+            sizes,
+            labels=[f"体积 {vol_pct:.2f}%", f"其余 {100-vol_pct:.2f}%"],
+            colors=colors,
+            autopct="",
+            startangle=90,
+            textprops={"color": "#e6edf3", "fontsize": 9},
+        )
+        ax.set_title(f"{title}\n质量占比 {mass_pct:.1f}%", fontsize=11, color="#e6edf3")
+    fig.suptitle("05 · 少数致密区：体积 vs 质量（Σρ 加权）", fontsize=12, color="#e6edf3")
+    save_figure(fig, OUT / "task5_mass_pie.png", has_suptitle=True, pad=0.15)
+
+
+def story_flow_chart() -> None:
+    """Section 06: flowchart for reports / poster PNG (larger type than legacy)."""
+    steps = [
+        ("1", "Nyx 数据", "128³·100步"),
+        ("2", "体渲染", "vtk.js"),
+        ("3", "时序统计", "precompute"),
+        ("4", "相空间刷选", "D3+Worker"),
+        ("5", "空间映射", "XY 投影"),
+        ("6", "验证分析", "亮脊/节点"),
+        ("7", "科学发现", "宇宙网"),
+    ]
+    n = len(steps)
+    fig_w = 22
+    fig_h = 4.8
+    fig, ax = plt.subplots(figsize=(fig_w, fig_h), facecolor="#03030A")
+    ax.set_facecolor("#03030A")
+    ax.axis("off")
+    box_w = 0.11
+    gap = 0.018
+    total = n * box_w + (n - 1) * gap
+    x0 = (1 - total) / 2 + box_w / 2
+    for i, (num, title, sub) in enumerate(steps):
+        x = x0 + i * (box_w + gap)
+        rect = plt.Rectangle(
+            (x - box_w / 2, 0.22),
+            box_w,
+            0.52,
+            facecolor="#121e38",
+            edgecolor="#4ec4ff",
+            linewidth=1.5,
+            transform=ax.transAxes,
+            zorder=1,
+        )
+        ax.add_patch(rect)
+        ax.text(x, 0.82, num, ha="center", va="center", fontsize=16, color="#ff6b2c", fontweight="bold", transform=ax.transAxes)
+        ax.text(x, 0.58, title, ha="center", va="center", fontsize=13, color="#f5f9ff", fontweight="bold", transform=ax.transAxes)
+        ax.text(x, 0.38, sub, ha="center", va="center", fontsize=10, color="#8fa3c4", transform=ax.transAxes)
+        if i < n - 1:
+            xn = x0 + (i + 1) * (box_w + gap)
+            ax.annotate(
+                "",
+                xy=(xn - box_w / 2 - 0.004, 0.48),
+                xytext=(x + box_w / 2 + 0.004, 0.48),
+                arrowprops=dict(arrowstyle="-|>", color="#ff6b2c", lw=2.2),
+                transform=ax.transAxes,
+            )
+    fig.suptitle("06 · 分析流程：从涨落到宇宙网", fontsize=16, color="#f5f9ff", y=0.96)
+    save_figure(fig, OUT / "task0_story_flow.png", has_suptitle=True, pad=0.12)
+
+
+def app_infographic_poster(timeline: dict) -> None:
+    """Vertical scroll PNG for app.html — same stitch as task6, fixed aspect (no tight crop)."""
+    panels = [
+        ("task1_hero_poster.png", 1.05),
+        ("task1_vol_strip.png", 0.55),
+        ("task3_story_panel.png", 0.85),
+        ("task4_brush_rows.png", 0.95),
+        ("task5_mass_pie.png", 0.5),
+        ("task0_story_flow.png", 0.35),
+    ]
+    present = [(n, h) for n, h in panels if (OUT / n).exists()]
+    if not present:
+        return
+
+    fig = plt.figure(figsize=(12, 30), facecolor="#050a14")
+    y = 0.97
+    total_h = sum(h for _, h in present) + 0.06
+    for name, hr in present:
+        rel_h = hr / total_h * 0.94
+        ax = fig.add_axes([0.03, y - rel_h, 0.94, rel_h])
+        ax.imshow(mpimg.imread(OUT / name))
+        ax.axis("off")
+        y -= rel_h + 0.012
+
+    s0, s99 = timeline["timesteps"][0], timeline["timesteps"][99]
+    span0, span99 = s0["p99"] - s0["p01"], s99["p99"] - s99["p01"]
+    fig.suptitle(
+        "宇宙网诞生记 · Nyx 128³\n"
+        f"σ +{(s99['std']-s0['std'])/s0['std']*100:.1f}% · p99−p01 +{(span99-span0)/span0*100:.1f}%",
+        fontsize=15,
+        color="#ff6b2c",
+        y=0.998,
+    )
+    out = OUT / "app_infographic_poster.png"
+    fig.savefig(
+        out,
+        dpi=FIG_DPI,
+        pad_inches=0.08,
+        facecolor="#050a14",
+        edgecolor="none",
+    )
+    plt.close(fig)
+    print(f"App scroll poster: {out}")
+
+
+def task6_story_poster(timeline: dict) -> None:
+    """Single-page vertical poster stitching V1–V5 key figures."""
+    panels = [
+        ("task1_hero_poster.png", 1.05),
+        ("task1_vol_strip.png", 0.55),
+        ("task3_story_panel.png", 0.85),
+        ("task4_brush_rows.png", 0.95),
+        ("task5_mass_pie.png", 0.5),
+        ("task0_story_flow.png", 0.35),
+    ]
+    fig = plt.figure(figsize=(12, 28), facecolor="#0a0e1a")
+    y = 0.98
+    total_h = sum(h for _, h in panels) + 0.08
+    for name, hr in panels:
+        path = OUT / name
+        if not path.exists():
+            continue
+        rel_h = hr / total_h * 0.92
+        ax = fig.add_axes([0.04, y - rel_h, 0.92, rel_h])
+        ax.imshow(mpimg.imread(path))
+        ax.axis("off")
+        y -= rel_h + 0.01
+    s0, s99 = timeline["timesteps"][0], timeline["timesteps"][99]
+    span0, span99 = s0["p99"] - s0["p01"], s99["p99"] - s99["p01"]
+    fig.suptitle(
+        "宇宙网诞生记 · Nyx 128³ 气体密度\n"
+        f"σ +{(s99['std']-s0['std'])/s0['std']*100:.1f}% · p99−p01 +{(span99-span0)/span0*100:.1f}%",
+        fontsize=15,
+        color="#e6edf3",
+        y=0.995,
+    )
+    save_figure(fig, OUT / "task6_story_poster.png", has_suptitle=True, pad=0.02)
+
+
 def representative_poster(timeline: dict) -> None:
+    sub = OUT.parent / "submission"
+    sub.mkdir(parents=True, exist_ok=True)
+    poster = OUT / "cosmic_poster_3840.png"
+    if not poster.exists():
+        poster = OUT / "task6_story_poster.png"
+    if poster.exists():
+        fig = plt.figure(figsize=(10, 24), facecolor="#0a0e1a")
+        ax = fig.add_axes([0, 0, 1, 1])
+        ax.imshow(mpimg.imread(poster))
+        ax.axis("off")
+        save_figure(fig, sub / "submission_representative.jpg", pad=0.02)
+        print(f"Representative from story poster: {sub / 'submission_representative.jpg'}")
+        return
+
     fig = plt.figure(figsize=(16, 11), facecolor="#0a0e1a")
     gs = gridspec.GridSpec(2, 2, height_ratios=[1.05, 1], hspace=0.1, wspace=0.06)
 
+    hero = OUT / "task1_hero_poster.png"
     ax0 = fig.add_subplot(gs[0, :])
-    ax0.imshow(mpimg.imread(OUT / "task1_vol_strip.png"))
+    ax0.imshow(mpimg.imread(hero if hero.exists() else OUT / "task1_vol_strip.png"))
     ax0.axis("off")
-    ax0.set_title("任务一 · 体渲染五时刻", fontsize=13, color="#e6edf3", pad=12)
+    ax0.set_title("任务一 · 体渲染 / Hero", fontsize=13, color="#e6edf3", pad=12)
 
     ax1 = fig.add_subplot(gs[1, 0])
-    ax1.imshow(mpimg.imread(OUT / "task2_evolution_story.png"))
+    ax1.imshow(mpimg.imread(OUT / "task3_story_panel.png" if (OUT / "task3_story_panel.png").exists() else OUT / "task2_evolution_story.png"))
     ax1.axis("off")
-    ax1.set_title("任务二 · 演化规律", fontsize=12, color="#e6edf3", pad=8)
+    ax1.set_title("任务三 · 定量统计", fontsize=12, color="#e6edf3", pad=8)
 
     ax2 = fig.add_subplot(gs[1, 1])
-    ax2.imshow(mpimg.imread(OUT / "task4_brush_triptych.png"))
+    brush = OUT / "task4_brush_rows.png"
+    ax2.imshow(mpimg.imread(brush if brush.exists() else OUT / "task4_brush_triptych.png"))
     ax2.axis("off")
-    ax2.set_title("任务四 · 刷选联动验证", fontsize=12, color="#e6edf3", pad=8)
+    ax2.set_title("任务四 · 刷选验证", fontsize=12, color="#e6edf3", pad=8)
 
     s0, s99 = timeline["timesteps"][0], timeline["timesteps"][99]
+    span0, span99 = s0["p99"] - s0["p01"], s99["p99"] - s99["p01"]
     fig.suptitle(
-        f"Nyx 128³ 气体密度可视化 | σ: {s0['std']:.3f}→{s99['std']:.3f} | "
-        f"分位跨度: {s0['p99']-s0['p01']:.3f}→{s99['p99']-s99['p01']:.3f}",
+        f"从涨落到宇宙网 · Nyx 128³ | σ +{(s99['std']-s0['std'])/s0['std']*100:.1f}% | "
+        f"p99−p01 +{(span99-span0)/span0*100:.1f}%",
         fontsize=14,
         color="#e6edf3",
         y=0.99,
     )
-    sub = OUT.parent / "submission"
-    sub.mkdir(parents=True, exist_ok=True)
     save_figure(fig, sub / "submission_representative.jpg", has_suptitle=True, pad=0.12)
 
 
@@ -371,6 +750,7 @@ def main() -> int:
         else:
             print(f"Using vtk volume render: {vol_png}")
 
+    task1_evo_frames(timeline)
     task1_strip(timeline)
     task2_evolution_story(timeline)
     task3_figures(timeline)
@@ -395,6 +775,19 @@ def main() -> int:
     task4_histogram_brush(timeline, 99)
     task4_spatial_to_stats(vol99, timeline, 99)
     task4_triptych(timeline)
+    task4_brush_rows(timeline)
+    task3_story_panel(timeline)
+    task1_hero_poster(timeline)
+    task5_mass_pie(timeline)
+    story_flow_chart()
+    task6_story_poster(timeline)
+    app_infographic_poster(timeline)
+    try:
+        from generate_poster_3840 import compose_poster_3840
+
+        compose_poster_3840(timeline)
+    except Exception as exc:
+        print(f"Poster 3840 skipped: {exc}", file=sys.stderr)
     representative_poster(timeline)
 
     print(f"Figures written to {OUT}")

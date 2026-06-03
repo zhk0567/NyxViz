@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { VolumeScene } from '@/volume/VolumeScene';
 import { loadTimestep, loadTimelineStats } from '@/data/nyxLoader';
-import { getGlobalTfDomain } from '@/volume/transferFunction';
+import { getEvolutionCaptureProfile } from '@/viz/tfDomain';
 
 declare global {
   interface Window {
@@ -17,6 +17,7 @@ function CaptureApp() {
   const timestep = Math.max(0, Math.min(99, Number(params.get('t') ?? 0)));
   const [data, setData] = useState<Float32Array | null>(null);
   const [domain, setDomain] = useState({ min: 7.5, max: 15 });
+  const [captureTf, setCaptureTf] = useState<{ opacityScale?: number; densityGain?: number }>({});
 
   useEffect(() => {
     window.__CAPTURE_READY__ = false;
@@ -25,8 +26,9 @@ function CaptureApp() {
 
     Promise.all([loadTimestep(timestep), loadTimelineStats()])
       .then(([vol, timeline]) => {
-        const { min, max } = getGlobalTfDomain(timeline);
-        setDomain({ min, max });
+        const profile = getEvolutionCaptureProfile(timeline, timestep);
+        setDomain({ min: profile.domain.min, max: profile.domain.max });
+        setCaptureTf(profile.tfParams);
         setData(vol);
       })
       .catch((err: unknown) => {
@@ -63,8 +65,10 @@ function CaptureApp() {
   return (
     <VolumeScene
       data={data}
+      timestep={timestep}
       dataMin={domain.min}
       dataMax={domain.max}
+      tfParams={captureTf}
       quality="presentation"
       useLogScale
       onRendered={handleRendered}

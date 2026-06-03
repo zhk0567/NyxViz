@@ -8,6 +8,8 @@
     "dev": "vite",
     "build": "vite build",
     "figures": "python tools/python/generate_figures.py",
+    "wireframe": "python tools/python/generate_wireframe.py",
+    "poster:3840": "python tools/python/generate_poster_3840.py",
     "figures:hd": "npm run capture-volumes && npm run figures && npm run export-report",
     "export-report": "python tools/python/export_report.py",
     "submission-pack": "python tools/python/build_submission.py",

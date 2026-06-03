@@ -13,9 +13,13 @@ export interface DensityStats {
   skewness: number;
   p01: number;
   p50: number;
+  p90: number;
   p99: number;
   p999: number;
   tailMassAboveP99: number;
+  tailMassBelowP01: number;
+  massFractionAboveP99: number;
+  massFractionBelowP01: number;
 }
 
 export interface TimelineData {

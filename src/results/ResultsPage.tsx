@@ -3,10 +3,18 @@ import type { TimelineData } from '@/data/types';
 import { simpleMarkdownToHtml } from '@/utils/simpleMarkdown';
 import {
   REPORT_SECTIONS,
+  STORY_SECTIONS,
+  EVOLUTION_PHASES,
   figureUrl,
   resolveFigureCandidates,
   type ReportSection,
+  type StorySection,
 } from './reportSections';
+import {
+  computeStoryMetrics,
+  DISCOVERY_CARDS,
+  discoveryDetail,
+} from './storyMetrics';
 import './results.css';
 
 function FigureImage({
@@ -75,9 +83,7 @@ function MetricsSvg({ timesteps }: { timesteps: TimelineData['timesteps'] }) {
 
   const poly = (vals: number[], color: string) => {
     const pts = ts.map((t, i) => `${sx(t).toFixed(1)},${sy(vals[i]!).toFixed(1)}`).join(' ');
-    return (
-      <polyline fill="none" stroke={color} strokeWidth={2} points={pts} />
-    );
+    return <polyline fill="none" stroke={color} strokeWidth={2} points={pts} />;
   };
 
   return (
@@ -105,6 +111,120 @@ function MetricsSvg({ timesteps }: { timesteps: TimelineData['timesteps'] }) {
   );
 }
 
+function StorySectionBlock({
+  section,
+  timeline,
+  onPreview,
+}: {
+  section: StorySection;
+  timeline: TimelineData;
+  onPreview: (src: string, label: string) => void;
+}) {
+  const metrics = computeStoryMetrics(timeline);
+  const hero = section.heroFigure;
+
+  return (
+    <section id={section.id} className="story-panel panel">
+      <h2 className="story-heading">
+        <span className="section-num">{section.num}</span>
+        {section.title}
+      </h2>
+      <p className="story-subtitle">{section.subtitle}</p>
+
+      {section.id === 'story-01' && hero && (
+        <figure className="story-hero-fig">
+          <img src={figureUrl(hero)} alt="t=99 宇宙网体渲染" loading="eager" />
+          <figcaption>t=99 体渲染 · cosmic 色标 · 128³ 气体密度</figcaption>
+        </figure>
+      )}
+
+      {section.id === 'story-02' && (
+        <>
+          <div className="phase-bands-static">
+            {EVOLUTION_PHASES.map((p) => (
+              <div key={p.range} className="phase-chip">
+                <strong>{p.range}</strong>
+                <span>{p.label}</span>
+                <small>{p.detail}</small>
+              </div>
+            ))}
+          </div>
+          {hero && (
+            <div className="gallery-hero">
+              <FigureImage name={hero} hero onPreview={onPreview} />
+            </div>
+          )}
+          <div className="gallery-grid gallery-grid-5">
+            {section.figures
+              .filter((f) => f !== hero)
+              .map((fn) => (
+                <FigureImage key={fn} name={fn} onPreview={onPreview} />
+              ))}
+          </div>
+        </>
+      )}
+
+      {section.id === 'story-03' && (
+        <>
+          <MetricsSvg timesteps={timeline.timesteps} />
+          <div className="story-kpi-row">
+            <span>σ: {metrics.s0.std.toFixed(4)} → {metrics.s99.std.toFixed(4)} (+{metrics.sigmaPct.toFixed(1)}%)</span>
+            <span>
+              p99−p01: {metrics.span0.toFixed(3)} → {metrics.span99.toFixed(3)} (+{metrics.spanPct.toFixed(1)}%)
+            </span>
+          </div>
+          <div className="gallery-grid">
+            {section.figures.map((fn) => (
+              <FigureImage key={fn} name={fn} onPreview={onPreview} />
+            ))}
+          </div>
+        </>
+      )}
+
+      {section.id === 'story-04' && (
+        <>
+          <div className="verify-cols">
+            <div>
+              <h4>统计 → 空间</h4>
+              <p>Top 1%（ρ≥{metrics.s99.p99.toFixed(2)}）刷选后投影呈丝状/节点聚集。</p>
+            </div>
+            <div>
+              <h4>空间 → 统计</h4>
+              <p>filament 亮脊反查密度带 {metrics.filamentBand}，与 Top 1% 区间一致。</p>
+            </div>
+          </div>
+          <div className="gallery-grid gallery-grid-2">
+            {section.figures.map((fn) => (
+              <FigureImage key={fn} name={fn} onPreview={onPreview} />
+            ))}
+          </div>
+        </>
+      )}
+
+      {section.id === 'story-05' && (
+        <>
+          <div className="discovery-grid">
+            {DISCOVERY_CARDS.map((card) => (
+              <article key={card.id} className="discovery-card">
+                <span className="discovery-icon">{card.icon}</span>
+                <h4>{card.title}</h4>
+                <p>{discoveryDetail(card.id, metrics)}</p>
+              </article>
+            ))}
+          </div>
+          {section.figures[0] && (
+            <FigureImage name={section.figures[0]} onPreview={onPreview} />
+          )}
+        </>
+      )}
+
+      {section.id === 'story-06' && hero && (
+        <FigureImage name={hero} hero onPreview={onPreview} />
+      )}
+    </section>
+  );
+}
+
 function TaskSection({
   section,
   bodyHtml,
@@ -125,12 +245,7 @@ function TaskSection({
           <h4>{section.galleryTitle}</h4>
           {heroName && section.figures.includes(heroName) && (
             <div className="gallery-hero">
-              <FigureImage
-                key={`hero-${heroName}`}
-                name={heroName}
-                hero
-                onPreview={onPreview}
-              />
+              <FigureImage name={heroName} hero onPreview={onPreview} />
             </div>
           )}
           <div className="gallery-grid">
@@ -150,9 +265,8 @@ export function ResultsPage() {
   const [timeline, setTimeline] = useState<TimelineData | null>(null);
   const [bodies, setBodies] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
-  const [lightbox, setLightbox] = useState<{ src: string; label: string } | null>(
-    null,
-  );
+  const [lightbox, setLightbox] = useState<{ src: string; label: string } | null>(null);
+  const [reportsOpen, setReportsOpen] = useState(false);
 
   useEffect(() => {
     fetch('/stats/timeline.json')
@@ -184,7 +298,7 @@ export function ResultsPage() {
     return (
       <div className="results-page">
         <header className="hero">
-          <h1>Nyx 宇宙学密度可视化</h1>
+          <h1>从涨落到宇宙网</h1>
           <p className="error">{error}</p>
         </header>
       </div>
@@ -195,110 +309,114 @@ export function ResultsPage() {
     return (
       <div className="results-page">
         <header className="hero">
-          <h1>Nyx 宇宙学密度可视化</h1>
+          <h1>从涨落到宇宙网</h1>
           <p className="sub">加载比赛成果…</p>
         </header>
       </div>
     );
   }
 
-  const s0 = timeline.timesteps[0]!;
-  const s99 = timeline.timesteps[99]!;
+  const metrics = computeStoryMetrics(timeline);
+  const onPreview = (src: string, label: string) => setLightbox({ src, label });
 
   return (
     <div className="results-page">
-      <header className="hero">
-        <h1>Nyx 宇宙学密度可视化 — 完整成果展示</h1>
-        <p className="sub">赛题 II · 体渲染 / 时序统计 / 相空间刷选 · 科学可视化挑战赛</p>
+      <header className="hero" id="story-01">
+        <h1>从涨落到宇宙网 · 宇宙网诞生记</h1>
+        <p className="sub">
+          Nyx 128³ 重子气体密度 · 100 时间步 · 体渲染 / 百步统计 / 相空间刷选
+        </p>
+        <div className="kpi-grid">
+          <div className="kpi">
+            <span>网格</span>
+            <strong>128³</strong>
+          </div>
+          <div className="kpi">
+            <span>时间步</span>
+            <strong>0–99</strong>
+          </div>
+          <div className="kpi">
+            <span>σ 变化</span>
+            <strong>+{metrics.sigmaPct.toFixed(1)}%</strong>
+          </div>
+          <div className="kpi">
+            <span>p99−p01</span>
+            <strong>
+              {metrics.span0.toFixed(2)} → {metrics.span99.toFixed(2)}
+            </strong>
+          </div>
+          <div className="kpi">
+            <span>≥p99 体积</span>
+            <strong>{metrics.tailAbovePct.toFixed(2)}%</strong>
+          </div>
+          <div className="kpi">
+            <span>纤维带</span>
+            <strong>{metrics.filamentBand}</strong>
+          </div>
+        </div>
       </header>
 
       <nav className="toc">
-        <a href="#overview">概览</a>
-        {REPORT_SECTIONS.map((s) => (
+        {STORY_SECTIONS.map((s) => (
           <a key={s.id} href={`#${s.id}`}>
-            {s.title.replace(/^任务[一二三四]：/, '')}
+            {s.num} {s.title.replace(/^[^:]+：/, '').slice(0, 6)}
           </a>
         ))}
+        <a href="#reports" onClick={() => setReportsOpen(true)}>
+          四题报告
+        </a>
         <a href="#stats">统计表</a>
         <a href="/app.html" className="toc-app">
-          交互演示 →
+          交互仪表盘 →
         </a>
       </nav>
 
       <main>
-        <section id="overview" className="panel">
-          <h2>项目概览</h2>
-          <p>
-            本页为赛题 II 全部可视化成果：128³ 气体密度、100 演化时间步、体渲染 / 统计 /
-            刷选联动分析。数据为 <code>Nyx/0000.dat–0099.dat</code>，小端 float32，z→y→x
-            列优先。
-          </p>
-          <div className="kpi-grid">
-            <div className="kpi">
-              <span>网格</span>
-              <strong>128³</strong>
-            </div>
-            <div className="kpi">
-              <span>时间步</span>
-              <strong>100</strong>
-            </div>
-            <div className="kpi">
-              <span>t=0 σ</span>
-              <strong>{s0.std.toFixed(4)}</strong>
-            </div>
-            <div className="kpi">
-              <span>t=99 σ</span>
-              <strong>{s99.std.toFixed(4)}</strong>
-            </div>
-            <div className="kpi">
-              <span>全局密度</span>
-              <strong>
-                {timeline.globalMin.toFixed(2)} – {timeline.globalMax.toFixed(2)}
-              </strong>
-            </div>
-            <div className="kpi">
-              <span>p99 跨度</span>
-              <strong>
-                {(s0.p99 - s0.p01).toFixed(3)} → {(s99.p99 - s99.p01).toFixed(3)}
-              </strong>
-            </div>
-          </div>
-          <figure className="overview-hero">
-            <img
-              src={figureUrl('task1_vol_strip.png')}
-              alt="体渲染五时刻条带"
-              loading="eager"
-            />
-            <figcaption>体渲染演化条带（全局 log 色标 · 展板质量截图）</figcaption>
-          </figure>
-        </section>
-
-        {REPORT_SECTIONS.map((sec) => (
-          <TaskSection
+        {STORY_SECTIONS.filter((s) => s.id !== 'story-01').map((sec) => (
+          <StorySectionBlock
             key={sec.id}
             section={sec}
-            bodyHtml={bodies[sec.id] ?? ''}
-            onPreview={(src, label) => setLightbox({ src, label })}
+            timeline={timeline}
+            onPreview={onPreview}
           />
         ))}
+
+        <section id="reports" className="panel reports-collapsible">
+          <button
+            type="button"
+            className="reports-toggle"
+            onClick={() => setReportsOpen((o) => !o)}
+            aria-expanded={reportsOpen}
+          >
+            {reportsOpen ? '收起' : '展开'} 四题详细报告（答卷正文）
+          </button>
+          {reportsOpen &&
+            REPORT_SECTIONS.map((sec) => (
+              <TaskSection
+                key={sec.id}
+                section={sec}
+                bodyHtml={bodies[sec.id] ?? ''}
+                onPreview={onPreview}
+              />
+            ))}
+        </section>
 
         <section id="stats" className="panel">
           <h2>100 时间步密度统计（预计算）</h2>
           <p>
-            下表由 <code>tools/python/precompute.py</code> 对每步全域密度汇总；上图为相同数据的时序曲线。
+            由 <code>tools/python/precompute.py</code> 汇总；与交互页、答卷数字一致。
           </p>
-          <MetricsSvg timesteps={timeline.timesteps} />
           <div className="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>步</th>
-                  <th>min</th>
-                  <th>max</th>
+                  <th>t</th>
                   <th>mean</th>
-                  <th>std</th>
-                  <th>p01</th>
+                  <th>σ</th>
+                  <th>p90</th>
                   <th>p99</th>
+                  <th>≥p99%</th>
+                  <th>≤p01%</th>
                   <th>偏度</th>
                 </tr>
               </thead>
@@ -306,12 +424,12 @@ export function ResultsPage() {
                 {timeline.timesteps.map((s) => (
                   <tr key={s.timestep}>
                     <td>{s.timestep}</td>
-                    <td>{s.min.toFixed(4)}</td>
-                    <td>{s.max.toFixed(4)}</td>
                     <td>{s.mean.toFixed(4)}</td>
                     <td>{s.std.toFixed(4)}</td>
-                    <td>{s.p01.toFixed(4)}</td>
+                    <td>{s.p90.toFixed(4)}</td>
                     <td>{s.p99.toFixed(4)}</td>
+                    <td>{(s.tailMassAboveP99 * 100).toFixed(2)}</td>
+                    <td>{(s.tailMassBelowP01 * 100).toFixed(2)}</td>
                     <td>{s.skewness.toFixed(4)}</td>
                   </tr>
                 ))}
@@ -321,13 +439,13 @@ export function ResultsPage() {
         </section>
 
         <section className="panel app-link-panel">
-          <h2>需要实时交互？</h2>
+          <h2>三栏交互仪表盘</h2>
           <p>
-            本页为静态比赛成果（报告 + 配图 + 统计表）。体渲染、直方图刷选、点云联动请打开
-            交互仪表盘（需本地 <code>Nyx/</code> 数据）。
+            左栏百步统计与三向切片，中栏体渲染常驻，右栏直方图刷选与 XY 投影联动。需本地{' '}
+            <code>Nyx/</code> 数据。
           </p>
           <a className="btn-primary" href="/app.html">
-            打开交互演示
+            打开 /app.html
           </a>
         </section>
       </main>
@@ -341,11 +459,7 @@ export function ResultsPage() {
           onClick={() => setLightbox(null)}
           onKeyDown={(e) => e.key === 'Escape' && setLightbox(null)}
         >
-          <button
-            type="button"
-            className="lightbox-close"
-            onClick={() => setLightbox(null)}
-          >
+          <button type="button" className="lightbox-close" onClick={() => setLightbox(null)}>
             关闭
           </button>
           <img src={lightbox.src} alt={lightbox.label} onClick={(e) => e.stopPropagation()} />
@@ -354,8 +468,7 @@ export function ResultsPage() {
       )}
 
       <footer>
-        NyxViz · 赛题 Nyx 宇宙学模拟密度场 · 展板配图请运行{' '}
-        <code>npm run figures:hd</code>（含 <code>capture-volumes</code>，默认展板质量）
+        NyxViz · 宇宙网诞生记 · <code>npm run submission-pack</code> 再生交付物
       </footer>
     </div>
   );

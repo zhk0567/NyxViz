@@ -1,8 +1,6 @@
 import { useEffect, useRef } from 'react';
-import {
-  computeMaxProjection,
-  type ProjectionAxis,
-} from '@/data/nyxLoader';
+import { computeMaxProjectionAsync } from '@/data/projectionAsync';
+import type { ProjectionAxis } from '@/data/nyxLoader';
 import type { BrushRange } from '@/data/types';
 import { GRID_SIZE } from '@/data/types';
 import {
@@ -88,18 +86,46 @@ export function DensityProjection({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const proj = computeMaxProjection(data, axis);
-    const w = canvas.clientWidth || 400;
-    const h = canvas.clientHeight || 280;
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = w * dpr;
-    canvas.height = h * dpr;
+    let cancelled = false;
+    let idleId: number | undefined;
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, w, h);
-    drawProjection(ctx, proj, domainMin, domainMax, brushRange, w, h);
+    const timer = window.setTimeout(() => {
+      const run = () => {
+        if (cancelled) return;
+        void computeMaxProjectionAsync(data, axis).then((proj) => {
+          if (cancelled) return;
+          const w = canvas.clientWidth || 400;
+          const h = canvas.clientHeight || 280;
+          const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+          canvas.width = w * dpr;
+          canvas.height = h * dpr;
+
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return;
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          ctx.clearRect(0, 0, w, h);
+          drawProjection(ctx, proj, domainMin, domainMax, brushRange, w, h);
+        });
+      };
+
+      if (typeof requestIdleCallback !== 'undefined') {
+        idleId = requestIdleCallback(run, { timeout: 800 });
+      } else {
+        idleId = requestAnimationFrame(run);
+      }
+    }, 280);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      if (idleId !== undefined) {
+        if (typeof cancelIdleCallback !== 'undefined') {
+          cancelIdleCallback(idleId);
+        } else {
+          cancelAnimationFrame(idleId);
+        }
+      }
+    };
   }, [data, brushRange, axis, domainMin, domainMax]);
 
   return (

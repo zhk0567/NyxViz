@@ -23,22 +23,46 @@ export function timestepUrl(timestep: number): string {
   return `/Nyx/${String(step).padStart(4, '0')}.dat`;
 }
 
+const MAX_TIMESTEP_CACHE = 8;
 const prefetchCache = new Map<number, Float32Array>();
 
+function touchTimestepCache(timestep: number, data: Float32Array): void {
+  if (prefetchCache.has(timestep)) prefetchCache.delete(timestep);
+  prefetchCache.set(timestep, data);
+  while (prefetchCache.size > MAX_TIMESTEP_CACHE) {
+    const oldest = prefetchCache.keys().next().value;
+    if (oldest === undefined) break;
+    prefetchCache.delete(oldest);
+  }
+}
+
+function getTimestepFromCache(timestep: number): Float32Array | undefined {
+  const data = prefetchCache.get(timestep);
+  if (!data) return undefined;
+  prefetchCache.delete(timestep);
+  prefetchCache.set(timestep, data);
+  return data;
+}
+
 export function getPrefetchedTimestep(timestep: number): Float32Array | undefined {
-  return prefetchCache.get(timestep);
+  return getTimestepFromCache(timestep);
 }
 
 export function setPrefetchedTimestep(timestep: number, data: Float32Array): void {
-  if (prefetchCache.size >= 3) {
-    const first = prefetchCache.keys().next().value;
-    if (first !== undefined) prefetchCache.delete(first);
-  }
-  prefetchCache.set(timestep, data);
+  touchTimestepCache(timestep, data);
+}
+
+export function prefetchTimestepQuiet(timestep: number): void {
+  if (prefetchCache.has(timestep)) return;
+  void loadTimestep(timestep).catch(() => {});
+}
+
+export function hasTimestepCached(timestep: number): boolean {
+  return prefetchCache.has(timestep);
 }
 
 export async function loadTimestep(timestep: number): Promise<Float32Array> {
-  const cached = prefetchCache.get(timestep);
+  const cached = getTimestepFromCache(timestep);
   if (cached) return cached;
 
   const url = timestepUrl(timestep);
@@ -53,17 +77,30 @@ export async function loadTimestep(timestep: number): Promise<Float32Array> {
     );
   }
   const data = new Float32Array(buffer);
-  prefetchCache.set(timestep, data);
+  touchTimestepCache(timestep, data);
   return data;
 }
 
 export type ProjectionAxis = 'xy' | 'xz' | 'yz';
+
+const projectionCache = new WeakMap<
+  Float32Array,
+  Map<ProjectionAxis, Float32Array>
+>();
 
 /** Max-density projection on a 2D plane (128×128). */
 export function computeMaxProjection(
   data: Float32Array,
   axis: ProjectionAxis,
 ): Float32Array {
+  let perAxis = projectionCache.get(data);
+  if (!perAxis) {
+    perAxis = new Map();
+    projectionCache.set(data, perAxis);
+  }
+  const hit = perAxis.get(axis);
+  if (hit) return hit;
+
   const size = GRID_SIZE * GRID_SIZE;
   const out = new Float32Array(size);
   out.fill(-Infinity);
@@ -75,7 +112,6 @@ export function computeMaxProjection(
       for (let z = 0; z < GRID_SIZE; z++) {
         const v = data[yOff + z]!;
         let u: number;
-        let vv: number;
         if (axis === 'xy') {
           u = x + y * GRID_SIZE;
         } else if (axis === 'xz') {
@@ -83,8 +119,7 @@ export function computeMaxProjection(
         } else {
           u = y + z * GRID_SIZE;
         }
-        vv = out[u]!;
-        if (v > vv) out[u] = v;
+        if (v > out[u]!) out[u] = v;
       }
     }
   }
@@ -92,33 +127,11 @@ export function computeMaxProjection(
   for (let i = 0; i < size; i++) {
     if (!Number.isFinite(out[i]!)) out[i] = 0;
   }
+  perAxis.set(axis, out);
   return out;
 }
 
-const vtkScalarCache = new WeakMap<Float32Array, Float32Array>();
-
-/** Copy scalar field into vtk-compatible layout; cached per timestep buffer. */
-export function getVtkScalars(zFastData: Float32Array): Float32Array {
-  const cached = vtkScalarCache.get(zFastData);
-  if (cached) return cached;
-
-  const out = new Float32Array(VOXEL_COUNT);
-  for (let x = 0; x < GRID_SIZE; x++) {
-    const xOff = x * GRID_SIZE * GRID_SIZE;
-    for (let y = 0; y < GRID_SIZE; y++) {
-      const yOff = xOff + y * GRID_SIZE;
-      for (let z = 0; z < GRID_SIZE; z++) {
-        const vtkIdx = x + GRID_SIZE * (y + GRID_SIZE * z);
-        out[vtkIdx] = zFastData[yOff + z]!;
-      }
-    }
-  }
-  vtkScalarCache.set(zFastData, out);
-  return out;
-}
-
-/** @deprecated Use getVtkScalars */
-export const toVtkScalars = getVtkScalars;
+export { getVtkScalars, getVtkScalarsAsync, getCachedVtkScalars, prewarmVtkScalarsQuiet } from './vtkConvert';
 
 export function scanBrushRange(
   data: Float32Array,

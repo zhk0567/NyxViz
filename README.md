@@ -32,7 +32,7 @@ python run.py
 
 `run.py` 会自动：释放 5173/5174/4173 等占用端口 → 首次运行 `npm install` / `precompute` / 生成报告与配图 → 启动 Vite → 打开浏览器。
 
-**默认首页**为完整比赛成果（四任务报告 + 配图 + 100 步统计表），无 vtk 动画。实时体渲染与刷选请打开 [http://localhost:5173/app.html](http://localhost:5173/app.html)。
+**默认首页**为「宇宙网诞生记」叙事（01–06 节 + 四题报告 + 统计表）。三栏交互仪表盘见 [http://localhost:5173/app.html](http://localhost:5173/app.html)。
 
 可选环境变量：`NYXVIZ_PORT=5173` 指定端口。
 
