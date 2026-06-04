@@ -1,6 +1,14 @@
 import { PosterTrendChart } from '@/dashboard/PosterTrendChart';
+import { HistogramOverlay } from '@/histogram/HistogramOverlay';
+import type { ChartSizeOptions } from '@/hooks/useChartSize';
 import { computeStoryMetrics } from '@/results/storyMetrics';
 import type { TimelineData } from '@/data/types';
+
+const POSTER_HIST_OVERLAY: ChartSizeOptions = {
+  minHeight: 360,
+  maxHeight: 420,
+  aspect: 2.15,
+};
 
 function KpiStrip({ timeline }: { timeline: TimelineData }) {
   const s = timeline.timesteps[99]!;
@@ -35,11 +43,7 @@ export function PosterStatsSection({ timeline }: { timeline: TimelineData }) {
     <div className="pl-s03-body">
       <figure className="pl-s03-hist-figure">
         <figcaption>多时刻 log 直方图叠加（t=0, 25, 50, 75, 99）</figcaption>
-        <img
-          src="/figures/task3_hist_overlay.png"
-          alt="密度分布演化直方图"
-          loading="lazy"
-        />
+        <HistogramOverlay timeline={timeline} sizeOpts={POSTER_HIST_OVERLAY} />
       </figure>
 
       <div className="pl-s03-trends">

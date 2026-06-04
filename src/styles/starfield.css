@@ -1,0 +1,65 @@
+/* 星光点点背景 — 用于宇宙主题页面 */
+
+.starfield-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.starfield-bg--fixed {
+  position: fixed;
+}
+
+.starfield-nebula {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 55% 40% at 18% 22%, rgba(78, 120, 220, 0.14), transparent 70%),
+    radial-gradient(ellipse 45% 35% at 82% 68%, rgba(120, 80, 200, 0.1), transparent 72%),
+    radial-gradient(ellipse 70% 45% at 50% 100%, rgba(0, 60, 120, 0.12), transparent 65%);
+  opacity: 0.9;
+}
+
+.starfield-star {
+  position: absolute;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: starfield-twinkle var(--star-duration, 3s) ease-in-out infinite;
+  animation-delay: var(--star-delay, 0s);
+  will-change: opacity, transform;
+}
+
+.starfield-star--white {
+  background: #f8fbff;
+  box-shadow: 0 0 4px 1px rgba(220, 235, 255, 0.55);
+}
+
+.starfield-star--cyan {
+  background: #b8ecff;
+  box-shadow: 0 0 5px 1px rgba(78, 196, 255, 0.65);
+}
+
+.starfield-star--gold {
+  background: #ffe9a8;
+  box-shadow: 0 0 6px 2px rgba(255, 213, 106, 0.5);
+}
+
+@keyframes starfield-twinkle {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: translate(-50%, -50%) scale(0.75);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.15);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .starfield-star {
+    animation: none;
+  }
+}

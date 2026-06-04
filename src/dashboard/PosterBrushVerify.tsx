@@ -1,10 +1,15 @@
 import { computeStoryMetrics } from '@/results/storyMetrics';
+import { BrushHistogramPreview } from '@/histogram/BrushHistogramPreview';
 import type { TimelineData } from '@/data/types';
 
 interface BrushRowProps {
+  timeline: TimelineData;
   title: string;
   accentClass: 'accent-high' | 'accent-low';
-  histSrc: string;
+  rangeMin: number;
+  rangeMax: number;
+  highlightColor: string;
+  legendLabel: string;
   spatialSrc: string;
   stats: { label: string; value: string }[];
   spatialNote: string;
@@ -13,9 +18,13 @@ interface BrushRowProps {
 }
 
 function BrushRow({
+  timeline,
   title,
   accentClass,
-  histSrc,
+  rangeMin,
+  rangeMax,
+  highlightColor,
+  legendLabel,
   spatialSrc,
   stats,
   spatialNote,
@@ -27,8 +36,14 @@ function BrushRow({
       <div className={`pl-brush-grid${showZoom ? '' : ' pl-brush-grid--no-zoom'}`}>
         <figure className="pl-brush-cell">
           <figcaption>统计刷选</figcaption>
-          <div className="pl-brush-media">
-            <img src={histSrc} alt="" loading="lazy" />
+          <div className="pl-brush-media pl-brush-media--hist">
+            <BrushHistogramPreview
+              timeline={timeline}
+              rangeMin={rangeMin}
+              rangeMax={rangeMax}
+              highlightColor={highlightColor}
+              legendLabel={legendLabel}
+            />
           </div>
         </figure>
 
@@ -76,9 +91,13 @@ export function PosterBrushVerify({ timeline }: { timeline: TimelineData }) {
   return (
     <div className="pl-brush-verify">
       <BrushRow
+        timeline={timeline}
         title="Top 1% 高密度尾 → 宇宙网节点 / 纤维"
         accentClass="accent-high"
-        histSrc="/figures/task4_hist_brush_top1.png"
+        rangeMin={s.p99}
+        rangeMax={s.max}
+        highlightColor="#f5c842"
+        legendLabel={`Top 1%: ρ≥${s.p99.toFixed(2)}`}
         spatialSrc="/figures/task4_brush_top1.png"
         spatialNote="刷选高密度尾区后，XY 投影呈现丝状亮脊与节点聚集。"
         showZoom
@@ -90,9 +109,13 @@ export function PosterBrushVerify({ timeline }: { timeline: TimelineData }) {
         ]}
       />
       <BrushRow
+        timeline={timeline}
         title="Bottom 1% 低密度 → IGM 空洞"
         accentClass="accent-low"
-        histSrc="/figures/task4_hist_brush_bottom1.png"
+        rangeMin={s.min}
+        rangeMax={s.p01}
+        highlightColor="#3dd6c6"
+        legendLabel={`Bottom 1%: ρ≤${s.p01.toFixed(2)}`}
         spatialSrc="/figures/task4_brush_bottom1.png"
         spatialNote="低密度尾区在投影上几乎不可见——对应宇宙网之间的空洞背景。"
         stats={[

@@ -95,6 +95,7 @@ export default defineConfig({
       input: {
         main: path.resolve(__dirname, 'pages/index.html'),
         app: path.resolve(__dirname, 'pages/app.html'),
+        video: path.resolve(__dirname, 'pages/video.html'),
         capture: path.resolve(__dirname, 'pages/capture.html'),
       },
       output: {

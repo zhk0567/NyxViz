@@ -2,16 +2,17 @@ import { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 import type { TimelineData } from '@/data/types';
 import { useAppStore } from '@/store/useAppStore';
-import { useChartSize } from '@/hooks/useChartSize';
+import { useChartSizeFromOpts, type ChartSizeOptions } from '@/hooks/useChartSize';
 import { AXIS_FILL, LABEL_FILL, styleAxisText, styleGrid } from './chartTheme';
 
 interface DensityHistogramProps {
   timeline: TimelineData;
+  sizeOpts?: ChartSizeOptions;
 }
 
-export function DensityHistogram({ timeline }: DensityHistogramProps) {
+export function DensityHistogram({ timeline, sizeOpts }: DensityHistogramProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
-  const { width, height } = useChartSize(wrapRef, 260, 2.1);
+  const { width, height } = useChartSizeFromOpts(wrapRef, sizeOpts);
   const svgRef = useRef<SVGSVGElement>(null);
   const chartRef = useRef<{
     x: d3.ScaleLog<number, number>;

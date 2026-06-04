@@ -31,7 +31,7 @@ python run.py                # 本地预览 / 与 app.html
 |------|------|------|
 | **M1** | 官方答卷终检 | ✅ 占位 `team.json` + `fill-answer-sheet` + `test:words`/`test:report`；**提交前**改真实队名/成员 |
 | **M2** | 100 字摘要 | ✅ 见 [`ABSTRACT_100.txt`](./ABSTRACT_100.txt)，提交表单粘贴 |
-| **M3** | 录制视频 | ⏳ 待你录屏；分镜见 [`VIDEO_SCRIPT.md`](./VIDEO_SCRIPT.md) |
+| **M3** | 录制视频 | ⏳ 待你录屏；分镜见 [`VIDEO_SCRIPT.md`](./VIDEO_SCRIPT.md)；刷选段用 **`/video.html`** 三栏（1920×1080） |
 | **M4** | 代表图终检 | ✅ `submission_representative.jpg`（由 `task6_story_poster` 导出，&lt;20MB）；可选 `figures:hd` 提质 |
 | **M5** | 上传提交 | ⏳ [提交入口](https://s99x45wjic.jiandaoyun.com/f/6a0ae5b7d2ebb735eedc664e)，建议 **6/18–19** |
 
@@ -82,7 +82,7 @@ python run.py                # 本地预览 / 与 app.html
 1. 四题答卷：方法 → 观察 → 数据佐证；数字与 `public/stats/timeline.json` 一致（勿用示意图夸大倍数）。
 2. 叙事闭环：任务2 假设 → 任务3 定量 → 任务4 刷选验证 → 任务1 体渲染印证。
 3. 三张主图：`task1_vol_strip`、`task2_evolution_story`、`task4_brush_triptych`。
-4. 视频含 v2 交互页 Top 1% → 体渲染高亮 → XY 投影一段。
+4. 视频含 **`/video.html`** 三栏 Top 1% → 体渲染高亮 → XY 投影一段（或 `app.html` 探索浮层）。
 5. **（可选）** 若做 V 段：代表图/长图数字仍跑 `npm run test:report`；未完成 V 段不视为缺交。
 
 ---

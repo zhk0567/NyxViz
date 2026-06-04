@@ -1,11 +1,12 @@
 import { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 import type { TimelineData } from '@/data/types';
-import { useChartSize } from '@/hooks/useChartSize';
+import { useChartSizeFromOpts, type ChartSizeOptions } from '@/hooks/useChartSize';
 import { LABEL_FILL, styleAxisText, styleGrid } from './chartTheme';
 
 interface TimelineMetricsProps {
   timeline: TimelineData;
+  sizeOpts?: ChartSizeOptions;
 }
 
 const SERIES = [
@@ -14,9 +15,9 @@ const SERIES = [
   { key: 'std' as const, label: '标准差', color: '#3dd6c6', fill: 'rgba(61, 214, 198, 0.1)' },
 ];
 
-export function TimelineMetrics({ timeline }: TimelineMetricsProps) {
+export function TimelineMetrics({ timeline, sizeOpts }: TimelineMetricsProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
-  const { width, height } = useChartSize(wrapRef, 260, 2.4);
+  const { width, height } = useChartSizeFromOpts(wrapRef, sizeOpts);
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {

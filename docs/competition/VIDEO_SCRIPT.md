@@ -7,7 +7,7 @@
 | 0:00–0:30 | 「宇宙网诞生记」：Nyx 128³ 气体密度、100 步 t=0…99；01–06 叙事：引言→演化→统计→刷选→发现→流程 | 首页 `/` 快扫 01–06 模块与 Hero KPI |
 | 0:30–1:20 | 02 演化：五帧体渲染、三阶段（0–29/30–69/70–99）；cosmic 色标 | `task1_vol_strip` 或首页 02 节 |
 | 1:20–2:10 | 03 定量：100 步 log 直方图，σ 约 +15%、右尾增厚（真实 timeline 数字） | `task3_hist_overlay` / `task3_evolution_metrics` / GIF |
-| 2:10–3:30 | 04 刷选：**v2 三栏** `/app.html`：Top 1% → 中栏体渲染高亮 → 右栏 XY 投影金斑；可选 90–99% 纤维 | **录屏** 交互页一次完整流程 |
+| 2:10–3:30 | 04 刷选：**录屏三栏** [`/video.html?record=1`](../video.html?record=1)（精简顶栏、默认高清）：Top 1% → 中栏体渲染高亮 → 右栏 XY 投影金斑；可选 90–99% 纤维 | **录屏** `video.html?record=1` 一屏完整流程 |
 | 3:30–4:15 | 05 发现 + 任务二：分位跨度↑、IGM 占体积、宇宙网验证 | 首页 05 发现卡 + `task2_evolution_story` |
 | 4:15–4:40 | 06 流程 + 工具：vtk.js、D3、Python precompute、Worker | `task0_story_flow.png` |
 | 4:40–5:00 | 总结：统计—空间闭环；代表图 | `submission_representative.jpg` + 黑场字幕 |

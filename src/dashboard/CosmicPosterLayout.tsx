@@ -11,6 +11,7 @@ import { computeStoryMetrics } from '@/results/storyMetrics';
 import type { TimelineData } from '@/data/types';
 
 import { PosterStatsSection } from '@/dashboard/PosterStatsSection';
+import type { ReactNode } from 'react';
 
 export interface CosmicPosterLayoutProps {
   timeline: TimelineData;
@@ -18,6 +19,7 @@ export interface CosmicPosterLayoutProps {
   dataMax: number;
   timestep: number;
   onSelectTimestep: (t: number) => void;
+  heroSlot?: ReactNode;
 }
 
 export function CosmicPosterLayout({
@@ -26,9 +28,11 @@ export function CosmicPosterLayout({
   dataMax,
   timestep,
   onSelectTimestep,
+  heroSlot,
 }: CosmicPosterLayoutProps) {
   const metrics = computeStoryMetrics(timeline);
   const phase = evolutionPhase(timestep);
+  const stepStats = timeline.timesteps[timestep] ?? metrics.s99;
 
   return (
     <div className="poster-layout">
@@ -42,21 +46,30 @@ export function CosmicPosterLayout({
           <aside className="pl-s01-left">
             <MetaStrip />
             <VerticalColorLegend min={dataMin} max={dataMax} />
-            <p className="pl-s01-stats">
-              t=99 · σ={metrics.s99.std.toFixed(4)}
-              <br />
-              p99−p01 +{metrics.spanPct.toFixed(1)}%
-            </p>
+            <dl className="pl-s01-stats">
+              <div className="pl-s01-stat">
+                <dt>当前步 σ</dt>
+                <dd>
+                  t={timestep} · {stepStats.std.toFixed(4)}
+                </dd>
+              </div>
+              <div className="pl-s01-stat">
+                <dt>p99 − p01</dt>
+                <dd>+{metrics.spanPct.toFixed(1)}%</dd>
+              </div>
+            </dl>
           </aside>
           <div className="pl-hero-frame">
-            <img
-              src="/figures/task1_vol_t0099.png"
-              alt="t=99 宇宙网体渲染"
-              className="pl-hero-img"
-              onError={(e) => {
-                e.currentTarget.src = '/figures/task1_slice_t0099.png';
-              }}
-            />
+            {heroSlot ?? (
+              <img
+                src="/figures/task1_vol_t0099.png"
+                alt="t=99 宇宙网体渲染"
+                className="pl-hero-img"
+                onError={(e) => {
+                  e.currentTarget.src = '/figures/task1_slice_t0099.png';
+                }}
+              />
+            )}
           </div>
         </div>
       </section>

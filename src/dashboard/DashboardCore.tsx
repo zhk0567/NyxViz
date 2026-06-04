@@ -1,15 +1,14 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
+import { StarfieldBackground } from '@/components/StarfieldBackground';
 import { CosmicPosterLayout } from '@/dashboard/CosmicPosterLayout';
+import { PosterHeroVolume } from '@/dashboard/PosterHeroVolume';
 import { InteractiveBrushLab } from '@/dashboard/InteractiveBrushLab';
 import { DiscoveryCards } from '@/dashboard/DiscoveryCards';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
-import { scanBrushRangeAsync } from '@/data/brushScan';
-import { useAppStore } from '@/store/useAppStore';
-import type { TimelineData } from '@/data/types';
-import { TIMESTEP_COUNT, VOXEL_COUNT } from '@/data/types';
-import { getGlobalTfDomain } from '@/volume/transferFunction';
+import { useDashboardInteraction } from '@/dashboard/useDashboardInteraction';
 import { MARK_STEPS } from '@/dashboard/evolutionPhase';
-import { usePrefetchTimestep } from '@/hooks/usePrefetchTimestep';
+import type { TimelineData } from '@/data/types';
+import { TIMESTEP_COUNT } from '@/data/types';
 
 const VolumeScene = lazy(() =>
   import('@/volume/VolumeScene').then((m) => ({ default: m.VolumeScene })),
@@ -43,112 +42,37 @@ export function DashboardCore({
   error,
   embedded = false,
 }: DashboardCoreProps) {
-  const [sliderStep, setSliderStep] = useState(0);
-  const [sliderDragging, setSliderDragging] = useState(false);
-  const [highQuality, setHighQuality] = useState(false);
-  const [volumeReady, setVolumeReady] = useState(true);
-  const [scanning, setScanning] = useState(false);
   const [exploreOpen, setExploreOpen] = useState(false);
 
-  usePrefetchTimestep(sliderStep, sliderDragging);
+  const ix = useDashboardInteraction(timeline, densityData, loading, {
+    onPresetBrush: () => setExploreOpen(true),
+  });
 
-  const timestep = useAppStore((s) => s.timestep);
-  const brushRange = useAppStore((s) => s.brushRange);
-  const brushedCount = useAppStore((s) => s.brushedCount);
-  const tfParams = useAppStore((s) => s.tfParams);
-  const setTimestep = useAppStore((s) => s.setTimestep);
-  const setBrushRange = useAppStore((s) => s.setBrushRange);
-  const setBrushedCount = useAppStore((s) => s.setBrushedCount);
-
-  useEffect(() => {
-    setSliderStep(timestep);
-    setVolumeReady(false);
-  }, [timestep]);
-
-  const stats = timeline.timesteps[sliderDragging ? sliderStep : timestep];
-  const tfDomain = getGlobalTfDomain(timeline);
-  const dataMin = tfDomain?.min ?? stats?.min ?? 7.5;
-  const dataMax = tfDomain?.max ?? stats?.max ?? 15;
-  const volumeQuality =
-    loading || scanning
-      ? 'interactive'
-      : highQuality
-        ? 'presentation'
-        : 'interactive';
-  const prevBrushRef = useRef<{ min: number; max: number } | null>(null);
-
-  const applyTop1 = useCallback(() => {
-    if (!stats) return;
-    setBrushRange({ min: stats.p99, max: stats.max });
-    setExploreOpen(true);
-  }, [stats, setBrushRange]);
-
-  const applyBottom1 = useCallback(() => {
-    if (!stats) return;
-    setBrushRange({ min: stats.min, max: stats.p01 });
-    setExploreOpen(true);
-  }, [stats, setBrushRange]);
-
-  const applyFilament = useCallback(() => {
-    if (!stats) return;
-    setBrushRange({ min: stats.p90, max: stats.p99 });
-    setExploreOpen(true);
-  }, [stats, setBrushRange]);
-
-  useEffect(() => {
-    if (!densityData || !brushRange) {
-      setBrushedCount(0);
-      setScanning(false);
-      prevBrushRef.current = null;
-      return;
-    }
-
-    const sameBrush =
-      prevBrushRef.current?.min === brushRange.min &&
-      prevBrushRef.current?.max === brushRange.max;
-    prevBrushRef.current = brushRange;
-
-    let cancelled = false;
-    setScanning(true);
-    const delay = sameBrush ? 450 : 180;
-
-    const handle = window.setTimeout(() => {
-      scanBrushRangeAsync(densityData, brushRange.min, brushRange.max, 8000)
-        .then((found) => {
-          if (!cancelled) {
-            setBrushedCount(found.length);
-            setScanning(false);
-          }
-        })
-        .catch(() => {
-          if (!cancelled) setScanning(false);
-        });
-    }, delay);
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(handle);
-    };
-  }, [densityData, brushRange, timestep, setBrushedCount]);
-
-  const highlight = useMemo(() => {
-    if (!brushRange) return {};
-    return { highlightMin: brushRange.min, highlightMax: brushRange.max };
-  }, [brushRange]);
-
-  const commitTimestep = () => {
-    if (sliderStep !== timestep) setTimestep(sliderStep);
-  };
-
-  const selectTimestep = (t: number) => {
-    setSliderStep(t);
-    setTimestep(t);
-  };
-
-  const volumeRatio =
-    brushRange && brushedCount > 0
-      ? ((brushedCount / VOXEL_COUNT) * 100).toFixed(2)
-      : null;
+  const {
+    timestep,
+    sliderStep,
+    sliderDragging,
+    setSliderStep,
+    setSliderDragging,
+    highQuality,
+    setHighQuality,
+    volumeReady,
+    setVolumeReady,
+    brushRange,
+    tfParams,
+    stats,
+    dataMin,
+    dataMax,
+    volumeQuality,
+    highlight,
+    applyTop1,
+    applyBottom1,
+    applyFilament,
+    clearBrush,
+    commitTimestep,
+    selectTimestep,
+    volumeRatio,
+  } = ix;
 
   const scrollToSection = (id: (typeof SECTION_IDS)[number]) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -178,10 +102,26 @@ export function DashboardCore({
     </div>
   );
 
+  const posterHero = (
+    <PosterHeroVolume
+      densityData={densityData}
+      loading={loading}
+      timestep={timestep}
+      dataMin={dataMin}
+      dataMax={dataMax}
+      tfParams={tfParams}
+      quality={volumeQuality}
+      highlightMin={highlight.highlightMin}
+      highlightMax={highlight.highlightMax}
+      paused={exploreOpen}
+    />
+  );
+
   return (
     <div className={`cosmic-poster cosmic-poster-layout${embedded ? ' cosmic-poster-embed' : ''}`}>
+      <StarfieldBackground count={200} seed={13} className="starfield-bg--fixed" />
       <header className="poster-top-bar">
-        <span className="poster-top-kicker">Nyx 128³ · 宇宙网诞生记</span>
+        <span className="poster-top-kicker pl-text-gradient-cyan">Nyx 128³ · 宇宙网诞生记</span>
         <button
           type="button"
           className="poster-explore-btn"
@@ -190,9 +130,14 @@ export function DashboardCore({
           交互探索
         </button>
         {!embedded && (
-          <a href="/" className="poster-top-link">
-            成果页
-          </a>
+          <>
+            <a href="/video.html" className="poster-top-link">
+              录屏版
+            </a>
+            <a href="/" className="poster-top-link">
+              成果页
+            </a>
+          </>
         )}
       </header>
 
@@ -216,6 +161,7 @@ export function DashboardCore({
           dataMax={dataMax}
           timestep={timestep}
           onSelectTimestep={selectTimestep}
+          heroSlot={posterHero}
         />
       </main>
 
@@ -247,7 +193,7 @@ export function DashboardCore({
               <button type="button" onClick={applyFilament}>
                 纤维带
               </button>
-              <button type="button" onClick={() => setBrushRange(null)}>
+              <button type="button" onClick={clearBrush}>
                 清除刷选
               </button>
               {MARK_STEPS.map((t) => (
@@ -272,7 +218,7 @@ export function DashboardCore({
               onTop1={applyTop1}
               onBottom1={applyBottom1}
               onFilament={applyFilament}
-              onClear={() => setBrushRange(null)}
+              onClear={clearBrush}
               vtkSlot={heroVtk}
             />
             <section className="explore-discover">

@@ -17,6 +17,7 @@ interface DensityProjectionProps {
   domainMin: number;
   domainMax: number;
   className?: string;
+  compact?: boolean;
 }
 
 const COSMIC_LUT = buildCosmicLut256();
@@ -29,6 +30,7 @@ function drawProjection(
   brushRange: BrushRange | null,
   displayW: number,
   displayH: number,
+  hideCaption = false,
 ) {
   const off = document.createElement('canvas');
   off.width = GRID_SIZE;
@@ -65,11 +67,23 @@ function drawProjection(
 
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(off, 0, 0, displayW, displayH);
 
-  ctx.fillStyle = 'rgba(154, 163, 184, 0.9)';
-  ctx.font = '11px sans-serif';
-  ctx.fillText('最大密度投影 (log, 全局色标)', 8, 16);
+  if (hideCaption) {
+    const size = Math.min(displayW, displayH);
+    const dx = (displayW - size) / 2;
+    const dy = (displayH - size) / 2;
+    ctx.fillStyle = '#060c18';
+    ctx.fillRect(0, 0, displayW, displayH);
+    ctx.drawImage(off, dx, dy, size, size);
+  } else {
+    ctx.drawImage(off, 0, 0, displayW, displayH);
+  }
+
+  if (!hideCaption) {
+    ctx.fillStyle = 'rgba(154, 163, 184, 0.9)';
+    ctx.font = '11px sans-serif';
+    ctx.fillText('最大密度投影 (log, 全局色标)', 8, 16);
+  }
 }
 
 export function DensityProjection({
@@ -79,6 +93,7 @@ export function DensityProjection({
   domainMin,
   domainMax,
   className,
+  compact = false,
 }: DensityProjectionProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -104,7 +119,7 @@ export function DensityProjection({
           if (!ctx) return;
           ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
           ctx.clearRect(0, 0, w, h);
-          drawProjection(ctx, proj, domainMin, domainMax, brushRange, w, h);
+          drawProjection(ctx, proj, domainMin, domainMax, brushRange, w, h, compact);
         });
       };
 
@@ -126,7 +141,7 @@ export function DensityProjection({
         }
       }
     };
-  }, [data, brushRange, axis, domainMin, domainMax]);
+  }, [data, brushRange, axis, domainMin, domainMax, compact]);
 
   return (
     <canvas

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 import type { TimelineData } from '@/data/types';
-import { useChartSize } from '@/hooks/useChartSize';
+import { useChartSizeFromOpts, type ChartSizeOptions } from '@/hooks/useChartSize';
 import { LABEL_FILL, styleAxisText, styleGrid } from './chartTheme';
 
 const REPRESENTATIVE_STEPS = [0, 25, 50, 75, 99];
@@ -9,18 +9,37 @@ const COLORS = ['#7c6cf0', '#3dd6c6', '#5b9bd5', '#f5c842', '#e87a5a'];
 
 interface HistogramOverlayProps {
   timeline: TimelineData;
+  sizeOpts?: ChartSizeOptions;
 }
 
-export function HistogramOverlay({ timeline }: HistogramOverlayProps) {
+function chartTier(sizeOpts?: ChartSizeOptions) {
+  const maxH = sizeOpts?.maxHeight ?? 320;
+  const minH = sizeOpts?.minHeight ?? 260;
+  if (minH >= 300 || maxH >= 360) return 'poster' as const;
+  if (maxH <= 200) return 'compact' as const;
+  return 'default' as const;
+}
+
+export function HistogramOverlay({ timeline, sizeOpts }: HistogramOverlayProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
-  const { width, height } = useChartSize(wrapRef, 260, 2.1);
+  const { width, height } = useChartSizeFromOpts(wrapRef, sizeOpts);
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
     const svgEl = svgRef.current;
-    if (!svgEl) return;
+    if (!svgEl || width < 80) return;
 
-    const margin = { top: 16, right: 16, bottom: 36, left: 52 };
+    const tier = chartTier(sizeOpts);
+    const margin =
+      tier === 'poster'
+        ? { top: 26, right: 84, bottom: 54, left: 64 }
+        : tier === 'compact'
+          ? { top: 12, right: 10, bottom: 28, left: 44 }
+          : { top: 16, right: 16, bottom: 36, left: 52 };
+    const legendFont = tier === 'poster' ? 13 : tier === 'compact' ? 11 : 11;
+    const legendStep = tier === 'poster' ? 16 : tier === 'compact' ? 12 : 14;
+    const axisFont = tier === 'poster' ? 12 : tier === 'compact' ? 10 : 11;
+    const strokeW = tier === 'poster' ? 2.6 : 2.2;
     const innerW = width - margin.left - margin.right;
     const innerH = height - margin.top - margin.bottom;
 
@@ -56,7 +75,7 @@ export function HistogramOverlay({ timeline }: HistogramOverlayProps) {
     gridG.call(
       d3
         .axisLeft(y)
-        .ticks(5)
+        .ticks(tier === 'poster' ? 6 : 5)
         .tickSize(-innerW)
         .tickFormat(() => ''),
     );
@@ -69,32 +88,89 @@ export function HistogramOverlay({ timeline }: HistogramOverlayProps) {
         .datum(hist)
         .attr('fill', 'none')
         .attr('stroke', COLORS[idx])
-        .attr('stroke-width', 2.2)
-        .attr('opacity', 0.95)
+        .attr('stroke-width', strokeW)
+        .attr('stroke-linejoin', 'round')
+        .attr('stroke-linecap', 'round')
+        .attr('opacity', 0.96)
         .attr('d', line);
     });
 
-    styleAxisText(
-      g
-        .append('g')
-        .attr('transform', `translate(0,${innerH})`)
-        .call(d3.axisBottom(x).ticks(6, '.2f')),
+    const xAxis = g
+      .append('g')
+      .attr('transform', `translate(0,${innerH})`)
+      .call(
+        d3
+          .axisBottom(x)
+          .ticks(tier === 'poster' ? 7 : tier === 'compact' ? 4 : 6, '.2f'),
+      );
+    styleAxisText(xAxis);
+    xAxis.selectAll('text').attr('font-size', axisFont);
+
+    const yAxis = g.append('g').call(
+      d3.axisLeft(y).ticks(tier === 'poster' ? 6 : tier === 'compact' ? 4 : 5),
     );
-    styleAxisText(g.append('g').call(d3.axisLeft(y).ticks(5)));
+    styleAxisText(yAxis);
+    yAxis.selectAll('text').attr('font-size', axisFont);
+
+    if (tier === 'poster') {
+      g.append('text')
+        .attr('x', innerW / 2)
+        .attr('y', innerH + 42)
+        .attr('text-anchor', 'middle')
+        .attr('fill', LABEL_FILL)
+        .attr('font-size', 13)
+        .attr('font-weight', 600)
+        .text('密度 ρ (log)');
+
+      g.append('text')
+        .attr('transform', 'rotate(-90)')
+        .attr('x', -innerH / 2)
+        .attr('y', -46)
+        .attr('text-anchor', 'middle')
+        .attr('fill', LABEL_FILL)
+        .attr('font-size', 13)
+        .attr('font-weight', 600)
+        .text('归一化频数');
+    }
+
+    const legendX = innerW - 4;
+    const legendY0 = 10;
+    if (tier === 'poster') {
+      g.insert('rect', ':first-child')
+        .attr('x', legendX - 58)
+        .attr('y', legendY0 - 6)
+        .attr('width', 62)
+        .attr('height', REPRESENTATIVE_STEPS.length * legendStep + 8)
+        .attr('rx', 6)
+        .attr('fill', 'rgba(6, 10, 20, 0.82)')
+        .attr('stroke', 'rgba(78, 196, 255, 0.22)');
+    }
 
     REPRESENTATIVE_STEPS.forEach((t, idx) => {
+      const ly = legendY0 + idx * legendStep;
+      if (tier === 'poster') {
+        g.append('line')
+          .attr('x1', legendX - 50)
+          .attr('x2', legendX - 34)
+          .attr('y1', ly)
+          .attr('y2', ly)
+          .attr('stroke', COLORS[idx]!)
+          .attr('stroke-width', 3)
+          .attr('stroke-linecap', 'round');
+      }
       g.append('text')
-        .attr('x', innerW - 60)
-        .attr('y', 14 + idx * 14)
+        .attr('x', legendX - (tier === 'poster' ? 30 : 56))
+        .attr('y', ly + (tier === 'poster' ? 4 : 0))
         .attr('fill', COLORS[idx]!)
-        .attr('font-size', 10)
+        .attr('font-size', legendFont)
+        .attr('font-weight', tier === 'poster' ? 600 : 400)
         .text(`t=${t}`);
     });
-  }, [timeline, width, height]);
+  }, [timeline, width, height, sizeOpts]);
 
   return (
-    <div ref={wrapRef} className="chart-responsive">
-      <svg ref={svgRef} className="histogram-overlay" width="100%" />
+    <div ref={wrapRef} className="chart-responsive chart-responsive-fill histogram-overlay-wrap">
+      <svg ref={svgRef} className="histogram-overlay" aria-label="多时刻 log 直方图叠加" />
     </div>
   );
 }
