@@ -8,8 +8,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_DOCX = ROOT / "docs" / "submission" / "NyxViz_报告终稿.docx"
-DEFAULT_PDF = ROOT / "docs" / "submission" / "NyxViz_报告终稿.pdf"
+DEFAULT_DOCX = ROOT / "docs" / "submission" / "NyxViz_作品说明文档.docx"
+DEFAULT_PDF = ROOT / "docs" / "submission" / "NyxViz_作品说明文档.pdf"
 
 WD_EXPORT_FORMAT_PDF = 17
 

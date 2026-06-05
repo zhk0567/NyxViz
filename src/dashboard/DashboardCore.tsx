@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState } from 'react';
-import { StarfieldBackground } from '@/components/StarfieldBackground';
+import { CosmicBackdrop } from '@/components/CosmicBackdrop';
 import { CosmicPosterLayout } from '@/dashboard/CosmicPosterLayout';
 import { PosterHeroVolume } from '@/dashboard/PosterHeroVolume';
 import { InteractiveBrushLab } from '@/dashboard/InteractiveBrushLab';
@@ -118,8 +118,8 @@ export function DashboardCore({
   );
 
   return (
-    <div className={`cosmic-poster cosmic-poster-layout${embedded ? ' cosmic-poster-embed' : ''}`}>
-      <StarfieldBackground count={200} seed={13} className="starfield-bg--fixed" />
+    <div className={`cosmic-poster cosmic-poster-layout cosmic-page-frame${embedded ? ' cosmic-poster-embed' : ''}`}>
+      <CosmicBackdrop variant="poster" intensity="full" fixed />
       <header className="poster-top-bar">
         <span className="poster-top-kicker pl-text-gradient-cyan">Nyx 128³ · 宇宙网诞生记</span>
         <button

@@ -3,7 +3,7 @@ import * as d3 from 'd3';
 import type { TimelineData } from '@/data/types';
 import { useAppStore } from '@/store/useAppStore';
 import { useChartSizeFromOpts, type ChartSizeOptions } from '@/hooks/useChartSize';
-import { AXIS_FILL, LABEL_FILL, styleAxisText, styleGrid } from './chartTheme';
+import { getChartTheme, LABEL_FILL, styleAxisText, styleGrid } from './chartTheme';
 
 interface DensityHistogramProps {
   timeline: TimelineData;
@@ -31,7 +31,11 @@ export function DensityHistogram({ timeline, sizeOpts }: DensityHistogramProps) 
     const svgEl = svgRef.current;
     if (!svgEl) return;
 
-    const margin = { top: 16, right: 16, bottom: 36, left: 52 };
+    const compact = (sizeOpts?.maxHeight ?? 320) <= 200;
+    const theme = getChartTheme(compact ? 'compact' : 'default');
+    const margin = compact
+      ? { top: 14, right: 14, bottom: 32, left: 48 }
+      : { top: 16, right: 16, bottom: 36, left: 52 };
     const innerW = width - margin.left - margin.right;
     const innerH = height - margin.top - margin.bottom;
 
@@ -86,7 +90,7 @@ export function DensityHistogram({ timeline, sizeOpts }: DensityHistogramProps) 
           .tickSize(-innerW)
           .tickFormat(() => ''),
       );
-    styleGrid(gridG);
+    styleGrid(gridG, theme);
 
     const barW = innerW / pct.length;
     const bars = g
@@ -112,13 +116,13 @@ export function DensityHistogram({ timeline, sizeOpts }: DensityHistogramProps) 
       .attr('opacity', 0)
       .attr('pointer-events', 'none');
 
-    styleAxisText(
-      g
-        .append('g')
-        .attr('transform', `translate(0,${innerH})`)
-        .call(d3.axisBottom(x).ticks(6, '.2f')),
-    );
-    styleAxisText(g.append('g').call(d3.axisLeft(y).ticks(5)));
+    const xAxis = g
+      .append('g')
+      .attr('transform', `translate(0,${innerH})`)
+      .call(d3.axisBottom(x).ticks(6, '.2f'));
+    styleAxisText(xAxis, theme);
+    const yAxis = g.append('g').call(d3.axisLeft(y).ticks(5));
+    styleAxisText(yAxis, theme);
 
     g.append('text')
       .attr('class', 'step-label')
@@ -146,7 +150,7 @@ export function DensityHistogram({ timeline, sizeOpts }: DensityHistogramProps) 
     g.append('g').attr('class', 'brush').call(brush);
 
     chartRef.current = { x, innerH, g, selection, bars, centers };
-  }, [timeline, timestep, width, height, setBrushRange]);
+  }, [timeline, timestep, width, height, setBrushRange, sizeOpts]);
 
   useEffect(() => {
     const chart = chartRef.current;

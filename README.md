@@ -72,8 +72,8 @@ npm run deliver
 | `npm run export-report` | `docs/report/*.md` |
 | `npm run fill-answer-sheet` | `docs/submission/Nyx_answerSheet_filled.docx`（官方模板） |
 | `npm run hist-animation` | `docs/figures/task3_hist_evolution.gif`（视频 B-roll） |
-| `npm run export-docx` | `docs/submission/NyxViz_报告终稿.docx` |
-| `npm run export-pdf` | `docs/submission/NyxViz_报告终稿.pdf` |
+| `npm run export-docx` | `docs/submission/NyxViz_作品说明文档.docx` |
+| `npm run export-pdf` | `docs/submission/NyxViz_作品说明文档.pdf` |
 | `npm run showcase` | `NyxViz_Showcase.html`（静态 + 内嵌交互 bundle） |
 | `npm run showcase:offline` | 同上，并 gzip 内嵌 t=0,99 体数据 |
 | `npm run build:showcase` | 仅构建 `dist-showcase/showcase.iife.js` |

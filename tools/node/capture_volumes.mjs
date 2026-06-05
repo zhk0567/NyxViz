@@ -16,6 +16,7 @@ const PORT = Number(process.env.CAPTURE_PORT || 5174);
 const BASE = `http://127.0.0.1:${PORT}`;
 const VIEW_W = Number(process.env.CAPTURE_WIDTH || 1920);
 const VIEW_H = Number(process.env.CAPTURE_HEIGHT || 1080);
+const CAPTURE_SCALE = Number(process.env.CAPTURE_SCALE || 2);
 const SETTLE_MS = Number(process.env.CAPTURE_SETTLE_MS || 2500);
 
 async function serverUp(url) {
@@ -96,9 +97,11 @@ async function main() {
       headless: true,
       args: gpuArgs,
     });
-    const page = await browser.newPage({
+    const context = await browser.newContext({
       viewport: { width: VIEW_W, height: VIEW_H },
+      deviceScaleFactor: CAPTURE_SCALE,
     });
+    const page = await context.newPage();
     page.setDefaultTimeout(120000);
     page.on('console', (msg) => console.log(`[browser] ${msg.text()}`));
     page.on('pageerror', (err) => console.error(`[pageerror] ${err.message}`));
@@ -127,25 +130,25 @@ async function main() {
         );
       }
       await page.waitForFunction(
-        ({ w, h }) => {
+        ({ w, h, scale }) => {
           const canvas = document.querySelector('[data-vtk-volume] canvas');
           return (
             canvas instanceof HTMLCanvasElement &&
-            canvas.width >= w * 0.9 &&
-            canvas.height >= h * 0.9
+            canvas.width >= w * scale * 0.85 &&
+            canvas.height >= h * scale * 0.85
           );
         },
-        { w: VIEW_W, h: VIEW_H },
+        { w: VIEW_W, h: VIEW_H, scale: CAPTURE_SCALE },
         { timeout: 60000 },
       );
       await page.waitForTimeout(SETTLE_MS);
       const outPath = path.join(OUT_DIR, `task1_vol_t${String(t).padStart(4, '0')}.png`);
-      // Screenshot full viewport to avoid canvas size quirks across platforms.
       await page.screenshot({
         path: outPath,
         clip: { x: 0, y: 0, width: VIEW_W, height: VIEW_H },
+        type: 'png',
       });
-      console.log(`Wrote ${outPath}`);
+      console.log(`Wrote ${outPath} (${VIEW_W * CAPTURE_SCALE}×${VIEW_H * CAPTURE_SCALE}px effective)`);
     }
 
     await browser.close();

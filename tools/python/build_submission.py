@@ -37,9 +37,9 @@ def main() -> int:
         print("Warning: submission_representative.jpg missing — run generate_figures.py", file=sys.stderr)
 
     print("\nSubmission pack ready under docs/submission/")
-    print("  - NyxViz_报告终稿.docx        (论文格式，上表下图)")
+    print("  - NyxViz_作品说明文档.docx   (作品说明 Word，参照一等作品体例)")
     print("  - Nyx_answerSheet_filled.docx (官方答卷)")
-    print("  - NyxViz_报告终稿.pdf           (PDF，若已导出)")
+    print("  - NyxViz_作品说明文档.pdf      (PDF，若已导出)")
     print("  - submission_representative.jpg")
     print("  - SUBMISSION_PACK.txt")
     print("  - Figures: docs/figures/")

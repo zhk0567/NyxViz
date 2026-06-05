@@ -16,10 +16,10 @@ import type { TfParams } from '@/volume/transferFunction';
 import type { VolumeQuality } from '@/volume/VolumeScene';
 
 const VIDEO_MINI_TREND: ChartSizeOptions = {
-  minHeight: 96,
-  maxHeight: 140,
-  aspect: 2.4,
-  fillContainer: true,
+  minHeight: 68,
+  maxHeight: 68,
+  aspect: 1.35,
+  fillContainer: false,
 };
 
 const VolumeScene = lazy(() =>
@@ -80,10 +80,12 @@ export function VideoDashboardLayout({
   histogramSizeOpts,
 }: VideoDashboardLayoutProps) {
   const m = computeStoryMetrics(timeline);
-  const tail0 = m.s0.tailMassAboveP99 * 100;
-  const tail99 = m.tailAbovePct;
+  const tailSeries = timeline.timesteps.map((s) => s.tailMassAboveP99 * 100);
+  const tail0 = tailSeries[0]!;
+  const tailPeak = Math.max(...tailSeries);
+  const tailRel = tail0 > 1e-6 ? ((tailPeak - tail0) / tail0) * 100 : 0;
   const tailBadge =
-    tail0 > 1e-6 ? `+${(((tail99 - tail0) / tail0) * 100).toFixed(1)}%` : '—';
+    tailRel >= 0.0005 ? `+${tailRel.toFixed(tailRel < 0.1 ? 3 : 1)}%` : '≈0%';
 
   return (
     <>
@@ -95,6 +97,7 @@ export function VideoDashboardLayout({
           <div className="vd-panel-hist">
             <HistogramOverlay timeline={timeline} sizeOpts={histOverlaySize} />
           </div>
+          {stats && <VideoKpiStrip timeline={timeline} stats={stats} />}
           <div className="vd-mini-trends">
             <PosterTrendChart
               timeline={timeline}
@@ -108,7 +111,7 @@ export function VideoDashboardLayout({
             />
             <PosterTrendChart
               timeline={timeline}
-              title="Top 1%"
+              title="Top 1% Δ"
               badge={tailBadge}
               color="#ff9500"
               fill="rgba(255, 149, 0, 0.12)"
@@ -127,7 +130,6 @@ export function VideoDashboardLayout({
               compact
             />
           </div>
-          {stats && <VideoKpiStrip timeline={timeline} stats={stats} />}
         </aside>
 
         <main className="vd-panel vd-panel-center">
@@ -217,7 +219,7 @@ export function VideoDashboardLayout({
       <VideoFindingsStrip timeline={timeline} />
 
       <footer className="vd-footer">
-        <p>
+        <p className="vd-footer-quote">
           从近乎均匀的微小涨落，到由引力塑造的宇宙网 —— 这就是结构的诞生。
         </p>
       </footer>

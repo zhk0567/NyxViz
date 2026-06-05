@@ -15,13 +15,20 @@ from projection_render import render_projection_rgb, render_xy_projection
 from spatial_to_stats import filament_density_band
 from viz_style import (
     COSMIC_CMAP,
-    FIG_DPI,
+    LINE_WIDTH,
     THEME,
     apply_dark_theme,
     global_projection_domain,
+    hex_to_rgb,
+    render_horizontal_colorbar_png,
+    render_text_banner,
+    save_pil_png,
+    stitch_panels_png,
+    stitch_vertical_weighted,
     style_axes,
     save_figure,
 )
+from PIL import Image
 
 apply_dark_theme()
 
@@ -107,35 +114,28 @@ def task1_evo_frames(timeline: dict) -> None:
 
 
 def task1_strip(timeline: dict) -> None:
-    fig = plt.figure(figsize=(18, 4.2), facecolor="#0a0e1a")
-    gs = gridspec.GridSpec(1, 5, wspace=0.04)
-    for i, t in enumerate(REP_STEPS):
-        ax = fig.add_subplot(gs[0, i])
-        img = mpimg.imread(resolve_vol_image(t, timeline))
-        ax.imshow(img, aspect="equal")
-        s = timeline["timesteps"][t]
-        ax.set_title(f"t={t}\nσ={s['std']:.3f}", fontsize=10, color="#e6edf3")
-        for spine in ax.spines.values():
-            spine.set_edgecolor("#3a4558")
-            spine.set_linewidth(0.8)
-        ax.set_xticks([])
-        ax.set_yticks([])
+    paths = [resolve_vol_image(t, timeline) for t in REP_STEPS]
+    labels = [f"t={t}  σ={timeline['timesteps'][t]['std']:.3f}" for t in REP_STEPS]
+    row = stitch_panels_png(
+        paths,
+        direction="horizontal",
+        gap=14,
+        uniform_height=920,
+        max_width=5200,
+        panel_labels=labels,
+    )
     vmin, vmax = global_projection_domain(timeline)
-    cax = fig.add_axes([0.25, 0.02, 0.5, 0.03])
-    sm = plt.cm.ScalarMappable(
-        cmap=COSMIC_CMAP,
-        norm=LogNorm(vmin=max(vmin, 1e-6), vmax=max(vmax, 1e-6)),
-    )
-    cb = fig.colorbar(sm, cax=cax, orientation="horizontal")
-    cb.set_label("密度 ρ (log, 全局 p01–p99)", color="#9aa3b8")
-    cb.ax.tick_params(colors="#9aa3b8")
-    fig.suptitle(
-        "体渲染关键帧：气体密度宇宙学演化 (128³)",
-        fontsize=13,
-        color="#e6edf3",
-        y=1.02,
-    )
-    save_figure(fig, OUT / "task1_vol_strip.png", has_suptitle=True, pad=0.18)
+    title = render_text_banner(["体渲染关键帧：气体密度宇宙学演化 (128³)"], row.width)
+    cbar = render_horizontal_colorbar_png(vmin, vmax, row.width)
+    final = Image.new("RGBA", (row.width, title.height + row.height + cbar.height + 20), (*hex_to_rgb("#0a0e1a"), 255))
+    y = 0
+    final.paste(title, (0, y))
+    y += title.height + 8
+    final.paste(row, (0, y))
+    y += row.height + 8
+    final.paste(cbar, (0, y))
+    save_pil_png(final, OUT / "task1_vol_strip.png")
+    print(f"Vol strip (PIL): {OUT / 'task1_vol_strip.png'} ({final.width}×{final.height}px)")
 
 
 def task2_evolution_story(timeline: dict) -> None:
@@ -146,7 +146,7 @@ def task2_evolution_story(timeline: dict) -> None:
     std = [s["std"] for s in steps]
     skew = [s["skewness"] for s in steps]
 
-    fig, axes = plt.subplots(2, 2, figsize=(10, 7))
+    fig, axes = plt.subplots(2, 2, figsize=(13, 9))
     specs = [
         (span, THEME["purple"], "分位跨度 p99−p01（团块化）"),
         (std, THEME["cyan"], "标准差 σ(t)"),
@@ -155,12 +155,12 @@ def task2_evolution_story(timeline: dict) -> None:
     ]
     for ax, (y, color, title) in zip(axes.flat, specs):
         ax.fill_between(ts, y, alpha=0.12, color=color)
-        ax.plot(ts, y, color=color, lw=2)
-        ax.set_title(title)
-        ax.set_xlabel("时间步")
+        ax.plot(ts, y, color=color, lw=LINE_WIDTH)
+        ax.set_title(title, fontsize=13)
+        ax.set_xlabel("时间步", fontsize=11)
         style_axes(ax)
 
-    fig.suptitle("任务二：100 步全域统计揭示的演化规律", fontsize=12)
+    fig.suptitle("任务二：100 步全域统计揭示的演化规律", fontsize=14)
     save_figure(fig, OUT / "task2_evolution_story.png", has_suptitle=True)
 
 
@@ -170,10 +170,10 @@ def task3_figures(timeline: dict) -> None:
     steps = timeline["timesteps"]
     colors = [THEME["purple"], THEME["blue"], THEME["cyan"], THEME["gold"], THEME["coral"]]
 
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, ax = plt.subplots(figsize=(10, 6))
     for t, c in zip(REP_STEPS, colors):
         hist = timeline["histograms"][t]
-        ax.plot(centers, hist, label=f"t={t}", color=c, lw=1.8)
+        ax.plot(centers, hist, label=f"t={t}", color=c, lw=LINE_WIDTH)
     ax.set_xscale("log")
     ax.set_xlabel("密度 ρ (log)")
     ax.set_ylabel("归一化频数")
@@ -183,12 +183,12 @@ def task3_figures(timeline: dict) -> None:
     save_figure(fig, OUT / "task3_hist_overlay.png")
 
     ts = [s["timestep"] for s in steps]
-    fig, ax = plt.subplots(figsize=(9, 4))
+    fig, ax = plt.subplots(figsize=(11, 5))
     means = [s["mean"] for s in steps]
     ax.fill_between(ts, means, alpha=0.15, color=THEME["purple"])
-    ax.plot(ts, means, label="均值", color=THEME["purple"], lw=2)
-    ax.plot(ts, [s["p99"] for s in steps], label="p99", color=THEME["gold"], lw=1.8)
-    ax.plot(ts, [s["std"] for s in steps], label="σ", color=THEME["cyan"], lw=1.8)
+    ax.plot(ts, means, label="均值", color=THEME["purple"], lw=LINE_WIDTH)
+    ax.plot(ts, [s["p99"] for s in steps], label="p99", color=THEME["gold"], lw=LINE_WIDTH)
+    ax.plot(ts, [s["std"] for s in steps], label="σ", color=THEME["cyan"], lw=LINE_WIDTH)
     ax.set_xlabel("时间步")
     ax.set_ylabel("密度统计量")
     ax.set_title("100 时间步时序指标")
@@ -196,25 +196,24 @@ def task3_figures(timeline: dict) -> None:
     style_axes(ax)
     save_figure(fig, OUT / "task3_metrics_timeline.png")
 
-    fig, axes = plt.subplots(1, 3, figsize=(12, 3.8))
-    axes[0].plot(ts, [s["std"] for s in steps], color=THEME["cyan"], lw=2)
-    axes[0].set_title("σ(t) 持续扩大")
-    axes[1].plot(ts, [s["skewness"] for s in steps], color=THEME["coral"], lw=2)
-    axes[1].set_title("偏度 — 右尾增厚")
-    axes[2].plot(ts, [s["p99"] - s["p01"] for s in steps], color=THEME["purple"], lw=2)
-    axes[2].set_title("p99−p01 分位跨度")
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4.5))
+    axes[0].plot(ts, [s["std"] for s in steps], color=THEME["cyan"], lw=LINE_WIDTH)
+    axes[0].set_title("σ(t) 持续扩大", fontsize=12)
+    axes[1].plot(ts, [s["skewness"] for s in steps], color=THEME["coral"], lw=LINE_WIDTH)
+    axes[1].set_title("偏度 — 右尾增厚", fontsize=12)
+    axes[2].plot(ts, [s["p99"] - s["p01"] for s in steps], color=THEME["purple"], lw=LINE_WIDTH)
+    axes[2].set_title("p99−p01 分位跨度", fontsize=12)
     for ax in axes:
         ax.set_xlabel("t")
         style_axes(ax)
-    fig.suptitle("任务三：两极分化与涨落增强", fontsize=11)
-    save_figure(fig, OUT / "task3_evolution_metrics.png", has_suptitle=True)
+    save_figure(fig, OUT / "task3_evolution_metrics.png")
 
     peak_t = []
     for t in range(100):
         h = timeline["histograms"][t]
         peak_t.append(centers[int(np.argmax(h))])
-    fig, ax = plt.subplots(figsize=(8, 3.5))
-    ax.plot(ts, peak_t, color=THEME["gold"], lw=2)
+    fig, ax = plt.subplots(figsize=(10, 4.2))
+    ax.plot(ts, peak_t, color=THEME["gold"], lw=LINE_WIDTH)
     ax.set_xscale("log")
     ax.set_xlabel("时间步")
     ax.set_ylabel("主峰中心密度 (log)")
@@ -242,12 +241,12 @@ def brush_projection(
         cmap=COSMIC_CMAP,
         norm=LogNorm(vmin=max(vmin, 1e-6), vmax=max(vmax, 1e-6)),
     )
-    axes[0].set_title("XY 最大密度投影（全场）")
+    axes[0].set_title("XY 最大密度投影（全场）", fontsize=13)
     axes[0].axis("off")
     axes[1].imshow(highlight, origin="lower")
-    axes[1].set_title(f"刷选高亮：ρ ∈ [{lo:.2f}, {hi:.2f}]")
+    axes[1].set_title(f"刷选高亮：ρ ∈ [{lo:.2f}, {hi:.2f}]", fontsize=13)
     axes[1].axis("off")
-    fig.suptitle(title)
+    fig.suptitle(title, fontsize=14)
     save_figure(fig, out, has_suptitle=True)
 
 
@@ -332,15 +331,21 @@ def task4_triptych(timeline: dict) -> None:
         resolve_vol_image(99, timeline),
         OUT / "task4_brush_top1.png",
     ]
-    fig = plt.figure(figsize=(15, 4.8))
-    for i, p in enumerate(paths):
-        ax = fig.add_subplot(1, 3, i + 1)
-        ax.imshow(mpimg.imread(p))
-        labels = ["统计刷选", "体渲染 (t=99)", "空间投影验证"]
-        ax.set_title(labels[i], fontsize=11, color="#e6edf3", pad=6)
-        ax.axis("off")
-    fig.suptitle("相空间联动：Top 1% 高密度尾 → 宇宙网节点", fontsize=12, color="#e6edf3")
-    save_figure(fig, OUT / "task4_brush_triptych.png", has_suptitle=True, pad=0.16)
+    labels = ["统计刷选", "体渲染 (t=99)", "空间投影验证"]
+    row = stitch_panels_png(
+        paths,
+        direction="horizontal",
+        gap=16,
+        uniform_height=780,
+        max_width=4800,
+        panel_labels=labels,
+    )
+    title = render_text_banner(["相空间联动：Top 1% 高密度尾 → 宇宙网节点"], row.width)
+    final = Image.new("RGBA", (row.width, title.height + row.height + 12), (*hex_to_rgb("#0a0e1a"), 255))
+    final.paste(title, (0, 0))
+    final.paste(row, (0, title.height + 8))
+    save_pil_png(final, OUT / "task4_brush_triptych.png")
+    print(f"Triptych (PIL): {OUT / 'task4_brush_triptych.png'} ({final.width}×{final.height}px)")
 
 
 def _ratio_label(v0: float, v99: float) -> str:
@@ -382,7 +387,7 @@ def task4_brush_rows(timeline: dict) -> None:
             ],
         ),
     ]
-    fig = plt.figure(figsize=(18, 9), facecolor="#0a0e1a")
+    fig = plt.figure(figsize=(24, 12), facecolor="#0a0e1a")
     gs = gridspec.GridSpec(2, 4, wspace=0.06, hspace=0.14)
     col_titles = ["统计刷选", "XY 投影", "结构要点", "局部放大"]
     for row_i, (row_title, paths, accent, bullets) in enumerate(rows):
@@ -390,7 +395,7 @@ def task4_brush_rows(timeline: dict) -> None:
             ax = fig.add_subplot(gs[row_i, col_i])
             ax.set_facecolor("#0a0e1a")
             if col_i < 2:
-                ax.imshow(mpimg.imread(paths[col_i]))
+                ax.imshow(mpimg.imread(paths[col_i]), interpolation="nearest")
                 ax.axis("off")
                 if row_i == 0:
                     ax.set_title(col_titles[col_i], fontsize=10, color="#9aa3b8", pad=4)
@@ -420,7 +425,7 @@ def task4_brush_rows(timeline: dict) -> None:
                         max(0, cy - half) : min(h, cy + half),
                         max(0, cx - half) : min(w, cx + half),
                     ]
-                    ax.imshow(crop)
+                    ax.imshow(crop, interpolation="nearest")
                     if row_i == 0:
                         ax.set_title(col_titles[3], fontsize=10, color="#9aa3b8", pad=4)
                 else:
@@ -438,7 +443,7 @@ def task3_story_panel(timeline: dict) -> None:
     span = [s["p99"] - s["p01"] for s in steps]
     tail = [s["tailMassAboveP99"] * 100 for s in steps]
 
-    fig = plt.figure(figsize=(14, 7.5), facecolor="#0a0e1a")
+    fig = plt.figure(figsize=(18, 9.5), facecolor="#0a0e1a")
     gs = gridspec.GridSpec(2, 2, height_ratios=[1.2, 0.35], width_ratios=[1.1, 1], hspace=0.22, wspace=0.1)
 
     ax_hist = fig.add_subplot(gs[0, 0])
@@ -454,7 +459,7 @@ def task3_story_panel(timeline: dict) -> None:
     inner = gridspec.GridSpecFromSubplotSpec(3, 1, subplot_spec=gs[0, 1], hspace=0.35)
     for i, (y, color, title, badge) in enumerate(specs):
         sub = fig.add_subplot(inner[i])
-        sub.plot(ts, y, color=color, lw=2)
+        sub.plot(ts, y, color=color, lw=LINE_WIDTH)
         sub.fill_between(ts, y, alpha=0.12, color=color)
         sub.set_title(f"{title}  t=0→99  {badge}", fontsize=9, color="#e6edf3")
         sub.set_xlim(0, 99)
@@ -483,7 +488,7 @@ def task1_hero_poster(timeline: dict) -> None:
     """Section 01: hero volume + vertical colorbar + metadata strip."""
     vmin, vmax = global_projection_domain(timeline)
     hero_path = resolve_vol_image(99, timeline)
-    fig = plt.figure(figsize=(14, 6.5), facecolor="#0a0e1a")
+    fig = plt.figure(figsize=(18, 8), facecolor="#0a0e1a")
     gs = gridspec.GridSpec(1, 3, width_ratios=[0.12, 1, 0.06], wspace=0.04)
 
     ax_meta = fig.add_subplot(gs[0, 0])
@@ -527,7 +532,7 @@ def task5_mass_pie(timeline: dict) -> None:
     mass_top = s99.get("massFractionAboveP99", 0) * 100
     mass_bot = s99.get("massFractionBelowP01", 0) * 100
 
-    fig, axes = plt.subplots(1, 2, figsize=(10, 4.5))
+    fig, axes = plt.subplots(1, 2, figsize=(13, 5.5))
     pies = [
         (axes[0], vol_top, mass_top, "≥p99 尾区 (t=99)"),
         (axes[1], vol_bot, mass_bot, "≤p01 尾区 (t=99)"),
@@ -598,9 +603,14 @@ def story_flow_chart() -> None:
     save_figure(fig, OUT / "task0_story_flow.png", has_suptitle=True, pad=0.12)
 
 
-def app_infographic_poster(timeline: dict) -> None:
-    """Vertical scroll PNG for app.html — same stitch as task6, fixed aspect (no tight crop)."""
-    panels = [
+def _story_poster_panels(timeline: dict, out_name: str, bg: str = "#0a0e1a") -> None:
+    s0, s99 = timeline["timesteps"][0], timeline["timesteps"][99]
+    span0, span99 = s0["p99"] - s0["p01"], s99["p99"] - s99["p01"]
+    header = [
+        "宇宙网诞生记 · Nyx 128³ 气体密度",
+        f"σ +{(s99['std']-s0['std'])/s0['std']*100:.1f}% · p99−p01 +{(span99-span0)/span0*100:.1f}%",
+    ]
+    items = [
         ("task1_hero_poster.png", 1.05),
         ("task1_vol_strip.png", 0.55),
         ("task3_story_panel.png", 0.85),
@@ -608,73 +618,20 @@ def app_infographic_poster(timeline: dict) -> None:
         ("task5_mass_pie.png", 0.5),
         ("task0_story_flow.png", 0.35),
     ]
-    present = [(n, h) for n, h in panels if (OUT / n).exists()]
+    present = [(OUT / name, w) for name, w in items if (OUT / name).exists()]
     if not present:
         return
+    poster = stitch_vertical_weighted(present, max_width=3840, gap=18, bg=bg, header_lines=header)
+    save_pil_png(poster, OUT / out_name)
+    print(f"Poster (PIL) {out_name}: {poster.width}×{poster.height}px")
 
-    fig = plt.figure(figsize=(12, 30), facecolor="#050a14")
-    y = 0.97
-    total_h = sum(h for _, h in present) + 0.06
-    for name, hr in present:
-        rel_h = hr / total_h * 0.94
-        ax = fig.add_axes([0.03, y - rel_h, 0.94, rel_h])
-        ax.imshow(mpimg.imread(OUT / name))
-        ax.axis("off")
-        y -= rel_h + 0.012
 
-    s0, s99 = timeline["timesteps"][0], timeline["timesteps"][99]
-    span0, span99 = s0["p99"] - s0["p01"], s99["p99"] - s99["p01"]
-    fig.suptitle(
-        "宇宙网诞生记 · Nyx 128³\n"
-        f"σ +{(s99['std']-s0['std'])/s0['std']*100:.1f}% · p99−p01 +{(span99-span0)/span0*100:.1f}%",
-        fontsize=15,
-        color="#ff6b2c",
-        y=0.998,
-    )
-    out = OUT / "app_infographic_poster.png"
-    fig.savefig(
-        out,
-        dpi=FIG_DPI,
-        pad_inches=0.08,
-        facecolor="#050a14",
-        edgecolor="none",
-    )
-    plt.close(fig)
-    print(f"App scroll poster: {out}")
+def app_infographic_poster(timeline: dict) -> None:
+    _story_poster_panels(timeline, "app_infographic_poster.png", bg="#050a14")
 
 
 def task6_story_poster(timeline: dict) -> None:
-    """Single-page vertical poster stitching V1–V5 key figures."""
-    panels = [
-        ("task1_hero_poster.png", 1.05),
-        ("task1_vol_strip.png", 0.55),
-        ("task3_story_panel.png", 0.85),
-        ("task4_brush_rows.png", 0.95),
-        ("task5_mass_pie.png", 0.5),
-        ("task0_story_flow.png", 0.35),
-    ]
-    fig = plt.figure(figsize=(12, 28), facecolor="#0a0e1a")
-    y = 0.98
-    total_h = sum(h for _, h in panels) + 0.08
-    for name, hr in panels:
-        path = OUT / name
-        if not path.exists():
-            continue
-        rel_h = hr / total_h * 0.92
-        ax = fig.add_axes([0.04, y - rel_h, 0.92, rel_h])
-        ax.imshow(mpimg.imread(path))
-        ax.axis("off")
-        y -= rel_h + 0.01
-    s0, s99 = timeline["timesteps"][0], timeline["timesteps"][99]
-    span0, span99 = s0["p99"] - s0["p01"], s99["p99"] - s99["p01"]
-    fig.suptitle(
-        "宇宙网诞生记 · Nyx 128³ 气体密度\n"
-        f"σ +{(s99['std']-s0['std'])/s0['std']*100:.1f}% · p99−p01 +{(span99-span0)/span0*100:.1f}%",
-        fontsize=15,
-        color="#e6edf3",
-        y=0.995,
-    )
-    save_figure(fig, OUT / "task6_story_poster.png", has_suptitle=True, pad=0.02)
+    _story_poster_panels(timeline, "task6_story_poster.png")
 
 
 def representative_poster(timeline: dict) -> None:
@@ -684,12 +641,11 @@ def representative_poster(timeline: dict) -> None:
     if not poster.exists():
         poster = OUT / "task6_story_poster.png"
     if poster.exists():
-        fig = plt.figure(figsize=(10, 24), facecolor="#0a0e1a")
-        ax = fig.add_axes([0, 0, 1, 1])
-        ax.imshow(mpimg.imread(poster))
-        ax.axis("off")
-        save_figure(fig, sub / "submission_representative.jpg", pad=0.02)
-        print(f"Representative from story poster: {sub / 'submission_representative.jpg'}")
+        img = Image.open(poster).convert("RGB")
+        sub.mkdir(parents=True, exist_ok=True)
+        out_jpg = sub / "submission_representative.jpg"
+        img.save(out_jpg, format="JPEG", quality=92, optimize=True)
+        print(f"Representative from story poster: {out_jpg}")
         return
 
     fig = plt.figure(figsize=(16, 11), facecolor="#0a0e1a")
@@ -760,9 +716,20 @@ def main() -> int:
     highlight = render_xy_projection(vol99, timeline, s99["p99"], s99["max"])
     fig, ax = plt.subplots(figsize=(6, 6))
     ax.imshow(highlight, origin="lower")
-    ax.set_title(f"Top 1% 体素 XY 投影 (t=99, ρ≥{s99['p99']:.2f})")
+    ax.set_title(f"Top 1% 体素 XY 投影 (t=99, ρ≥{s99['p99']:.2f})", fontsize=14)
     ax.axis("off")
     save_figure(fig, OUT / "task4_brush_top1.png", pad=0.16)
+
+    highlight_bottom = render_xy_projection(vol99, timeline, s99["min"], s99["p01"])
+    fig, ax = plt.subplots(figsize=(6, 6))
+    ax.imshow(highlight_bottom, origin="lower")
+    ax.axis("off")
+    save_figure(fig, OUT / "task4_brush_bottom_hl.png", pad=0.02)
+
+    fig, ax = plt.subplots(figsize=(6, 6))
+    ax.imshow(highlight, origin="lower")
+    ax.axis("off")
+    save_figure(fig, OUT / "task4_brush_top1_viz.png", pad=0.02)
 
     brush_projection(
         vol99,

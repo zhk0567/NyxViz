@@ -5,9 +5,9 @@ NyxViz — 提交用文件（Word 整理入口）
 docs/submission/  （上传 / Word 只认这一夹）
 ═══════════════════════════════════════════════════════════
 
-  NyxViz_报告终稿.docx          论文格式 Word（推荐打开此文件）
-  Nyx_answerSheet_filled.docx   官方答卷（已填四题）
-  NyxViz_报告终稿.pdf           PDF 备份（npm run export-pdf）
+  NyxViz_作品说明文档.docx      作品说明 Word（系统概览+四题案例+附录，推荐）
+  Nyx_answerSheet_filled.docx   官方答卷（已填四题，≤800字/题）
+  NyxViz_作品说明文档.pdf       PDF 备份（npm run export-pdf）
   submission_representative.jpg 代表图（<20MB）
   SUBMISSION_PACK.txt           本清单
 

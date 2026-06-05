@@ -28,9 +28,16 @@ export function useChartSize(
       const w = Math.max(120, el.clientWidth);
       const containerH = el.clientHeight;
       let h: number;
-      if (fillContainer && containerH > 40) {
-        // 不得超过容器实际高度，避免 SVG 撑开父级 → ResizeObserver 振荡
-        h = Math.min(maxHeight, containerH);
+      if (fillContainer) {
+        if (containerH < 8) {
+          if (lastDims.current.h > 0) {
+            h = lastDims.current.h;
+          } else {
+            h = Math.min(maxHeight, minHeight);
+          }
+        } else {
+          h = Math.min(maxHeight, containerH);
+        }
       } else {
         h = Math.min(maxHeight, Math.max(minHeight, Math.round(w / aspect)));
       }

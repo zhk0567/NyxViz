@@ -55,7 +55,10 @@
 .pl-section {
   padding: 40px 32px 48px;
   border-bottom: 1px solid var(--pl-border);
-  background: linear-gradient(165deg, #0c1428 0%, #060a14 48%, var(--pl-bg) 100%);
+  background: var(--cosmic-glass-bg);
+  backdrop-filter: blur(var(--cosmic-glass-blur));
+  -webkit-backdrop-filter: blur(var(--cosmic-glass-blur));
+  box-shadow: inset 0 1px 0 rgba(78, 196, 255, 0.06);
 }
 
 .pl-section:first-child {
@@ -491,11 +494,14 @@
 .pl-trend-chart {
   min-height: 220px;
   max-height: 280px;
-  overflow: hidden;
+  overflow: visible;
   padding: 12px 10px 8px;
   border-radius: 14px;
-  border: 1px solid var(--pl-border);
-  background: rgba(8, 14, 28, 0.95);
+  border: 1px solid var(--cosmic-glass-border);
+  background: var(--cosmic-glass-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: var(--cosmic-glass-glow);
 }
 
 .pl-trend-chart svg {
@@ -513,8 +519,11 @@
 .pl-kpi-card {
   padding: 20px 16px;
   border-radius: 12px;
-  border: 1px solid var(--pl-border);
-  background: rgba(12, 20, 40, 0.95);
+  border: 1px solid var(--cosmic-glass-border);
+  background: var(--cosmic-glass-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: var(--cosmic-glass-glow);
   text-align: center;
 }
 
@@ -620,9 +629,9 @@
 .pl-brush-cell figcaption {
   flex: none;
   margin: 0 0 8px;
-  font-size: var(--pl-fs-md);
+  font-size: var(--pl-fs-lg);
   font-weight: 700;
-  color: var(--pl-muted);
+  color: var(--pl-text);
 }
 
 .pl-brush-media {
@@ -711,7 +720,7 @@
 
 .pl-brush-stats h4 {
   margin: 0 0 12px;
-  font-size: var(--pl-fs-sm);
+  font-size: var(--pl-fs-md);
   font-weight: 800;
   color: var(--pl-orange);
 }
@@ -732,15 +741,27 @@
 }
 
 .pl-brush-stat-label {
-  font-size: var(--pl-fs-sm);
+  font-size: var(--pl-fs-md);
   color: var(--pl-muted);
 }
 
 .pl-brush-stat-value {
-  font-size: var(--pl-fs-md);
+  font-size: var(--pl-fs-lg);
   font-weight: 700;
   color: var(--pl-text);
   line-height: 1.4;
+}
+
+/* Bottom 1% 双联图：只展示右侧刷选高亮，避免 PNG 内嵌小字 */
+.pl-brush-media--bottom-highlight {
+  overflow: hidden;
+}
+
+.pl-brush-media--bottom-highlight img {
+  width: 210%;
+  max-width: none;
+  object-fit: cover;
+  object-position: 72% center;
 }
 
 /* §06 流程图（HTML，替代 matplotlib 小图） */
@@ -884,7 +905,10 @@
   padding: 22px 20px;
   min-height: 0;
   border-color: rgba(255, 107, 44, 0.28);
-  background: rgba(10, 18, 36, 0.96);
+  background: var(--cosmic-glass-bg-strong);
+  backdrop-filter: blur(var(--cosmic-glass-blur));
+  -webkit-backdrop-filter: blur(var(--cosmic-glass-blur));
+  box-shadow: var(--cosmic-glass-glow);
 }
 
 .pl-s05 .discovery-num {

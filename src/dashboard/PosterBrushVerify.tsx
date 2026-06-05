@@ -116,7 +116,7 @@ export function PosterBrushVerify({ timeline }: { timeline: TimelineData }) {
         rangeMax={s.p01}
         highlightColor="#3dd6c6"
         legendLabel={`Bottom 1%: ρ≤${s.p01.toFixed(2)}`}
-        spatialSrc="/figures/task4_brush_bottom1.png"
+        spatialSrc="/figures/task4_brush_bottom_hl.png"
         spatialNote="低密度尾区在投影上几乎不可见——对应宇宙网之间的空洞背景。"
         stats={[
           { label: '密度阈值', value: `ρ ≤ p01 (${s.p01.toFixed(2)})` },

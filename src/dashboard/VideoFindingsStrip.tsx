@@ -9,6 +9,7 @@ interface VideoFindingsStripProps {
 
 export function VideoFindingsStrip({ timeline }: VideoFindingsStripProps) {
   const m = computeStoryMetrics(timeline);
+  const s = timeline.timesteps[99]!;
 
   return (
     <section className="vd-findings" aria-label="关键科学发现">
@@ -38,25 +39,27 @@ export function VideoFindingsStrip({ timeline }: VideoFindingsStripProps) {
           </div>
         </article>
 
-        <article className="vd-finding">
-          <header>
+        <article className="vd-finding vd-finding--metrics">
+          <header className="vd-finding-head-stack">
             <span className="vd-finding-num">02</span>
-            <h3 className="vd-finding-title">密度分布两极化</h3>
+            <div className="vd-finding-head-text">
+              <h3 className="vd-finding-title">密度分布两极化</h3>
+              <p className="vd-finding-note vd-finding-note--inline">
+                σ +{m.sigmaPct.toFixed(1)}% · p99−p01 +{m.spanPct.toFixed(1)}% · 右尾增厚
+              </p>
+            </div>
           </header>
-          <div className="vd-finding-media vd-finding-media-wide">
+          <div className="vd-finding-media vd-finding-media-wide vd-finding-media-zoom">
             <img
               className="vd-finding-img"
-              src="/figures/task3_hist_overlay.png"
-              alt="t=0 与 t=99 直方图对比"
+              src="/figures/task3_evolution_metrics.png"
+              alt="σ、偏度与 p99−p01 时序演化"
               loading="lazy"
             />
           </div>
-          <p className="vd-finding-note">
-            σ +{m.sigmaPct.toFixed(1)}% · 右尾增厚 void 与节点并存
-          </p>
         </article>
 
-        <article className="vd-finding">
+        <article className="vd-finding vd-finding--mass">
           <header>
             <span className="vd-finding-num">03</span>
             <h3 className="vd-finding-title">1% 体积 · 24% 质量</h3>
@@ -89,18 +92,43 @@ export function VideoFindingsStrip({ timeline }: VideoFindingsStripProps) {
           </div>
         </article>
 
-        <article className="vd-finding">
+        <article className="vd-finding vd-finding--verify">
           <header>
             <span className="vd-finding-num">04</span>
             <h3 className="vd-finding-title">统计—空间验证</h3>
           </header>
-          <div className="vd-finding-verify">
-            <div className="vd-finding-media vd-finding-media-square">
-              <img src="/figures/task4_brush_top1.png" alt="Top 1% 空间" loading="lazy" />
-            </div>
-            <div className="vd-finding-media vd-finding-media-square">
-              <img src="/figures/task4_brush_bottom1.png" alt="Bottom 1%" loading="lazy" />
-            </div>
+            <div className="vd-finding-verify">
+            <figure className="vd-finding-verify-item">
+              <figcaption className="vd-finding-cap">
+                Top 1% · ρ≥{s.p99.toFixed(2)}
+              </figcaption>
+              <div className="vd-finding-media vd-finding-media-verify">
+                <img
+                  src="/figures/task4_brush_top1_viz.png"
+                  alt="Top 1% 空间投影"
+                  loading="lazy"
+                  onError={(e) => {
+                    e.currentTarget.src = '/figures/task4_brush_top1.png';
+                  }}
+                />
+              </div>
+            </figure>
+            <figure className="vd-finding-verify-item">
+              <figcaption className="vd-finding-cap">
+                Bottom 1% · ρ≤{s.p01.toFixed(2)}
+              </figcaption>
+              <div className="vd-finding-media vd-finding-media-verify">
+                <img
+                  src="/figures/task4_brush_bottom_hl.png"
+                  alt="Bottom 1% 刷选高亮"
+                  loading="lazy"
+                  onError={(e) => {
+                    e.currentTarget.src = '/figures/task4_brush_bottom1.png';
+                    e.currentTarget.parentElement?.classList.add('vd-finding-media-crop-right');
+                  }}
+                />
+              </div>
+            </figure>
           </div>
         </article>
       </div>

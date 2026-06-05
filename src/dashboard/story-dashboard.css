@@ -2,7 +2,7 @@
 
 body:has(.cosmic-poster) {
   margin: 0;
-  background: #050a14;
+  background: var(--cosmic-bg-deep, #050a14);
   font-family: 'Segoe UI', 'Microsoft YaHei', system-ui, sans-serif;
 }
 
@@ -50,8 +50,8 @@ body:has(.cosmic-poster) {
   z-index: 500;
 }
 
-.cosmic-poster .starfield-bg {
-  background: var(--poster-bg);
+.cosmic-poster > .cosmic-backdrop {
+  z-index: 0;
 }
 
 /* 右侧章节锚点 */
@@ -76,8 +76,10 @@ body:has(.cosmic-poster) {
   font-size: 0.72rem;
   font-weight: 700;
   color: var(--cyan);
-  background: rgba(10, 20, 40, 0.92);
+  background: var(--cosmic-glass-bg-strong);
   border: 1px solid rgba(78, 196, 255, 0.35);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border-radius: 8px;
 }
 
@@ -106,6 +108,7 @@ body:has(.cosmic-poster) {
   margin-bottom: 22px;
   box-shadow:
     0 0 0 1px rgba(255, 107, 44, 0.06) inset,
+    0 0 40px rgba(78, 196, 255, 0.06),
     0 12px 40px rgba(0, 0, 0, 0.45);
 }
 
@@ -544,11 +547,14 @@ body:has(.cosmic-poster) {
   z-index: 400;
   width: min(1100px, calc(100vw - 80px));
   padding: 12px 18px;
-  background: rgba(8, 14, 28, 0.96);
+  background: var(--cosmic-glass-bg-strong);
   border: 1px solid rgba(255, 107, 44, 0.45);
   border-radius: 14px;
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(12px);
+  box-shadow:
+    var(--cosmic-glass-glow),
+    0 8px 40px rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(var(--cosmic-glass-blur));
+  -webkit-backdrop-filter: blur(var(--cosmic-glass-blur));
 }
 
 .dock-row {
@@ -671,9 +677,10 @@ html:has(.cosmic-poster) {
   align-items: center;
   gap: 12px;
   padding: 8px 16px;
-  background: linear-gradient(180deg, rgba(5, 10, 20, 0.98) 0%, rgba(5, 10, 20, 0.88) 100%);
+  background: var(--cosmic-glass-bg-strong);
   border-bottom: 1px solid rgba(255, 107, 44, 0.25);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(var(--cosmic-glass-blur));
+  -webkit-backdrop-filter: blur(var(--cosmic-glass-blur));
 }
 
 .poster-top-kicker {

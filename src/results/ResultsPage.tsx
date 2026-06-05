@@ -15,6 +15,7 @@ import {
   DISCOVERY_CARDS,
   discoveryDetail,
 } from './storyMetrics';
+import { CosmicBackdrop } from '@/components/CosmicBackdrop';
 import './results.css';
 
 function FigureImage({
@@ -296,7 +297,8 @@ export function ResultsPage() {
 
   if (error) {
     return (
-      <div className="results-page">
+      <div className="results-page cosmic-page-frame">
+        <CosmicBackdrop variant="results" fixed />
         <header className="hero">
           <h1>从涨落到宇宙网</h1>
           <p className="error">{error}</p>
@@ -307,7 +309,8 @@ export function ResultsPage() {
 
   if (!timeline) {
     return (
-      <div className="results-page">
+      <div className="results-page cosmic-page-frame">
+        <CosmicBackdrop variant="results" fixed />
         <header className="hero">
           <h1>从涨落到宇宙网</h1>
           <p className="sub">加载比赛成果…</p>
@@ -320,7 +323,8 @@ export function ResultsPage() {
   const onPreview = (src: string, label: string) => setLightbox({ src, label });
 
   return (
-    <div className="results-page">
+    <div className="results-page cosmic-page-frame">
+      <CosmicBackdrop variant="results" fixed />
       <header className="hero" id="story-01">
         <h1>从涨落到宇宙网 · 宇宙网诞生记</h1>
         <p className="sub">

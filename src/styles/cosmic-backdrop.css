@@ -1,0 +1,317 @@
+/* 多层宇宙背景 — CosmicBackdrop */
+@import './theme.css';
+
+.cosmic-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 90% 60% at 50% -15%, rgba(0, 80, 160, 0.22), transparent 72%),
+    radial-gradient(ellipse 60% 45% at 12% 35%, var(--cosmic-nebula-cyan), transparent 68%),
+    radial-gradient(ellipse 55% 40% at 88% 55%, var(--cosmic-nebula-violet), transparent 70%),
+    radial-gradient(ellipse 80% 50% at 50% 105%, rgba(0, 40, 90, 0.22), transparent 65%),
+    var(--cosmic-bg-deep);
+}
+
+.cosmic-backdrop--fixed {
+  position: fixed;
+}
+
+/* ── 漂移星云 blob ── */
+.cosmic-nebula {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(48px);
+  opacity: 0.85;
+  will-change: transform;
+}
+
+.cosmic-nebula--a {
+  width: 55%;
+  height: 42%;
+  top: -8%;
+  left: -5%;
+  background: radial-gradient(circle, rgba(78, 196, 255, 0.18) 0%, transparent 70%);
+  animation: cosmic-nebula-drift-a 62s ease-in-out infinite;
+}
+
+.cosmic-nebula--b {
+  width: 48%;
+  height: 38%;
+  top: 45%;
+  right: -8%;
+  background: radial-gradient(circle, rgba(124, 108, 240, 0.16) 0%, transparent 72%);
+  animation: cosmic-nebula-drift-b 74s ease-in-out infinite;
+}
+
+.cosmic-nebula--c {
+  width: 65%;
+  height: 35%;
+  bottom: -12%;
+  left: 20%;
+  background: radial-gradient(circle, rgba(255, 107, 44, 0.08) 0%, transparent 75%);
+  animation: cosmic-nebula-drift-c 88s ease-in-out infinite;
+}
+
+@keyframes cosmic-nebula-drift-a {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(4%, 3%) scale(1.06);
+  }
+  66% {
+    transform: translate(-2%, 5%) scale(0.96);
+  }
+}
+
+@keyframes cosmic-nebula-drift-b {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  40% {
+    transform: translate(-5%, -4%) scale(1.08);
+  }
+  70% {
+    transform: translate(3%, -2%) scale(0.94);
+  }
+}
+
+@keyframes cosmic-nebula-drift-c {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(3%, -3%) scale(1.05);
+  }
+}
+
+/* ── 星点 ── */
+.cosmic-star {
+  position: absolute;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: cosmic-twinkle var(--star-duration, 3s) ease-in-out infinite;
+  animation-delay: var(--star-delay, 0s);
+  will-change: opacity, transform;
+}
+
+.cosmic-star--far {
+  animation-name: cosmic-twinkle-far;
+}
+
+.cosmic-star--white {
+  background: #f8fbff;
+  box-shadow: 0 0 4px 1px rgba(220, 235, 255, 0.55);
+}
+
+.cosmic-star--cyan {
+  background: #b8ecff;
+  box-shadow: 0 0 5px 1px rgba(78, 196, 255, 0.65);
+}
+
+.cosmic-star--gold {
+  background: #ffe9a8;
+  box-shadow: 0 0 6px 2px rgba(255, 213, 106, 0.5);
+}
+
+.cosmic-star--bright {
+  background: #fff;
+  box-shadow:
+    0 0 8px 2px rgba(184, 236, 255, 0.75),
+    0 0 16px 4px rgba(124, 108, 240, 0.35);
+}
+
+.cosmic-star--bright::before,
+.cosmic-star--bright::after {
+  content: '';
+  position: absolute;
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 1px;
+}
+
+.cosmic-star--bright::before {
+  width: 180%;
+  height: 1px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.cosmic-star--bright::after {
+  width: 1px;
+  height: 180%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+@keyframes cosmic-twinkle {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+}
+
+@keyframes cosmic-twinkle-far {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: translate(-50%, -50%) scale(0.7);
+  }
+  50% {
+    opacity: 0.55;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* ── 流星 ── */
+.cosmic-meteor {
+  position: absolute;
+  width: var(--meteor-len, 80px);
+  height: 2px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.9), rgba(184, 236, 255, 0.4), transparent);
+  border-radius: 2px;
+  transform: rotate(var(--meteor-angle, -35deg));
+  transform-origin: left center;
+  opacity: 0;
+  animation: cosmic-meteor-fly var(--meteor-cycle, 18s) ease-in var(--meteor-delay, 0s) infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes cosmic-meteor-fly {
+  0%,
+  94%,
+  100% {
+    opacity: 0;
+    transform: rotate(var(--meteor-angle, -35deg)) translateX(0);
+  }
+  95% {
+    opacity: 0.85;
+  }
+  98% {
+    opacity: 0;
+    transform: rotate(var(--meteor-angle, -35deg)) translateX(280px);
+  }
+}
+
+/* ── 极光扫光 ── */
+.cosmic-aurora {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    transparent 38%,
+    rgba(78, 196, 255, 0.06) 46%,
+    rgba(124, 108, 240, 0.08) 50%,
+    rgba(255, 213, 106, 0.04) 54%,
+    transparent 62%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: cosmic-aurora-sweep 18s ease-in-out infinite;
+  opacity: 0.7;
+}
+
+@keyframes cosmic-aurora-sweep {
+  0%,
+  100% {
+    background-position: 120% 0;
+  }
+  50% {
+    background-position: -20% 0;
+  }
+}
+
+/* ── 暗角 ── */
+.cosmic-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 85% 75% at 50% 45%, transparent 35%, var(--cosmic-vignette) 100%);
+  opacity: 0.88;
+}
+
+/* ── 变体微调 ── */
+.cosmic-backdrop--video {
+  background:
+    radial-gradient(ellipse 90% 60% at 50% -15%, rgba(0, 80, 160, 0.24), transparent 72%),
+    radial-gradient(ellipse 60% 45% at 12% 35%, var(--cosmic-nebula-cyan), transparent 68%),
+    radial-gradient(ellipse 55% 40% at 88% 55%, var(--cosmic-nebula-violet), transparent 70%),
+    radial-gradient(ellipse 70% 42% at 50% 108%, rgba(0, 50, 110, 0.28), transparent 62%),
+    radial-gradient(ellipse 80% 50% at 50% 105%, rgba(0, 40, 90, 0.22), transparent 65%),
+    var(--cosmic-bg-deep);
+}
+
+.cosmic-backdrop--video .cosmic-nebula--c {
+  opacity: 0.75;
+}
+
+.cosmic-backdrop--results .cosmic-aurora {
+  opacity: 0.5;
+}
+
+/* ── 低强度 / 录屏模式：仅停动画，保留静态星云与星点 ── */
+.cosmic-backdrop--subtle .cosmic-meteor,
+.cosmic-backdrop--subtle .cosmic-aurora {
+  display: none;
+}
+
+.cosmic-backdrop--subtle .cosmic-nebula {
+  animation: none;
+  opacity: 0.9;
+}
+
+.cosmic-backdrop--subtle .cosmic-star {
+  animation: none;
+}
+
+.video-record-mode .cosmic-meteor,
+.video-record-mode .cosmic-aurora {
+  display: none;
+}
+
+.video-record-mode .cosmic-nebula {
+  animation: none;
+  opacity: 0.9;
+}
+
+.video-record-mode .cosmic-star {
+  animation: none;
+}
+
+/* ── 兼容旧 starfield 类名 ── */
+.starfield-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.starfield-bg--fixed {
+  position: fixed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cosmic-nebula,
+  .cosmic-aurora,
+  .cosmic-meteor {
+    animation: none !important;
+  }
+
+  .cosmic-star {
+    animation: none !important;
+  }
+}

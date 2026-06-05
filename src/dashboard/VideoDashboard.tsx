@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { StarfieldBackground } from '@/components/StarfieldBackground';
+import { CosmicBackdrop } from '@/components/CosmicBackdrop';
 import { VideoDashboardLayout } from '@/dashboard/VideoDashboardLayout';
 import { VideoDashboardHeader } from '@/dashboard/VideoDashboardHeader';
 import { useDashboardInteraction } from '@/dashboard/useDashboardInteraction';
@@ -8,15 +8,15 @@ import type { ChartSizeOptions } from '@/hooks/useChartSize';
 import type { TimelineData } from '@/data/types';
 
 const VIDEO_HIST_OVERLAY: ChartSizeOptions = {
-  minHeight: 128,
-  maxHeight: 158,
+  minHeight: 100,
+  maxHeight: 520,
   aspect: 2.2,
   fillContainer: true,
 };
 
 const VIDEO_HISTOGRAM_SIZE: ChartSizeOptions = {
-  minHeight: 100,
-  maxHeight: 165,
+  minHeight: 120,
+  maxHeight: 480,
   aspect: 1.65,
   fillContainer: true,
 };
@@ -77,8 +77,11 @@ export function VideoDashboard({
   } = ix;
 
   return (
-    <div className={`video-dashboard${recordMode ? ' video-record-mode' : ''}`}>
-      <StarfieldBackground count={160} seed={42} />
+    <div className={`video-dashboard cosmic-page-frame${recordMode ? ' video-record-mode' : ''}`}>
+      <CosmicBackdrop
+        variant="video"
+        intensity={recordMode ? 'subtle' : 'full'}
+      />
       <VideoDashboardHeader
         timestep={timestep}
         sliderStep={sliderStep}

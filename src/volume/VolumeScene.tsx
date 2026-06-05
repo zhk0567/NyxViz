@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import '@kitware/vtk.js/Rendering/Profiles/Volume';
+import '@kitware/vtk.js/Rendering/Profiles/Geometry';
 import vtkFullScreenRenderWindow from '@kitware/vtk.js/Rendering/Misc/FullScreenRenderWindow';
 import vtkVolume from '@kitware/vtk.js/Rendering/Core/Volume';
 import vtkVolumeMapper from '@kitware/vtk.js/Rendering/Core/VolumeMapper';
@@ -9,6 +10,8 @@ import vtkVolumeProperty from '@kitware/vtk.js/Rendering/Core/VolumeProperty';
 import vtkColorTransferFunction from '@kitware/vtk.js/Rendering/Core/ColorTransferFunction';
 import vtkPiecewiseFunction from '@kitware/vtk.js/Common/DataModel/PiecewiseFunction';
 import vtkLight from '@kitware/vtk.js/Rendering/Core/Light';
+import vtkAxesActor from '@kitware/vtk.js/Rendering/Core/AxesActor';
+import vtkOrientationMarkerWidget from '@kitware/vtk.js/Interaction/Widgets/OrientationMarkerWidget';
 import { getCachedVtkScalars, getVtkScalarsAsync } from '@/data/nyxLoader';
 import { GRID_SIZE, DOMAIN_LENGTH, SPACING } from '@/data/types';
 import {
@@ -68,6 +71,10 @@ export function VolumeScene({
     dataArray: ReturnType<typeof vtkDataArray.newInstance>;
     ctf: ReturnType<typeof vtkColorTransferFunction.newInstance>;
     otf: ReturnType<typeof vtkPiecewiseFunction.newInstance>;
+    orientationWidget: ReturnType<
+      typeof vtkOrientationMarkerWidget.newInstance
+    >;
+    axesActor: ReturnType<typeof vtkAxesActor.newInstance>;
   } | null>(null);
 
   const frameCamera = () => {
@@ -80,12 +87,15 @@ export function VolumeScene({
         : 1;
     ctx.fullScreenRenderer.resize();
     fitVolumeCamera(ctx.renderer, ctx.imageData, aspect);
+    ctx.orientationWidget.updateViewport();
+    ctx.orientationWidget.updateMarkerOrientation();
     ctx.fullScreenRenderer.getRenderWindow().render();
   };
 
   const requestRender = () => {
     const ctx = contextRef.current;
     if (!ctx || !renderActiveRef.current) return;
+    ctx.orientationWidget.updateMarkerOrientation();
     ctx.fullScreenRenderer.getRenderWindow().render();
   };
 
@@ -150,6 +160,37 @@ export function VolumeScene({
 
     fitVolumeCamera(renderer, imageData, container.clientWidth / container.clientHeight || 1);
 
+    const axesActor = vtkAxesActor.newInstance({
+      config: {
+        tipRadius: 0.12,
+        shaftRadius: 0.04,
+        tipLength: 0.22,
+      },
+    });
+    axesActor.setXAxisColor([235, 72, 72]);
+    axesActor.setYAxisColor([72, 210, 92]);
+    axesActor.setZAxisColor([72, 140, 255]);
+    axesActor.update();
+
+    const orientationWidget = vtkOrientationMarkerWidget.newInstance({
+      actor: axesActor,
+      interactor: renderWindow.getInteractor(),
+      parentRenderer: renderer,
+    });
+    orientationWidget.setViewportCorner(
+      vtkOrientationMarkerWidget.Corners.BOTTOM_LEFT,
+    );
+    orientationWidget.setViewportSize(0.16);
+    orientationWidget.setMinPixelSize(64);
+    orientationWidget.setMaxPixelSize(112);
+    orientationWidget.setEnabled(true);
+
+    requestAnimationFrame(() => {
+      orientationWidget.updateViewport();
+      orientationWidget.updateMarkerOrientation();
+      renderWindow.render();
+    });
+
     contextRef.current = {
       fullScreenRenderer,
       renderer,
@@ -159,6 +200,8 @@ export function VolumeScene({
       dataArray,
       ctf,
       otf,
+      orientationWidget,
+      axesActor,
     };
 
     const resize = debounce(() => {
@@ -170,6 +213,9 @@ export function VolumeScene({
     return () => {
       resize.cancel();
       ro.disconnect();
+      orientationWidget.setEnabled(false);
+      orientationWidget.delete();
+      axesActor.delete();
       volume.delete();
       mapper.delete();
       otf.delete();

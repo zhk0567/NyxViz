@@ -15,7 +15,7 @@
 ```powershell
 npm run submission-pack      # 预计算 + 配图 + 报告 + docx + 代表图 + 答卷
 npm run fill-answer-sheet    # 官方答卷（需先填 docs/competition/team.json）
-npm run figures:hd           # capture + 静态图 + 报告
+npm run figures:hd           # CAPTURE_SCALE=2 体渲染 + 300DPI 配图 + 报告
 npm run export-pdf           # docx → PDF（本机 Word）
 npm run test:words           # 四题 ≤800 字/题
 npm run test:report          # 报告数字与 timeline 一致
