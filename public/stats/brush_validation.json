@@ -1,0 +1,223 @@
+{
+  "timestep": 99,
+  "note": "Top 1% uses empirical p99 (no halo \u0394200 on this 128\u00b3 gas subvolume). Filament proxy = P88 XY ridge columns with \u03c1\u2265band_lo.",
+  "thresholds": [
+    {
+      "label": "p95 (Top 5%)",
+      "rhoMin": 10.197809219360352,
+      "rhoMax": null,
+      "volumePct": 5.000114440917969,
+      "massPct": 5.658246577268698,
+      "note": "\u66f4\u5bbd\u53f3\u5c3e\uff0c\u6613\u6df7\u5165 IGM \u8fc7\u6e21\u533a"
+    },
+    {
+      "label": "90\u201399% \u7ea4\u7ef4\u5e26",
+      "rhoMin": 9.955887699127198,
+      "rhoMax": 10.76010950088501,
+      "volumePct": 9.000015258789062,
+      "massPct": 9.864811081115295,
+      "note": "\u4ea4\u4e92\u9884\u8bbe\u7ea4\u7ef4\u5237\u9009 \u03c1\u2208[p90,p99]"
+    },
+    {
+      "label": "p99 (Top 1%)",
+      "rhoMin": 10.76010950088501,
+      "rhoMax": null,
+      "volumePct": 1.0000228881835938,
+      "massPct": 1.193135907702948,
+      "note": "\u9ed8\u8ba4 Top 1% \u5237\u9009\uff08\u4ea4\u4e92\u9884\u8bbe\uff09"
+    },
+    {
+      "label": "p99.9 (Top 0.1%)",
+      "rhoMin": 11.585500887870815,
+      "rhoMax": null,
+      "volumePct": 0.10004043579101562,
+      "massPct": 0.12799676278849226,
+      "note": "\u66f4\u6781\u7aef\u8282\u70b9\u6838\uff0c\u4f53\u79ef\u4efd\u989d\u66f4\u5c0f"
+    }
+  ],
+  "p88Sweep": [
+    {
+      "projPercentile": 85,
+      "ridgePixels": 2458,
+      "ridgePixelPct": 15.00244140625,
+      "densityBand": [
+        11.125398635864258,
+        12.068790435791016
+      ]
+    },
+    {
+      "projPercentile": 88,
+      "ridgePixels": 1966,
+      "ridgePixelPct": 11.99951171875,
+      "densityBand": [
+        11.225975036621094,
+        12.160283088684082
+      ]
+    },
+    {
+      "projPercentile": 90,
+      "ridgePixels": 1639,
+      "ridgePixelPct": 10.003662109375,
+      "densityBand": [
+        11.29281997680664,
+        12.219432830810547
+      ]
+    },
+    {
+      "projPercentile": 92,
+      "ridgePixels": 1311,
+      "ridgePixelPct": 8.001708984375,
+      "densityBand": [
+        11.378385543823242,
+        12.312338829040527
+      ]
+    },
+    {
+      "projPercentile": 95,
+      "ridgePixels": 820,
+      "ridgePixelPct": 5.0048828125,
+      "densityBand": [
+        11.577320098876953,
+        12.492817878723145
+      ]
+    }
+  ],
+  "fpFnDefault": {
+    "projPercentile": 88.0,
+    "filamentBand": [
+      11.225975036621094,
+      12.160283088684082
+    ],
+    "brushVoxels": 20972,
+    "filamentProxyVoxels": 5796,
+    "truePositive": 5796,
+    "falsePositive": 15176,
+    "falseNegative": 0,
+    "precision": 0.27636849132176233,
+    "recall": 1.0,
+    "fpRateInBrush": 0.7236315086782377,
+    "fnRateInProxy": 0.0,
+    "isolatedHighDensityInBrush": 397,
+    "isolatedRateInBrush": 0.01893000190730498
+  },
+  "benchmark": {
+    "top1_earlyExit": {
+      "elapsedMs": 37.83,
+      "stride": 2,
+      "maxPoints": 8000,
+      "hitsSampled": 2669,
+      "countAll": false
+    },
+    "top1_fullCount": {
+      "elapsedMs": 307.42,
+      "stride": 1,
+      "maxPoints": 2097152,
+      "hitsSampled": 20972,
+      "countAll": true
+    },
+    "filament_earlyExit": {
+      "elapsedMs": 10.48,
+      "stride": 2,
+      "maxPoints": 8000,
+      "hitsSampled": 8000,
+      "countAll": false
+    },
+    "sampleRecall": {
+      "trueBrushVoxels": 20972,
+      "sampledHits": 2669,
+      "uniqueTrueFound": 2669,
+      "recallVsTrue": 0.12726492466145337,
+      "gridCellsVisited": 262144,
+      "gridCoverage": 0.125,
+      "stride": 2,
+      "maxPoints": 8000,
+      "note": "\u65e9\u505c\u7528\u4e8e\u4ea4\u4e92\u91c7\u6837\uff1b\u4f53\u6e32\u67d3/\u6295\u5f71\u9ad8\u4eae\u7528\u5bc6\u5ea6\u9608\u503c\u5168\u5b57\u6bb5\uff0c\u4e0d\u4f9d\u8d56\u91c7\u6837\u70b9\u5217\u8868"
+    },
+    "customBrushErrors": [
+      {
+        "label": "Top 1% \u533a\u95f4\uff08\u5bf9\u7167\uff09",
+        "rhoRange": [
+          10.76010950088501,
+          14.449421882629395
+        ],
+        "trueVoxels": 20972,
+        "reportedCount": 2669,
+        "reportedOverTruePct": 12.726492466145336,
+        "uniqueTrueFound": 2669,
+        "recallVsTruePct": 12.726492466145336,
+        "maxPoints": 8000,
+        "stride": 2
+      },
+      {
+        "label": "\u7ea4\u7ef4 90\u201399% \u533a\u95f4\uff08\u5bf9\u7167\uff09",
+        "rhoRange": [
+          9.955887699127198,
+          10.76010950088501
+        ],
+        "trueVoxels": 188744,
+        "reportedCount": 8000,
+        "reportedOverTruePct": 4.238545331242317,
+        "uniqueTrueFound": 8000,
+        "recallVsTruePct": 4.238545331242317,
+        "maxPoints": 8000,
+        "stride": 2
+      },
+      {
+        "label": "\u81ea\u5b9a\u4e49\uff1ap50\u2013p99",
+        "rhoRange": [
+          9.274541854858398,
+          10.76010950088501
+        ],
+        "trueVoxels": 1027604,
+        "reportedCount": 8000,
+        "reportedOverTruePct": 0.7785100096924495,
+        "uniqueTrueFound": 8000,
+        "recallVsTruePct": 0.7785100096924495,
+        "maxPoints": 8000,
+        "stride": 2
+      },
+      {
+        "label": "\u81ea\u5b9a\u4e49\uff1ap75\u2013max",
+        "rhoRange": [
+          9.602796077728271,
+          14.449421882629395
+        ],
+        "trueVoxels": 524288,
+        "reportedCount": 8000,
+        "reportedOverTruePct": 1.52587890625,
+        "uniqueTrueFound": 8000,
+        "recallVsTruePct": 1.52587890625,
+        "maxPoints": 8000,
+        "stride": 2
+      },
+      {
+        "label": "\u81ea\u5b9a\u4e49\uff1ap01\u2013p90",
+        "rhoRange": [
+          8.345784549713136,
+          9.955887699127198
+        ],
+        "trueVoxels": 1866467,
+        "reportedCount": 8000,
+        "reportedOverTruePct": 0.4286172753121271,
+        "uniqueTrueFound": 8000,
+        "recallVsTruePct": 0.4286172753121271,
+        "maxPoints": 8000,
+        "stride": 2
+      },
+      {
+        "label": "\u81ea\u5b9a\u4e49\uff1ap25\u2013p75",
+        "rhoRange": [
+          8.978022336959839,
+          9.602796077728271
+        ],
+        "trueVoxels": 1048576,
+        "reportedCount": 8000,
+        "reportedOverTruePct": 0.762939453125,
+        "uniqueTrueFound": 8000,
+        "recallVsTruePct": 0.762939453125,
+        "maxPoints": 8000,
+        "stride": 2
+      }
+    ]
+  }
+}

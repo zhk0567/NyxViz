@@ -21,6 +21,11 @@ import {
 } from './transferFunction';
 import { debounce } from '@/utils/debounce';
 import { fitVolumeCamera } from './fitVolumeCamera';
+import {
+  OPACITY_SCALAR_UNIT_DISTANCE,
+  VOLUME_LIGHTING,
+  VOLUME_QUALITY_PRESETS,
+} from './renderSpec';
 
 export type VolumeQuality = 'interactive' | 'high' | 'presentation';
 
@@ -36,6 +41,8 @@ interface VolumeSceneProps {
   useLogScale?: boolean;
   /** When false, skip GPU render (e.g. hidden tab). */
   renderActive?: boolean;
+  /** >1 zooms in (video dashboard uses ~1.1). */
+  cameraZoom?: number;
   className?: string;
   onRendered?: () => void;
 }
@@ -51,6 +58,7 @@ export function VolumeScene({
   quality = 'presentation',
   useLogScale = true,
   renderActive = true,
+  cameraZoom = 1,
   className,
   onRendered,
 }: VolumeSceneProps) {
@@ -59,6 +67,8 @@ export function VolumeScene({
   onRenderedRef.current = onRendered;
   const renderActiveRef = useRef(renderActive);
   renderActiveRef.current = renderActive;
+  const cameraZoomRef = useRef(cameraZoom);
+  cameraZoomRef.current = cameraZoom;
 
   const contextRef = useRef<{
     fullScreenRenderer: ReturnType<typeof vtkFullScreenRenderWindow.newInstance>;
@@ -86,7 +96,7 @@ export function VolumeScene({
         ? container.clientWidth / container.clientHeight
         : 1;
     ctx.fullScreenRenderer.resize();
-    fitVolumeCamera(ctx.renderer, ctx.imageData, aspect);
+    fitVolumeCamera(ctx.renderer, ctx.imageData, aspect, cameraZoomRef.current);
     ctx.orientationWidget.updateViewport();
     ctx.orientationWidget.updateMarkerOrientation();
     ctx.fullScreenRenderer.getRenderWindow().render();
@@ -113,17 +123,25 @@ export function VolumeScene({
 
     const fc = DOMAIN_LENGTH / 2;
     const light1 = vtkLight.newInstance();
-    light1.setPosition(fc + 8, fc + 10, fc + 12);
+    light1.setPosition(
+      fc + VOLUME_LIGHTING.key.offset[0],
+      fc + VOLUME_LIGHTING.key.offset[1],
+      fc + VOLUME_LIGHTING.key.offset[2],
+    );
     light1.setFocalPoint(fc, fc, fc);
-    light1.setColor(1, 1, 1);
-    light1.setIntensity(1.0);
+    light1.setColor(...VOLUME_LIGHTING.key.color);
+    light1.setIntensity(VOLUME_LIGHTING.key.intensity);
     renderer.addLight(light1);
 
     const light2 = vtkLight.newInstance();
-    light2.setPosition(fc - 12, fc - 8, fc - 10);
+    light2.setPosition(
+      fc + VOLUME_LIGHTING.fill.offset[0],
+      fc + VOLUME_LIGHTING.fill.offset[1],
+      fc + VOLUME_LIGHTING.fill.offset[2],
+    );
     light2.setFocalPoint(fc, fc, fc);
-    light2.setColor(0.55, 0.75, 1);
-    light2.setIntensity(0.3);
+    light2.setColor(...VOLUME_LIGHTING.fill.color);
+    light2.setIntensity(VOLUME_LIGHTING.fill.intensity);
     renderer.addLight(light2);
 
     const imageData = vtkImageData.newInstance();
@@ -151,14 +169,22 @@ export function VolumeScene({
     volumeProperty.setSpecular(0.1);
     volumeProperty.setRGBTransferFunction(0, ctf);
     volumeProperty.setScalarOpacity(0, otf);
-    volumeProperty.setScalarOpacityUnitDistance(0, SPACING * 2.5);
+    volumeProperty.setScalarOpacityUnitDistance(
+      0,
+      SPACING * OPACITY_SCALAR_UNIT_DISTANCE,
+    );
 
     const volume = vtkVolume.newInstance();
     volume.setMapper(mapper);
     volume.setProperty(volumeProperty);
     renderer.addVolume(volume);
 
-    fitVolumeCamera(renderer, imageData, container.clientWidth / container.clientHeight || 1);
+    fitVolumeCamera(
+      renderer,
+      imageData,
+      container.clientWidth / container.clientHeight || 1,
+      cameraZoomRef.current,
+    );
 
     const axesActor = vtkAxesActor.newInstance({
       config: {
@@ -181,9 +207,9 @@ export function VolumeScene({
     orientationWidget.setViewportCorner(
       vtkOrientationMarkerWidget.Corners.BOTTOM_LEFT,
     );
-    orientationWidget.setViewportSize(0.22);
-    orientationWidget.setMinPixelSize(88);
-    orientationWidget.setMaxPixelSize(148);
+    orientationWidget.setViewportSize(0.2);
+    orientationWidget.setMinPixelSize(80);
+    orientationWidget.setMaxPixelSize(128);
     orientationWidget.setEnabled(true);
 
     requestAnimationFrame(() => {
@@ -265,18 +291,14 @@ export function VolumeScene({
     const ctx = contextRef.current;
     if (!ctx) return;
 
-    const pres = quality === 'presentation' || quality === 'high';
-    const sampleDist =
-      quality === 'presentation' ? 0.85 : quality === 'high' ? 1.2 : 4.0;
-    ctx.mapper.setSampleDistance(sampleDist);
-    ctx.mapper.setMaximumSamplesPerRay(
-      quality === 'presentation' ? 4096 : quality === 'high' ? 2048 : 512,
-    );
+    const preset = VOLUME_QUALITY_PRESETS[quality];
+    ctx.mapper.setSampleDistance(preset.sampleDistance);
+    ctx.mapper.setMaximumSamplesPerRay(preset.maximumSamplesPerRay);
     const property = ctx.volume.getProperty();
-    property.setShade(pres);
-    property.setAmbient(pres ? 0.12 : 0.2);
-    property.setDiffuse(pres ? 0.75 : 0.55);
-    property.setSpecular(pres ? 0.4 : 0.1);
+    property.setShade(preset.shade);
+    property.setAmbient(preset.ambient);
+    property.setDiffuse(preset.diffuse);
+    property.setSpecular(preset.specular);
 
     const opts = {
       dataMin,
@@ -306,6 +328,10 @@ export function VolumeScene({
   useEffect(() => {
     if (renderActive) requestRender();
   }, [renderActive]);
+
+  useEffect(() => {
+    frameCamera();
+  }, [cameraZoom]);
 
   useEffect(() => {
     const onVisibility = () => {

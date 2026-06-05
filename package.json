@@ -19,6 +19,7 @@
     "showcase": "python tools/python/build_showcase_html.py",
     "showcase:offline": "python tools/python/build_showcase_html.py --embed-steps 0,99",
     "capture-volumes": "node tools/node/capture_volumes.mjs",
+    "capture-app-poster": "node tools/node/capture_app_poster.mjs",
     "export-docx": "python tools/python/export_docx.py",
     "export-pdf": "python tools/python/export_docx_pdf.py",
     "fill-answer-sheet": "python tools/python/fill_answer_sheet.py",

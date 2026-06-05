@@ -1,0 +1,170 @@
+{
+  "domainLength": 14.245,
+  "voxelSpacing": 0.1112890625,
+  "focalPoint": [
+    7.1225,
+    7.1225,
+    7.1225
+  ],
+  "position": [
+    30.056949999999997,
+    26.566924999999998,
+    24.07405
+  ],
+  "viewUp": [
+    0,
+    0,
+    1
+  ],
+  "viewMargin": 0.88,
+  "wideAspectBoost": 0.75,
+  "zoomFactor": 1.0,
+  "effectiveZoom": 0.66,
+  "viewAspect": 1.7777777777777777,
+  "lights": {
+    "key": {
+      "position": [
+        15.122499999999999,
+        17.1225,
+        19.1225
+      ],
+      "focalPoint": [
+        7.1225,
+        7.1225,
+        7.1225
+      ],
+      "position_offset": [
+        8,
+        10,
+        12
+      ],
+      "color_rgb": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "intensity": 1.0
+    },
+    "fill": {
+      "position": [
+        -4.8775,
+        -0.8775000000000004,
+        -2.8775000000000004
+      ],
+      "focalPoint": [
+        7.1225,
+        7.1225,
+        7.1225
+      ],
+      "position_offset": [
+        -12,
+        -8,
+        -10
+      ],
+      "color_rgb": [
+        0.55,
+        0.75,
+        1.0
+      ],
+      "intensity": 0.3
+    }
+  },
+  "presentation": {
+    "sampleDistance": 0.65,
+    "maximumSamplesPerRay": 4096,
+    "shade": true,
+    "ambient": 0.12,
+    "diffuse": 0.75,
+    "specular": 0.4,
+    "scalarOpacityUnitDistance": 0.27822265625,
+    "gpuTextureInterpolation": "trilinear (WebGL LINEAR on 3D texture)"
+  },
+  "opacityStopsNormalized": [
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.12,
+      0.02
+    ],
+    [
+      0.35,
+      0.06
+    ],
+    [
+      0.55,
+      0.14
+    ],
+    [
+      0.72,
+      0.32
+    ],
+    [
+      0.88,
+      0.65
+    ],
+    [
+      1.0,
+      0.95
+    ]
+  ],
+  "colorStopsNormalized": [
+    {
+      "t": 0.0,
+      "rgb": [
+        0.02,
+        0.03,
+        0.1
+      ]
+    },
+    {
+      "t": 0.15,
+      "rgb": [
+        0.04,
+        0.08,
+        0.28
+      ]
+    },
+    {
+      "t": 0.35,
+      "rgb": [
+        0.12,
+        0.2,
+        0.48
+      ]
+    },
+    {
+      "t": 0.55,
+      "rgb": [
+        0.24,
+        0.55,
+        0.72
+      ]
+    },
+    {
+      "t": 0.72,
+      "rgb": [
+        0.55,
+        0.42,
+        0.78
+      ]
+    },
+    {
+      "t": 0.85,
+      "rgb": [
+        0.85,
+        0.65,
+        0.42
+      ]
+    },
+    {
+      "t": 1.0,
+      "rgb": [
+        0.98,
+        0.92,
+        0.78
+      ]
+    }
+  ]
+}

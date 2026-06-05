@@ -45,7 +45,10 @@ export function VideoFindingsStrip({ timeline }: VideoFindingsStripProps) {
             <div className="vd-finding-head-text">
               <h3 className="vd-finding-title">密度分布两极化</h3>
               <p className="vd-finding-note vd-finding-note--inline">
-                σ +{m.sigmaPct.toFixed(1)}% · p99−p01 +{m.spanPct.toFixed(1)}% · 右尾增厚
+                <strong className="vd-metric-em">σ +{m.sigmaPct.toFixed(1)}%</strong>
+                {' · '}
+                <strong className="vd-metric-em">p99−p01 +{m.spanPct.toFixed(1)}%</strong>
+                {' · 右尾增厚'}
               </p>
             </div>
           </header>
@@ -62,7 +65,10 @@ export function VideoFindingsStrip({ timeline }: VideoFindingsStripProps) {
         <article className="vd-finding vd-finding--mass">
           <header>
             <span className="vd-finding-num">03</span>
-            <h3 className="vd-finding-title">1% 体积 · 24% 质量</h3>
+            <h3 className="vd-finding-title">
+              <strong className="vd-metric-em">1%</strong> 体积 ·{' '}
+              <strong className="vd-metric-em">{m.massAbovePct.toFixed(0)}%</strong> 质量
+            </h3>
           </header>
           <div className="vd-finding-mass">
             <div
@@ -79,14 +85,14 @@ export function VideoFindingsStrip({ timeline }: VideoFindingsStripProps) {
                 <div className="vd-finding-mass-bar" aria-hidden>
                   <span style={{ width: `${Math.max(m.tailAbovePct, 2)}%` }} />
                 </div>
-                <strong>{m.tailAbovePct.toFixed(2)}%</strong>
+                <strong className="vd-metric-em">{m.tailAbovePct.toFixed(2)}%</strong>
               </div>
               <div className="vd-finding-mass-row">
                 <span className="vd-finding-mass-label">质量</span>
                 <div className="vd-finding-mass-bar vd-finding-mass-bar-mass" aria-hidden>
                   <span style={{ width: `${Math.min(m.massAbovePct, 100)}%` }} />
                 </div>
-                <strong>{m.massAbovePct.toFixed(1)}%</strong>
+                <strong className="vd-metric-em">{m.massAbovePct.toFixed(1)}%</strong>
               </div>
             </div>
           </div>
@@ -100,7 +106,7 @@ export function VideoFindingsStrip({ timeline }: VideoFindingsStripProps) {
             <div className="vd-finding-verify">
             <figure className="vd-finding-verify-item">
               <figcaption className="vd-finding-cap">
-                Top 1% · ρ≥{s.p99.toFixed(2)}
+                <strong className="vd-metric-em">Top 1%</strong> · ρ≥{s.p99.toFixed(2)}
               </figcaption>
               <div className="vd-finding-media vd-finding-media-verify">
                 <img

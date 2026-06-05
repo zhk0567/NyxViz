@@ -24,12 +24,32 @@ def render_projection_rgb(
     return rgb
 
 
+def max_projection(vol: np.ndarray, axis: str) -> np.ndarray:
+    if axis == "xy":
+        return np.max(vol, axis=2)
+    if axis == "xz":
+        return np.max(vol, axis=1)
+    if axis == "yz":
+        return np.max(vol, axis=0)
+    raise ValueError(axis)
+
+
+def render_axis_projection(
+    vol: np.ndarray,
+    timeline: dict,
+    axis: str,
+    brush_lo: float | None = None,
+    brush_hi: float | None = None,
+) -> np.ndarray:
+    proj = max_projection(vol, axis)
+    vmin, vmax = global_projection_domain(timeline)
+    return render_projection_rgb(proj, vmin, vmax, brush_lo, brush_hi)
+
+
 def render_xy_projection(
     vol: np.ndarray,
     timeline: dict,
     brush_lo: float | None = None,
     brush_hi: float | None = None,
 ) -> np.ndarray:
-    proj = np.max(vol, axis=2)
-    vmin, vmax = global_projection_domain(timeline)
-    return render_projection_rgb(proj, vmin, vmax, brush_lo, brush_hi)
+    return render_axis_projection(vol, timeline, "xy", brush_lo, brush_hi)

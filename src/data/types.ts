@@ -12,12 +12,20 @@ export interface DensityStats {
   std: number;
   skewness: number;
   p01: number;
+  p10?: number;
+  p25?: number;
   p50: number;
+  p75?: number;
   p90: number;
   p99: number;
   p999: number;
   tailMassAboveP99: number;
   tailMassBelowP01: number;
+  tailMassFilament90_99?: number;
+  tailMassBelowP10?: number;
+  tailMassBelowP25?: number;
+  voidFractionBelowT0P10?: number;
+  voidFractionBelowT0P01?: number;
   massFractionAboveP99: number;
   massFractionBelowP01: number;
 }

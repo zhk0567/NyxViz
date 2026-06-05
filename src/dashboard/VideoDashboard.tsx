@@ -8,14 +8,14 @@ import type { ChartSizeOptions } from '@/hooks/useChartSize';
 import type { TimelineData } from '@/data/types';
 
 const VIDEO_HIST_OVERLAY: ChartSizeOptions = {
-  minHeight: 100,
+  minHeight: 118,
   maxHeight: 520,
-  aspect: 2.2,
+  aspect: 2.0,
   fillContainer: true,
 };
 
 const VIDEO_HISTOGRAM_SIZE: ChartSizeOptions = {
-  minHeight: 120,
+  minHeight: 132,
   maxHeight: 480,
   aspect: 1.65,
   fillContainer: true,
@@ -99,8 +99,7 @@ export function VideoDashboard({
 
       {!recordMode && (
         <div className="vd-nav-links">
-          <a href="/app.html">← 长卷版</a>
-          <a href="/">成果页</a>
+          <a href="/app.html">← 交互页</a>
           <a href="/video.html?record=1">录屏模式</a>
           {loading && <span className="vd-badge">加载中…</span>}
           {error && <span className="vd-badge error">{error}</span>}

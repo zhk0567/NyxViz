@@ -127,7 +127,7 @@ export function BrushHistogramPreview({
       .attr('fill', LABEL_FILL)
       .attr('font-size', 12)
       .attr('font-weight', 600)
-      .text('占比 %');
+      .text('Probability mass×100');
 
     const legendW = Math.min(innerW * 0.52, 220);
     g.append('rect')

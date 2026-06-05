@@ -131,7 +131,7 @@ export function DensityHistogram({ timeline, sizeOpts }: DensityHistogramProps) 
       .attr('text-anchor', 'middle')
       .attr('fill', LABEL_FILL)
       .attr('font-size', 11)
-      .text(`密度 (log) — 时间步 ${timestep} · Y=占比 %`);
+      .text(`密度 (log) — 时间步 ${timestep} · Y=Probability mass×100`);
 
     const brush = d3
       .brushX()

@@ -16,8 +16,8 @@ import type { TfParams } from '@/volume/transferFunction';
 import type { VolumeQuality } from '@/volume/VolumeScene';
 
 const VIDEO_MINI_TREND: ChartSizeOptions = {
-  minHeight: 68,
-  maxHeight: 68,
+  minHeight: 78,
+  maxHeight: 78,
   aspect: 1.35,
   fillContainer: false,
 };
@@ -134,28 +134,31 @@ export function VideoDashboardLayout({
 
         <main className="vd-panel vd-panel-center">
           <div className="vd-vtk-frame">
-            <LoadingOverlay visible={loading} label={`t=${timestep}`} />
-            {densityData ? (
-              <Suspense fallback={<VtkFallback />}>
-                <VolumeScene
-                  data={densityData}
-                  timestep={timestep}
-                  dataMin={dataMin}
-                  dataMax={dataMax}
-                  tfParams={tfParams}
-                  quality={volumeQuality}
-                  renderActive
-                  highlightMin={highlightMin}
-                  highlightMax={highlightMax}
-                  onRendered={onVolumeRendered}
-                  className="vd-vtk-panel"
-                />
-              </Suspense>
-            ) : (
-              <VtkFallback />
-            )}
+            <div className="vd-vtk-canvas-wrap">
+              <LoadingOverlay visible={loading} label={`t=${timestep}`} />
+              {densityData ? (
+                <Suspense fallback={<VtkFallback />}>
+                  <VolumeScene
+                    data={densityData}
+                    timestep={timestep}
+                    dataMin={dataMin}
+                    dataMax={dataMax}
+                    tfParams={tfParams}
+                    quality={volumeQuality}
+                    renderActive
+                    cameraZoom={1.1}
+                    highlightMin={highlightMin}
+                    highlightMax={highlightMax}
+                    onRendered={onVolumeRendered}
+                    className="vd-vtk-panel"
+                  />
+                </Suspense>
+              ) : (
+                <VtkFallback />
+              )}
+            </div>
+            <DensityColorLegend min={dataMin} max={dataMax} />
           </div>
-          <DensityColorLegend min={dataMin} max={dataMax} />
         </main>
 
         <aside className="vd-panel vd-panel-right">
@@ -165,6 +168,10 @@ export function VideoDashboardLayout({
           <div className="vd-panel-brush-hist">
             <DensityHistogram timeline={timeline} sizeOpts={histogramSizeOpts} />
           </div>
+          <p className="vd-brush-hist-hint" aria-hidden>
+            <span className="vd-brush-hist-arrow">↓</span>
+            刷选密度区间 · 下方空间投影对应验证
+          </p>
           {stats && (
             <VideoBrushPreviews
               stats={stats}

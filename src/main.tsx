@@ -1,4 +1,5 @@
 import { createRoot } from 'react-dom/client';
-import { ResultsPage } from '@/results/ResultsPage';
+import { App } from '@/dashboard/App';
+import '@/dashboard/dashboard.css';
 
-createRoot(document.getElementById('root')!).render(<ResultsPage />);
+createRoot(document.getElementById('root')!).render(<App />);

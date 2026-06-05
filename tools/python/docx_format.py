@@ -18,6 +18,29 @@ def normalize_cn(text: str) -> str:
     return text.strip()
 
 
+def parse_bold_runs(text: str) -> list[tuple[str, bool]]:
+    """Split text into (segment, bold) preserving **markdown** markers."""
+    parts: list[tuple[str, bool]] = []
+    pos = 0
+    for match in re.finditer(r"\*\*(.+?)\*\*", text):
+        if match.start() > pos:
+            parts.append((text[pos : match.start()], False))
+        parts.append((match.group(1), True))
+        pos = match.end()
+    if pos < len(text):
+        parts.append((text[pos:], False))
+    if not parts:
+        parts.append((text, False))
+    cleaned: list[tuple[str, bool]] = []
+    for segment, bold in parts:
+        segment = normalize_cn(segment) if not bold else re.sub(
+            r"`([^`]+)`", r"\1", segment
+        ).strip()
+        if segment:
+            cleaned.append((segment, bold))
+    return cleaned
+
+
 def set_run_font(run, name: str = "宋体", size_pt: float = 10.5, bold: bool = False) -> None:
     run.font.name = name
     run.font.size = Pt(size_pt)

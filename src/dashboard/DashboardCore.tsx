@@ -130,14 +130,9 @@ export function DashboardCore({
           交互探索
         </button>
         {!embedded && (
-          <>
-            <a href="/video.html" className="poster-top-link">
-              录屏版
-            </a>
-            <a href="/" className="poster-top-link">
-              成果页
-            </a>
-          </>
+          <a href="/video.html" className="poster-top-link">
+            录屏版
+          </a>
         )}
       </header>
 

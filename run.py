@@ -29,7 +29,7 @@ NODE_MODULES = ROOT / "node_modules"
 
 HOST = "127.0.0.1"
 PORT = int(os.environ.get("NYXVIZ_PORT", "5173"))
-URL = f"http://{HOST}:{PORT}/"
+URL = f"http://{HOST}:{PORT}/app.html"
 
 # Ports that may be left from previous Vite / capture runs
 PORTS_TO_CLEAR = [PORT, 5173, 5174, 4173]

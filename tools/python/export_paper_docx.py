@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import json
-import re
 import sys
 from pathlib import Path
 
@@ -13,6 +12,7 @@ from docx.shared import Cm, Pt
 
 from PIL import Image
 
+from docx_format import normalize_cn, parse_bold_runs, set_run_font
 from report_docx_shared import ROOT, resolve_image
 from viz_style import DOC_EMBED_DPI
 from work_doc_content import (
@@ -34,24 +34,6 @@ def load_timeline() -> dict:
     return json.loads(STATS.read_text(encoding="utf-8"))
 
 
-def normalize_cn(text: str) -> str:
-    text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)
-    text = re.sub(r"`([^`]+)`", r"\1", text)
-    text = re.sub(r"\s+([，。；：、）】])", r"\1", text)
-    text = re.sub(r"([（【])\s+", r"\1", text)
-    text = re.sub(r"\s+→\s+", "→", text)
-    text = re.sub(r" {2,}", " ", text)
-    return text.strip()
-
-
-def set_run_font(run, name: str = "宋体", size_pt: float = 12, bold: bool = False) -> None:
-    run.font.name = name
-    run.font.size = Pt(size_pt)
-    run.font.bold = bold
-    r = run._element.get_or_add_rPr()
-    r.rFonts.set(qn("w:eastAsia"), name)
-
-
 def set_paragraph_format(paragraph, *, indent: bool = True, align=WD_ALIGN_PARAGRAPH.JUSTIFY) -> None:
     fmt = paragraph.paragraph_format
     fmt.line_spacing_rule = WD_LINE_SPACING.ONE_POINT_FIVE
@@ -62,13 +44,18 @@ def set_paragraph_format(paragraph, *, indent: bool = True, align=WD_ALIGN_PARAG
         fmt.first_line_indent = Pt(24)
 
 
-def add_body(doc: Document, text: str, *, indent: bool = True) -> None:
-    text = normalize_cn(text)
-    if not text:
+def add_rich_body(doc: Document, text: str, *, indent: bool = True) -> None:
+    runs = parse_bold_runs(text)
+    if not runs:
         return
     p = doc.add_paragraph()
     set_paragraph_format(p, indent=indent)
-    set_run_font(p.add_run(text))
+    for segment, bold in runs:
+        set_run_font(p.add_run(segment), "宋体", 12, bold=bold)
+
+
+def add_body(doc: Document, text: str, *, indent: bool = True) -> None:
+    add_rich_body(doc, text, indent=indent)
 
 
 def add_heading(doc: Document, text: str, level: int) -> None:
@@ -95,7 +82,7 @@ def add_cover_line(doc: Document, text: str, *, center: bool = False) -> None:
 
 def add_cover_page(doc: Document, cover: CoverInfo) -> None:
     add_heading(doc, "2026 年第十三届中国可视化与可视分析大会", 0)
-    add_heading(doc, "数据可视化竞赛赛道 1-II（ChinaVis Data Challenge 2026 - mini challenge 1-II）", 3)
+    add_heading(doc, "数据可视化竞赛赛道 II（ChinaVis Data Challenge 2026 - mini challenge II）", 3)
     add_heading(doc, "答  卷", 0)
     doc.add_paragraph()
 
@@ -114,7 +101,8 @@ def add_cover_page(doc: Document, cover: CoverInfo) -> None:
     doc.add_paragraph()
     add_body(
         doc,
-        "（以下为作品说明正文：系统概览、四题案例分析、综合发现与附录。配图多为拼接图，子图含义见各图注。）",
+        "（以下为作品说明正文：系统概览、四题案例分析、综合发现与附录。配图按出现顺序编号为图1、图2…；"
+        "同一配图重复引用时标注「见图N，同图从略」。子图含义见各图注。）",
         indent=False,
     )
     doc.add_page_break()
@@ -125,7 +113,9 @@ def add_table_caption(doc: Document, num: int, title: str) -> None:
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p.paragraph_format.space_before = Pt(6)
     p.paragraph_format.space_after = Pt(3)
-    set_run_font(p.add_run(f"表{num} {normalize_cn(title)}"), "宋体", 10.5, bold=True)
+    label = f"表{num} "
+    set_run_font(p.add_run(label), "宋体", 10.5, bold=True)
+    set_run_font(p.add_run(normalize_cn(title)), "宋体", 10.5, bold=True)
 
 
 def add_figure_caption(doc: Document, num: int, title: str) -> None:
@@ -133,7 +123,8 @@ def add_figure_caption(doc: Document, num: int, title: str) -> None:
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p.paragraph_format.space_before = Pt(3)
     p.paragraph_format.space_after = Pt(12)
-    set_run_font(p.add_run(f"图{num} {normalize_cn(title)}"), "宋体", 10.5)
+    set_run_font(p.add_run(f"图{num} "), "宋体", 10.5, bold=True)
+    set_run_font(p.add_run(normalize_cn(title)), "宋体", 10.5, bold=False)
 
 
 def style_table(table) -> None:
@@ -185,18 +176,33 @@ def add_figure_block(
     num: int,
     image_name: str,
     caption: str,
-    width_cm: float = 15.0,
-) -> None:
+    width_cm: float,
+    seen: dict[str, int],
+) -> bool:
+    """Embed figure; duplicate filenames become cross-refs. Returns True if newly embedded."""
+    if image_name in seen:
+        p = doc.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p.paragraph_format.space_before = Pt(6)
+        p.paragraph_format.space_after = Pt(12)
+        first = seen[image_name]
+        set_run_font(p.add_run(f"（见图{first}："), "宋体", 10.5, bold=True)
+        set_run_font(p.add_run(normalize_cn(caption)), "宋体", 10.5, bold=False)
+        set_run_font(p.add_run("，同图从略）"), "宋体", 10.5, bold=True)
+        return False
+
     path = resolve_image(image_name)
     if not path:
         add_body(doc, f"（缺图：{image_name}）", indent=False)
-        return
+        return False
     embed_cm = figure_embed_width_cm(path, max_cm=min(16.5, width_cm))
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run = p.add_run()
     run.add_picture(str(path), width=Cm(embed_cm))
     add_figure_caption(doc, num, caption)
+    seen[image_name] = num
+    return True
 
 
 def setup_page(doc: Document) -> None:
@@ -214,17 +220,18 @@ def setup_page(doc: Document) -> None:
 def render_blocks(doc: Document, blocks: list[Block]) -> None:
     fig_no = 1
     tbl_no = 1
+    seen_figures: dict[str, int] = {}
     for block in blocks:
         if isinstance(block, Heading):
             add_heading(doc, block.text, block.level)
         elif isinstance(block, Text):
-            add_body(doc, block.content, indent=block.indent)
+            add_rich_body(doc, block.content, indent=block.indent)
         elif isinstance(block, Table):
             add_table_block(doc, tbl_no, block.caption, block.headers, block.rows)
             tbl_no += 1
         elif isinstance(block, Figure):
-            add_figure_block(doc, fig_no, block.file, block.caption, block.width_cm)
-            fig_no += 1
+            if add_figure_block(doc, fig_no, block.file, block.caption, block.width_cm, seen_figures):
+                fig_no += 1
 
 
 def build_document(timeline: dict, cover: CoverInfo | None = None) -> Document:

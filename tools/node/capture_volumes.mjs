@@ -17,6 +17,7 @@ const BASE = `http://127.0.0.1:${PORT}`;
 const VIEW_W = Number(process.env.CAPTURE_WIDTH || 1920);
 const VIEW_H = Number(process.env.CAPTURE_HEIGHT || 1080);
 const CAPTURE_SCALE = Number(process.env.CAPTURE_SCALE || 2);
+const CROP_MARGIN = Number(process.env.CAPTURE_CROP_MARGIN || 0.02);
 const SETTLE_MS = Number(process.env.CAPTURE_SETTLE_MS || 2500);
 
 async function serverUp(url) {
@@ -142,13 +143,17 @@ async function main() {
         { timeout: 60000 },
       );
       await page.waitForTimeout(SETTLE_MS);
+      const cropX = Math.round(VIEW_W * CROP_MARGIN);
+      const cropY = Math.round(VIEW_H * CROP_MARGIN);
+      const cropW = VIEW_W - cropX * 2;
+      const cropH = VIEW_H - cropY * 2;
       const outPath = path.join(OUT_DIR, `task1_vol_t${String(t).padStart(4, '0')}.png`);
       await page.screenshot({
         path: outPath,
-        clip: { x: 0, y: 0, width: VIEW_W, height: VIEW_H },
+        clip: { x: cropX, y: cropY, width: cropW, height: cropH },
         type: 'png',
       });
-      console.log(`Wrote ${outPath} (${VIEW_W * CAPTURE_SCALE}×${VIEW_H * CAPTURE_SCALE}px effective)`);
+      console.log(`Wrote ${outPath} (${cropW * CAPTURE_SCALE}×${cropH * CAPTURE_SCALE}px effective)`);
     }
 
     await browser.close();

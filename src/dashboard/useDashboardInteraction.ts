@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { scanBrushRangeAsync } from '@/data/brushScan';
-import { matchBrushPreset } from '@/data/brushPreset';
+import { matchBrushPreset, type BrushPresetId } from '@/data/brushPreset';
 import { useAppStore } from '@/store/useAppStore';
 import type { TimelineData } from '@/data/types';
-import { TIMESTEP_COUNT, VOXEL_COUNT } from '@/data/types';
+import { TIMESTEP_COUNT, VOXEL_COUNT, type DensityStats } from '@/data/types';
 import { getGlobalTfDomain } from '@/volume/transferFunction';
 import type { VolumeQuality } from '@/volume/VolumeScene';
 import { usePrefetchTimestep } from '@/hooks/usePrefetchTimestep';
@@ -13,6 +13,15 @@ export interface UseDashboardInteractionOptions {
   onPresetBrush?: () => void;
   /** 录屏页默认开启高清体渲染 */
   defaultHighQuality?: boolean;
+}
+
+function exactPresetBrushCount(stats: DensityStats, preset: BrushPresetId): number | null {
+  if (preset === 'top') return Math.round(stats.tailMassAboveP99 * VOXEL_COUNT);
+  if (preset === 'bottom') return Math.round(stats.tailMassBelowP01 * VOXEL_COUNT);
+  if (preset === 'filament' && stats.tailMassFilament90_99 != null) {
+    return Math.round(stats.tailMassFilament90_99 * VOXEL_COUNT);
+  }
+  return null;
 }
 
 export function useDashboardInteraction(
@@ -88,6 +97,15 @@ export function useDashboardInteraction(
       return;
     }
 
+    const preset = matchBrushPreset(stats, brushRange);
+    const exactCount = preset ? exactPresetBrushCount(stats, preset) : null;
+    if (exactCount != null) {
+      setBrushedCount(exactCount);
+      setScanning(false);
+      prevBrushRef.current = { min: brushRange.min, max: brushRange.max };
+      return;
+    }
+
     const sameBrush =
       prevBrushRef.current?.min === brushRange.min &&
       prevBrushRef.current?.max === brushRange.max;
@@ -114,7 +132,7 @@ export function useDashboardInteraction(
       cancelled = true;
       window.clearTimeout(handle);
     };
-  }, [densityData, brushRange, timestep, setBrushedCount]);
+  }, [densityData, brushRange, timestep, stats, setBrushedCount]);
 
   const highlight = useMemo(() => {
     if (!brushRange) return {};
