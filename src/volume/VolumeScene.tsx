@@ -162,9 +162,10 @@ export function VolumeScene({
 
     const axesActor = vtkAxesActor.newInstance({
       config: {
-        tipRadius: 0.12,
-        shaftRadius: 0.04,
-        tipLength: 0.22,
+        recenter: false,
+        tipRadius: 0.14,
+        shaftRadius: 0.05,
+        tipLength: 0.26,
       },
     });
     axesActor.setXAxisColor([235, 72, 72]);
@@ -180,9 +181,9 @@ export function VolumeScene({
     orientationWidget.setViewportCorner(
       vtkOrientationMarkerWidget.Corners.BOTTOM_LEFT,
     );
-    orientationWidget.setViewportSize(0.16);
-    orientationWidget.setMinPixelSize(64);
-    orientationWidget.setMaxPixelSize(112);
+    orientationWidget.setViewportSize(0.22);
+    orientationWidget.setMinPixelSize(88);
+    orientationWidget.setMaxPixelSize(148);
     orientationWidget.setEnabled(true);
 
     requestAnimationFrame(() => {
