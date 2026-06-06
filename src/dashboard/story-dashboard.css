@@ -54,6 +54,21 @@ body:has(.cosmic-poster) {
   z-index: 0;
 }
 
+.poster-capture-mode {
+  padding-bottom: 32px !important;
+  min-height: auto !important;
+}
+
+.poster-capture-mode .poster-top-bar {
+  position: static !important;
+}
+
+.poster-capture-mode .poster-main {
+  max-width: var(--max-w, 1180px);
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
 /* 右侧章节锚点 */
 .poster-rail {
   position: fixed;

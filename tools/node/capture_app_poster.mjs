@@ -1,5 +1,6 @@
 /**
- * Full-page Playwright capture of /app.html for doc poster figures.
+ * Section-wise Playwright capture of /app.html for doc poster figures.
+ * Avoids fullPage stitching bugs with fixed UI (control-dock / poster-rail).
  * Usage: npm run build && node tools/node/capture_app_poster.mjs
  */
 import { spawn } from 'node:child_process';
@@ -16,6 +17,7 @@ const BASE = `http://127.0.0.1:${PORT}`;
 const VIEW_W = Number(process.env.CAPTURE_WIDTH || 1440);
 const CAPTURE_SCALE = Number(process.env.CAPTURE_SCALE || 2);
 const SETTLE_MS = Number(process.env.CAPTURE_SETTLE_MS || 4000);
+const SECTION_COUNT = 6;
 
 const POSTER_FILES = ['task6_story_poster.png', 'app_infographic_poster.png'];
 
@@ -71,17 +73,17 @@ async function buildApp() {
   });
 }
 
-async function resizePoster(srcPath) {
+async function stitchSections(partPaths) {
   const isWin = process.platform === 'win32';
-  const py = path.join(ROOT, 'tools', 'python', 'resize_poster_capture.py');
+  const py = path.join(ROOT, 'tools', 'python', 'stitch_app_poster.py');
   await new Promise((resolve, reject) => {
-    const child = spawn(isWin ? 'python' : 'python3', [py, srcPath], {
+    const child = spawn(isWin ? 'python' : 'python3', [py, ...partPaths], {
       cwd: ROOT,
       stdio: 'inherit',
       shell: isWin,
     });
     child.on('exit', (code) =>
-      code === 0 ? resolve() : reject(new Error(`resize failed: ${code}`)),
+      code === 0 ? resolve() : reject(new Error(`stitch failed: ${code}`)),
     );
   });
 }
@@ -91,16 +93,17 @@ async function main() {
 
   let server = null;
   let exitCode = 0;
-  const tmpCapture = path.join(OUT_DIR, '_app_poster_capture_raw.png');
 
   try {
-    if (!(await serverUp(`${BASE}/app.html`))) {
-      console.log('Building app…');
-      await buildApp();
+    console.log('Building app…');
+    await buildApp();
+    if (await serverUp(`${BASE}/app.html`)) {
+      console.log(`Restarting preview on ${BASE}…`);
+    } else {
       console.log(`Starting preview on ${BASE}…`);
-      server = startPreview();
-      await waitForServer(`${BASE}/app.html`);
     }
+    server = startPreview();
+    await waitForServer(`${BASE}/app.html`);
 
     const browser = await chromium.launch({
       headless: true,
@@ -113,11 +116,11 @@ async function main() {
     const page = await context.newPage();
     page.setDefaultTimeout(120000);
 
-    const url = `${BASE}/app.html`;
-    console.log(`Capturing ${url} (full page)…`);
+    const url = `${BASE}/app.html?posterCapture=1`;
+    console.log(`Capturing ${url} (section-wise)…`);
     await page.goto(url, { waitUntil: 'networkidle', timeout: 120000 });
 
-    await page.waitForSelector('.cosmic-poster', { timeout: 120000 });
+    await page.waitForSelector('.cosmic-poster.poster-capture-mode', { timeout: 120000 });
     await page.waitForFunction(
       () => !document.querySelector('.app-loading'),
       { timeout: 120000 },
@@ -126,14 +129,36 @@ async function main() {
       () => document.querySelectorAll('.loading-overlay').length === 0,
       { timeout: 120000 },
     );
-    await page.waitForSelector('.poster-main', { timeout: 60000 });
+    await page.waitForSelector('.pl-section', { timeout: 60000 });
+    await page.waitForSelector('.pl-hero-vtk canvas, .pl-hero-img', { timeout: 120000 });
+    await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(SETTLE_MS);
 
-    await page.screenshot({ path: tmpCapture, fullPage: true, type: 'png' });
-    console.log(`Raw capture: ${tmpCapture}`);
+    const partPaths = [];
+    const headerPath = path.join(OUT_DIR, '_app_sec_header.png');
+    await page.locator('.poster-top-bar').screenshot({ path: headerPath, type: 'png' });
+    partPaths.push(headerPath);
+    console.log(`Section header → ${headerPath}`);
+
+    const sections = page.locator('.pl-section');
+    const count = await sections.count();
+    if (count !== SECTION_COUNT) {
+      throw new Error(`Expected ${SECTION_COUNT} .pl-section, got ${count}`);
+    }
+
+    for (let i = 0; i < count; i += 1) {
+      const loc = sections.nth(i);
+      await loc.scrollIntoViewIfNeeded();
+      await page.waitForTimeout(400);
+      const secPath = path.join(OUT_DIR, `_app_sec_${String(i + 1).padStart(2, '0')}.png`);
+      await loc.screenshot({ path: secPath, type: 'png' });
+      partPaths.push(secPath);
+      const id = await loc.getAttribute('id');
+      console.log(`Section ${id ?? i + 1} → ${secPath}`);
+    }
 
     await browser.close();
-    await resizePoster(tmpCapture);
+    await stitchSections(partPaths);
 
     const resized = path.join(OUT_DIR, '_app_poster_capture_resized.png');
     const { copyFile } = await import('node:fs/promises');

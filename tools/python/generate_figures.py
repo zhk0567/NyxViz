@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -48,6 +49,7 @@ from viz_style import (
     stitch_panels_png,
     style_axes,
     save_figure,
+    split_panel_label,
     wrap_panel,
 )
 from PIL import Image
@@ -204,21 +206,33 @@ def task1_strip(timeline: dict) -> None:
 
 
 def task2_spatial_metrics(timeline: dict, ext_val: dict | None = None) -> None:
-    """Moran's I, ξ half-length, fractal dim, excess kurtosis / multiscale entropy."""
+    """Moran's I, ξ half-length, fractal dim, excess kurtosis — 2×2 sheet + split panels."""
     steps = timeline["timesteps"]
     ts = [s["timestep"] for s in steps]
     if "moransI" not in steps[0]:
         print("Skip task2_spatial_metrics: run npm run precompute", file=sys.stderr)
         return
 
-    specs = [
-        ([s["moransI"] for s in steps], THEME["purple"], "Moran's I（6 邻域，3D）"),
-        ([s.get("xiR1", 0) for s in steps], THEME["cyan"], "两点相关 ξ(r=1)（XY 投影）"),
-        ([s.get("fractalDimP90", 0) for s in steps], THEME["gold"], "分形维数 D（P90 亮脊掩膜）"),
-        ([s["excessKurtosis"] for s in steps], THEME["coral"], "超额峰度 κ−3"),
+    panel_specs = [
+        ([s["moransI"] for s in steps], THEME["purple"], "Moran's I（6 邻域，3D）", "(a) Moran's I"),
+        ([s.get("xiR1", 0) for s in steps], THEME["cyan"], "两点相关 ξ(r=1)（XY 投影）", "(b) ξ(r=1)"),
+        ([s.get("fractalDimP90", 0) for s in steps], THEME["gold"], "分形维数 D（P90 亮脊掩膜）", "(c) 分形维 D"),
+        ([s["excessKurtosis"] for s in steps], THEME["coral"], "超额峰度 κ−3", "(d) 超额峰度"),
     ]
+    panel_paths: list[Path] = []
+    for idx, (y, color, title, label) in enumerate(panel_specs):
+        fig, ax = plt.subplots(figsize=(6.8, 3.1))
+        ax.plot(ts, y, color=color, lw=LINE_WIDTH)
+        ax.fill_between(ts, y, alpha=0.12, color=color)
+        ax.set_title(title, fontsize=11)
+        ax.set_xlabel("时间步")
+        style_axes(ax)
+        out = OUT / f"task2_spatial_panel_{idx}.png"
+        save_figure(fig, out, pad=0.16)
+        panel_paths.append(out)
+
     fig, axes = plt.subplots(2, 2, figsize=(14, 5))
-    for ax, (y, color, title) in zip(axes.flat, specs):
+    for ax, (y, color, title, _) in zip(axes.flat, panel_specs):
         ax.plot(ts, y, color=color, lw=LINE_WIDTH)
         ax.fill_between(ts, y, alpha=0.1, color=color)
         ax.set_title(title, fontsize=11)
@@ -683,22 +697,60 @@ def task1_lighting_diagram() -> None:
 
 def task1_resolution_coarsening(ext: dict) -> None:
     rows = ext["resolutionCoarseningT99"]
+    jboot = ext.get("resolutionJaccardBootstrapT99", {})
     labels = [r["label"] for r in rows]
     corr = [r["projCorrWith128"] for r in rows]
-    jacc = [r["ridgeJaccardVs128"] for r in rows]
+    jacc_fixed = [r["ridgeJaccardVs128"] for r in rows]
     x = np.arange(len(labels))
-    w = 0.35
-    fig, ax = plt.subplots(figsize=(8.5, 4.2))
+    w = 0.32
+    fig, ax = plt.subplots(figsize=(9.2, 4.8))
     ax.bar(x - w / 2, corr, w, label="投影相关 r", color=THEME["cyan"])
-    ax.bar(x + w / 2, jacc, w, label="filament 脊 Jaccard", color=THEME["gold"])
+    ax.bar(x + w / 2, jacc_fixed, w, color=THEME["gold"], alpha=0.45)
+    if jboot and len(jacc_fixed) > 1:
+        mean_j = jboot.get("jaccardMean", jacc_fixed[1])
+        std_j = jboot.get("jaccardStd", 0)
+        fixed_64 = jboot.get("jaccardFixedOrigin", jacc_fixed[1])
+        xi = x[1] + w / 2
+        ax.scatter([xi - 0.12], [fixed_64], marker="D", s=70, color=THEME["gold"], zorder=6, label="64³ 原点对齐")
+        ax.errorbar(
+            [xi + 0.12],
+            mean_j,
+            yerr=std_j,
+            fmt="o",
+            color="white",
+            ecolor=THEME["coral"],
+            capsize=6,
+            lw=2.2,
+            markersize=8,
+            zorder=7,
+            label=f"64³ 8 偏移 均值±1×样本SD (n={jboot.get('nReplicates', 8)})",
+        )
+        ax.annotate(
+            f"原点\n{fixed_64:.2f}",
+            xy=(xi - 0.12, fixed_64),
+            xytext=(xi - 0.55, min(1.02, fixed_64 + 0.12)),
+            fontsize=8,
+            color=THEME["gold"],
+            arrowprops=dict(arrowstyle="->", color=THEME["gold"], lw=1),
+        )
+        ax.annotate(
+            f"偏移\n{mean_j:.3f}±{std_j:.3f}\n(±1 SD)",
+            xy=(xi + 0.12, mean_j),
+            xytext=(xi + 0.35, max(0.05, mean_j - 0.14)),
+            fontsize=8,
+            color=THEME["coral"],
+            arrowprops=dict(arrowstyle="->", color=THEME["coral"], lw=1),
+        )
+    else:
+        ax.bar(x + w / 2, jacc_fixed, w, label="filament 脊 Jaccard", color=THEME["gold"])
     ax.set_xticks(x)
     ax.set_xticklabels(labels, fontsize=9)
-    ax.set_ylim(0, 1.05)
+    ax.set_ylim(0, 1.08)
     ax.set_ylabel("相对 128³ 保真度")
-    ax.set_title("分辨率粗化敏感性（t=99；无 512³ 包，块平均替代）")
-    ax.legend()
+    ax.set_title("分辨率粗化敏感性（t=99）：原点对齐 vs 随机 lattice 偏移", fontsize=11)
+    ax.legend(fontsize=7.5, loc="lower left", ncol=2)
     style_axes(ax)
-    save_figure(fig, OUT / "task1_resolution_coarsening.png", pad=0.18)
+    save_figure(fig, OUT / "task1_resolution_coarsening.png", pad=0.24)
 
 
 def task2_bootstrap_ci(ext: dict) -> None:
@@ -748,6 +800,36 @@ def task5_lyalpha_flux(ext: dict) -> None:
     ax.legend()
     style_axes(ax)
     save_figure(fig, OUT / "task5_lyalpha_flux_proxy.png", pad=0.18)
+
+
+def task5_lyalpha_direction_sensitivity(ext: dict) -> None:
+    sens = ext.get("lyalphaDirectionSensitivity")
+    if not sens:
+        return
+    t99 = sens["t99"]
+    cmp = sens.get("t99Comparison", {})
+    colors = {"+x": THEME["cyan"], "+y": THEME["purple"], "+z": THEME["gold"]}
+    fig, ax = plt.subplots(figsize=(8.8, 4.4))
+    for d in sens.get("directions", ["+x", "+y", "+z"]):
+        bucket = t99[d]
+        centers = 0.5 * (np.array(bucket["edges"][:-1]) + np.array(bucket["edges"][1:]))
+        ax.plot(
+            centers,
+            bucket["hist"],
+            color=colors.get(d, THEME["muted"]),
+            lw=LINE_WIDTH,
+            label=f"{d}  σ={bucket['fluxStd']:.4f}",
+        )
+    spread = cmp.get("stdSpreadRelPct", 0)
+    ax.set_xlabel("视线列平均密度（t=99）")
+    ax.set_ylabel("概率密度")
+    ax.set_title(
+        f"Lyα 代理方向敏感性（n={sens.get('nSightlines', 2000)}；"
+        f"σ 极差 {spread:.2f}%；max L1={cmp.get('maxHistL1', 0):.3f}）"
+    )
+    ax.legend(fontsize=8)
+    style_axes(ax)
+    save_figure(fig, OUT / "task5_lyalpha_direction_sensitivity.png", pad=0.18)
 
 
 def task4_brush_sample_recall(brush_val: dict) -> None:
@@ -808,22 +890,172 @@ def task4_ridge_methods(ext: dict) -> None:
     save_figure(fig, OUT / "task4_ridge_methods.png", pad=0.18)
 
 
+def compose_figure_stacks() -> None:
+    """Merge sub-figures for compact doc (≤5 figs per task)."""
+    stacks: list[tuple] = [
+        (
+            "task1_render_params.png",
+            "渲染参数汇总",
+            "(a) 传递函数 · (b) 光照 · (c) capture TF 增益",
+            ["task1_transfer_function.png", "task1_lighting_diagram.png", "task1_tf_gain_curve.png"],
+            "vertical",
+            ["(a) 传递函数", "(b) Phong 光照", "(c) capture TF 增益"],
+        ),
+        (
+            "task3_histogram_summary.png",
+            "直方图时序指标汇总",
+            "(a) σ/span · (b) p50 · (c) void",
+            ["task3_evolution_metrics.png", "task3_peak_drift.png", "task3_void_evolution.png"],
+            "vertical",
+            ["(a) σ / span / 偏度", "(b) p50 轨迹", "(c) void 扩张"],
+        ),
+        (
+            "task4_discovery_summary.png",
+            "可视化驱动发现",
+            "(a–c) Top 1% 三联 · (d) 空间→统计反查",
+            ["task4_brush_triptych.png", "task4_spatial_to_stats.png"],
+            "vertical",
+            ["(a–c) Top 1% 三联", "(d) 空间→统计反查"],
+        ),
+        (
+            "task4_brush_validation_summary.png",
+            "刷选验证汇总",
+            "(a) 阈值 · (b) KPI 误差 · (c) 早停召回",
+            [
+                "task4_threshold_comparison.png",
+                "task4_custom_brush_error.png",
+                "task4_brush_sample_recall.png",
+            ],
+            "vertical",
+            ["(a) 阈值对比", "(b) 自定义 KPI 误差", "(c) Top 1% 早停召回"],
+        ),
+        (
+            "task4_performance_summary.png",
+            "刷选扩展验证",
+            "(a) 三向投影 · (b) P88 · (c) 精确率 · (d) 脊线",
+            [
+                "task4_projection_axes.png",
+                "task4_p88_sensitivity.png",
+                "task4_brush_precision.png",
+                "task4_ridge_methods.png",
+            ],
+            "grid2x2",
+            ["(a) XY/XZ/YZ", "(b) P88 敏感度", "(c) 精确率/召回", "(d) 脊线方法"],
+        ),
+    ]
+    for out_name, title, subtitle, parts, layout, sub_labels in stacks:
+        paths = [OUT / p for p in parts if (OUT / p).exists()]
+        if len(paths) < 2:
+            print(f"Skip composite {out_name}: need ≥2 panels, got {len(paths)}")
+            continue
+        labels = sub_labels[: len(paths)]
+        wrapped = []
+        for p, lab in zip(paths, labels):
+            letter, caption = split_panel_label(lab)
+            wrapped.append(
+                wrap_panel(p, label=caption, corner_letter=letter, accent=THEME["cyan"])
+            )
+        if layout == "grid2x2" and len(wrapped) >= 4:
+            top = stitch_panels_png(wrapped[:2], direction="horizontal", gap=16, max_width=4800)
+            bot = stitch_panels_png(wrapped[2:4], direction="horizontal", gap=16, max_width=4800)
+            body = stitch_panels_png([top, bot], direction="vertical", gap=20, max_width=4800)
+        else:
+            body = stitch_panels_png(wrapped, direction="vertical", gap=16, max_width=4800)
+        final = compose_sheet(title, subtitle, [body], max_width=min(body.width, 3840))
+        save_pil_png(final, OUT / out_name)
+        print(f"Composite {out_name}: {final.width}×{final.height}px")
+
+    compose_task2_spatial_summary()
+
+
+def compose_task2_spatial_summary() -> None:
+    """(a)–(d) metric timelines + (e) ξ profile + (f) bootstrap."""
+    panel_files = [OUT / f"task2_spatial_panel_{i}.png" for i in range(4)]
+    if not all(p.exists() for p in panel_files):
+        print("Skip task2_spatial_summary: missing split panels")
+        return
+    row1 = stitch_panels_png(
+        [
+            wrap_panel(
+                panel_files[0],
+                label="Moran's I 时序",
+                corner_letter="(a)",
+            ),
+            wrap_panel(
+                panel_files[1],
+                label="ξ(r=1) 时序",
+                corner_letter="(b)",
+            ),
+        ],
+        direction="horizontal",
+        gap=16,
+        max_width=4800,
+    )
+    row2 = stitch_panels_png(
+        [
+            wrap_panel(
+                panel_files[2],
+                label="分形维 D",
+                corner_letter="(c)",
+            ),
+            wrap_panel(
+                panel_files[3],
+                label="超额峰度 κ−3",
+                corner_letter="(d)",
+            ),
+        ],
+        direction="horizontal",
+        gap=16,
+        max_width=4800,
+    )
+    extras: list[Image.Image] = []
+    xi = OUT / "task2_two_point_xi.png"
+    boot = OUT / "task2_bootstrap_ci.png"
+    if xi.exists():
+        extras.append(
+            wrap_panel(
+                xi,
+                label="ξ(r) 剖面 + 子块 MC ±1σ",
+                corner_letter="(e)",
+            )
+        )
+    if boot.exists():
+        extras.append(
+            wrap_panel(
+                boot,
+                label="Moran's I / ξ(r=1) bootstrap ±1σ",
+                corner_letter="(f)",
+            )
+        )
+    rows = [row1, row2] + extras
+    body = stitch_panels_png(rows, direction="vertical", gap=18, max_width=4800)
+    final = compose_sheet(
+        "空间统计汇总",
+        "(a)–(d) 时序四指标 · (e) ξ 剖面 · (f) bootstrap",
+        [body],
+        max_width=min(body.width, 3840),
+    )
+    save_pil_png(final, OUT / "task2_spatial_summary.png")
+    print(f"Composite task2_spatial_summary.png: {final.width}×{final.height}px")
+
+
 def task4_triptych(timeline: dict) -> None:
     paths = [
         OUT / "task4_hist_brush_top1.png",
         resolve_vol_image(99, timeline),
         OUT / "task4_brush_top1.png",
     ]
-    labels = ["统计刷选", "体渲染 (t=99)", "空间投影验证"]
+    labels = ["log 直方图刷选", "体渲染 (t=99)", "XY 投影验证"]
+    letters = ["(a)", "(b)", "(c)"]
     accents = [THEME["gold"], THEME["cyan"], THEME["purple"]]
     panels = [
-        wrap_panel(p, label=lab, accent=acc, content_height=720)
-        for p, lab, acc in zip(paths, labels, accents)
+        wrap_panel(p, label=lab, corner_letter=letter, accent=acc, content_height=720)
+        for p, lab, letter, acc in zip(paths, labels, letters, accents)
     ]
     row = stitch_panels_png(panels, direction="horizontal", gap=20, max_width=4800)
     final = compose_sheet(
         "相空间联动：Top 1% 高密度尾 → 宇宙网节点",
-        "统计刷选 → 体渲染 → 空间验证",
+        "(a) log 直方图 · (b) 体渲染 · (c) XY 投影",
         [row],
         max_width=row.width,
     )
@@ -1101,18 +1333,42 @@ def task6_story_poster(timeline: dict) -> None:
     _story_poster_panels(timeline, "task6_story_poster.png")
 
 
+def capture_app_html_poster() -> bool:
+    """Playwright 全页截取 /app.html → _app_poster_capture_resized + task6 副本。"""
+    is_win = sys.platform == "win32"
+    try:
+        subprocess.run(
+            ["npm", "run", "capture-app-poster"],
+            cwd=ROOT,
+            check=True,
+            shell=is_win,
+        )
+    except subprocess.CalledProcessError as exc:
+        print(f"app.html capture failed: {exc}", file=sys.stderr)
+        return False
+    ok = (OUT / "_app_poster_capture_resized.png").is_file()
+    if ok:
+        print(f"app.html capture OK: {OUT / '_app_poster_capture_resized.png'}")
+    return ok
+
+
 def representative_poster(timeline: dict) -> None:
     sub = OUT.parent / "submission"
     sub.mkdir(parents=True, exist_ok=True)
-    poster = OUT / "cosmic_poster_3840.png"
-    if not poster.exists():
-        poster = OUT / "task6_story_poster.png"
-    if poster.exists():
+    # 赛题代表图：/app.html 交互长卷 Playwright 全页截取（与 run.py 默认入口一致）
+    poster_candidates = (
+        OUT / "_app_poster_capture_resized.png",
+        OUT / "task6_story_poster.png",
+        OUT / "app_infographic_poster.png",
+        OUT / "cosmic_poster_3840.png",
+    )
+    poster = next((p for p in poster_candidates if p.exists()), None)
+    if poster is not None:
         img = Image.open(poster).convert("RGB")
-        sub.mkdir(parents=True, exist_ok=True)
         out_jpg = sub / "submission_representative.jpg"
         img.save(out_jpg, format="JPEG", quality=92, optimize=True)
-        print(f"Representative from story poster: {out_jpg}")
+        mb = out_jpg.stat().st_size / (1024 * 1024)
+        print(f"Representative from {poster.name}: {out_jpg} ({mb:.2f} MB)")
         return
 
     fig = plt.figure(figsize=(16, 11), facecolor="#0a0e1a")
@@ -1224,6 +1480,7 @@ def main() -> int:
     task2_bootstrap_ci(ext_val)
     task3_bin_kl(ext_val)
     task5_lyalpha_flux(ext_val)
+    task5_lyalpha_direction_sensitivity(ext_val)
     task4_threshold_comparison(brush_val)
     task4_p88_sensitivity(brush_val)
     task4_projection_axes(vol99, timeline, s99)
@@ -1232,6 +1489,7 @@ def main() -> int:
     task4_ridge_methods(ext_val)
     task4_triptych(timeline)
     task4_brush_rows(timeline)
+    compose_figure_stacks()
     task3_story_panel(timeline)
     task1_hero_poster(timeline)
     task5_mass_pie(timeline)
@@ -1244,6 +1502,11 @@ def main() -> int:
         compose_poster_3840(timeline)
     except Exception as exc:
         print(f"Poster 3840 skipped: {exc}", file=sys.stderr)
+    if not capture_app_html_poster():
+        print(
+            "Warning: /app.html capture unavailable — representative falls back to PIL story poster",
+            file=sys.stderr,
+        )
     representative_poster(timeline)
 
     print(f"Figures written to {OUT}")

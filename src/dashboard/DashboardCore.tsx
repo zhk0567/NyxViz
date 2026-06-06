@@ -42,6 +42,9 @@ export function DashboardCore({
   error,
   embedded = false,
 }: DashboardCoreProps) {
+  const posterCapture =
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).has('posterCapture');
   const [exploreOpen, setExploreOpen] = useState(false);
 
   const ix = useDashboardInteraction(timeline, densityData, loading, {
@@ -118,24 +121,33 @@ export function DashboardCore({
   );
 
   return (
-    <div className={`cosmic-poster cosmic-poster-layout cosmic-page-frame${embedded ? ' cosmic-poster-embed' : ''}`}>
-      <CosmicBackdrop variant="poster" intensity="full" fixed />
+    <div
+      className={`cosmic-poster cosmic-poster-layout cosmic-page-frame${
+        embedded ? ' cosmic-poster-embed' : ''
+      }${posterCapture ? ' poster-capture-mode' : ''}`}
+    >
+      <CosmicBackdrop variant="poster" intensity="full" fixed={!posterCapture} />
       <header className="poster-top-bar">
         <span className="poster-top-kicker pl-text-gradient-cyan">Nyx 128³ · 宇宙网诞生记</span>
-        <button
-          type="button"
-          className="poster-explore-btn"
-          onClick={() => setExploreOpen(true)}
-        >
-          交互探索
-        </button>
-        {!embedded && (
-          <a href="/video.html" className="poster-top-link">
-            录屏版
-          </a>
+        {!posterCapture && (
+          <>
+            <button
+              type="button"
+              className="poster-explore-btn"
+              onClick={() => setExploreOpen(true)}
+            >
+              交互探索
+            </button>
+            {!embedded && (
+              <a href="/video.html" className="poster-top-link">
+                录屏版
+              </a>
+            )}
+          </>
         )}
       </header>
 
+      {!posterCapture && (
       <nav className="poster-rail" aria-label="章节">
         {SECTION_IDS.map((id, i) => (
           <button
@@ -148,6 +160,7 @@ export function DashboardCore({
           </button>
         ))}
       </nav>
+      )}
 
       <main className="poster-main">
         <CosmicPosterLayout
@@ -224,6 +237,7 @@ export function DashboardCore({
         </div>
       )}
 
+      {!posterCapture && (
       <aside className="control-dock" aria-label="交互控制">
         <div className="dock-row">
           <span className="dock-title">时间步</span>
@@ -287,6 +301,7 @@ export function DashboardCore({
         {loading && <span className="dock-badge">加载中…</span>}
         {error && <span className="dock-badge err">{error}</span>}
       </aside>
+      )}
     </div>
   );
 }

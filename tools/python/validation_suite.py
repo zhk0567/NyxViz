@@ -28,14 +28,84 @@ GRID = 128
 
 def block_downsample(vol: np.ndarray, factor: int) -> np.ndarray:
     """Average-pool vol to coarser grid (simulates lower effective resolution)."""
+    return block_downsample_offset(vol, factor, (0, 0, 0))
+
+
+def block_downsample_offset(vol: np.ndarray, factor: int, offset: tuple[int, int, int]) -> np.ndarray:
+    """Average-pool with lattice offset (0…factor−1 per axis)."""
     if factor == 1:
         return vol
     n = GRID // factor
-    trimmed = vol[: n * factor, : n * factor, : n * factor]
-    return (
-        trimmed.reshape(n, factor, n, factor, n, factor)
-        .mean(axis=(1, 3, 5))
-    )
+    ox, oy, oz = offset
+    out = np.zeros((n, n, n), dtype=np.float32)
+    for i in range(n):
+        for j in range(n):
+            for k in range(n):
+                sl = (
+                    slice(i * factor + ox, i * factor + ox + factor),
+                    slice(j * factor + oy, j * factor + oy + factor),
+                    slice(k * factor + oz, k * factor + oz + factor),
+                )
+                out[i, j, k] = float(vol[sl].mean())
+    return out
+
+
+def _ridge_jaccard_vs_ref(vol: np.ndarray, ref_ridge: np.ndarray, factor: int, offset: tuple[int, int, int]) -> float:
+    coarse = block_downsample_offset(vol, factor, offset)
+    _, _, ridge = filament_density_band(coarse, 88.0)
+    ridge_up = np.kron(ridge.astype(float), np.ones((factor, factor)))[:128, :128] > 0.5
+    return float((ref_ridge & ridge_up).sum() / max((ref_ridge | ridge_up).sum(), 1))
+
+
+def resolution_jaccard_offset_bootstrap(
+    vol: np.ndarray,
+    *,
+    factor: int = 2,
+    n_rep: int = 8,
+    seed: int = 42,
+) -> dict:
+    """Lattice-shift 64³ block-average coarsening → P88 ridge Jaccard vs 128³ ref."""
+    _, _, ref_ridge = filament_density_band(vol, 88.0)
+    all_offsets = [(ox, oy, oz) for ox in range(factor) for oy in range(factor) for oz in range(factor)]
+    if factor == 2 and n_rep >= len(all_offsets):
+        offsets_used = [list(o) for o in all_offsets]
+        sampling = "exhaustive — all 8 lattice shifts (factor=2)"
+    else:
+        rng = np.random.default_rng(seed)
+        offsets_used = []
+        for _ in range(n_rep):
+            off = tuple(int(rng.integers(0, factor)) for _ in range(3))
+            offsets_used.append(list(off))
+        sampling = f"random with replacement, n={n_rep}, seed={seed}"
+    samples = [_ridge_jaccard_vs_ref(vol, ref_ridge, factor, tuple(o)) for o in offsets_used]
+    arr = np.array(samples, dtype=np.float64)
+    n_coarse = GRID // factor
+    return {
+        "factor": factor,
+        "nReplicates": len(offsets_used),
+        "randomSeed": seed,
+        "offsetsSampled": offsets_used,
+        "offsetsUnique": len({tuple(o) for o in offsets_used}),
+        "jaccardSamples": samples,
+        "jaccardMean": float(arr.mean()),
+        "jaccardStd": float(arr.std(ddof=1)) if len(arr) > 1 else 0.0,
+        "jaccardStdNote": "sample SD (ddof=1) across lattice shifts; error bars are not SEM",
+        "jaccardFixedOrigin": _ridge_jaccard_vs_ref(vol, ref_ridge, factor, (0, 0, 0)),
+        "method": {
+            "blockSize": f"{factor}³ voxels per coarse cell",
+            "coarseGridShape": [n_coarse, n_coarse, n_coarse],
+            "offsetRangePerAxis": f"ox, oy, oz ∈ {{0, …, {factor - 1}}} (integer lattice shift)",
+            "sampling": sampling,
+            "fixedOrigin": "(0, 0, 0) — aligns coarse grid with volume origin",
+            "windowInBounds": (
+                f"each coarse cell averages vol[i×{factor}+ox : i×{factor}+ox+{factor}, …]; "
+                f"max index {factor - 1}+({n_coarse}-1)×{factor}+{factor - 1}="
+                f"{factor - 1 + (n_coarse - 1) * factor + factor - 1} ≤ {GRID - 1}"
+            ),
+            "reproduce": "validation_suite.py :: block_downsample_offset + resolution_jaccard_offset_bootstrap",
+        },
+        "note": "Lattice-shift block average; not AMR resampling",
+    }
 
 
 def resolution_coarsening(vol: np.ndarray, p99: float) -> list[dict]:
@@ -203,6 +273,38 @@ def bootstrap_spatial_ci(
     delta_xi = xi99_global - xi0_global
     pooled_std_xi = float(np.sqrt(np.std(xi_r1_boot_0) ** 2 + np.std(xi_r1_boot_99) ** 2))
 
+    # Non-overlapping 2×2×2 grid of 64³ tiles — compare Moran I spread vs random-origin bootstrap
+    tile_origins = [
+        (i * ph, j * pw, k * pz)
+        for i in range(2)
+        for j in range(2)
+        for k in range(2)
+    ]
+    tile_morans_0 = [morans_i_6_neighbor(vol0[o[0] : o[0] + ph, o[1] : o[1] + pw, o[2] : o[2] + pz]) for o in tile_origins]
+    tile_morans_99 = [morans_i_6_neighbor(vol99[o[0] : o[0] + ph, o[1] : o[1] + pw, o[2] : o[2] + pz]) for o in tile_origins]
+
+    def resample_tiles(tiles: list[float]) -> list[float]:
+        out: list[float] = []
+        for _ in range(n_boot):
+            idx = int(rng.integers(0, len(tiles)))
+            out.append(tiles[idx])
+        return out
+
+    grid_m0 = resample_tiles(tile_morans_0)
+    grid_m99 = resample_tiles(tile_morans_99)
+    grid_std_0 = float(np.std(grid_m0))
+    grid_std_99 = float(np.std(grid_m99))
+    grid_pooled = float(np.sqrt(grid_std_0**2 + grid_std_99**2))
+
+    ratio_samples: list[float] = []
+    for _ in range(400):
+        g0 = resample_tiles(tile_morans_0)
+        g99 = resample_tiles(tile_morans_99)
+        gp = float(np.sqrt(np.std(g0) ** 2 + np.std(g99) ** 2))
+        if gp > 1e-9:
+            ratio_samples.append(pooled_std_i / gp)
+    ratio_arr = np.array(ratio_samples, dtype=np.float64)
+
     return {
         "method": {
             "name": "spatial_block_monte_carlo",
@@ -222,6 +324,10 @@ def bootstrap_spatial_ci(
             "resamplingNote": (
                 "Spatial block bootstrap: independent random subvolume origins each replicate; "
                 "NOT pixel-level bootstrap with/without replacement."
+            ),
+            "overlapNote": (
+                "Random 64³ origins in 128³ allow overlap between replicates; "
+                "compared to bootstrap resampling from 8 non-overlapping 64³ tiles (2×2×2 grid)."
             ),
             "reproduce": "tools/python/validation_suite.py :: bootstrap_spatial_ci",
         },
@@ -250,6 +356,47 @@ def bootstrap_spatial_ci(
                 "mean": x99_arr.mean(axis=0).tolist(),
                 "std": x99_arr.std(axis=0).tolist(),
             },
+        },
+        "overlapComparison": {
+            "randomOriginMoranStdT0": s0_std,
+            "randomOriginMoranStdT99": s99_std,
+            "randomOriginPooledStdMoran": pooled_std_i,
+            "gridTileMoranStdT0": grid_std_0,
+            "gridTileMoranStdT99": grid_std_99,
+            "gridTilePooledStdMoran": grid_pooled,
+            "pooledStdRatioRandomOverGrid": (
+                pooled_std_i / grid_pooled if grid_pooled > 1e-9 else None
+            ),
+            "ratioBootstrap": {
+                "nReplicates": len(ratio_samples),
+                "ratioMean": float(ratio_arr.mean()) if len(ratio_arr) else None,
+                "ratioStd": float(ratio_arr.std(ddof=1)) if len(ratio_arr) > 1 else None,
+                "ratioCi95": [
+                    float(np.percentile(ratio_arr, 2.5)),
+                    float(np.percentile(ratio_arr, 97.5)),
+                ]
+                if len(ratio_arr)
+                else None,
+                "note": (
+                    "Tile-side uncertainty: resample 8 disjoint 64³ tiles with replacement (400×); "
+                    "random-origin pooled σ fixed at n=40 MC estimate."
+                ),
+            },
+            "tileMoransT0": tile_morans_0,
+            "tileMoransT99": tile_morans_99,
+            "interpretation": (
+                "Ratio random/grid < 1 ⇒ overlapping random origins yield lower Moran spread "
+                "than resampling 8 disjoint 64³ tiles; random-origin std is conservative for 2σ checks."
+            ),
+            "theoreticalNote": (
+                "Spatial block bootstrap with replacement of overlapping 64³ windows: "
+                "replicates share voxels ⇒ positive correlation ρ between Moran's I estimates "
+                "⇒ Var(bootstrap replicate distribution) is reduced vs disjoint tiles that sample "
+                "independent spatial heterogeneity. Ratio random/grid ≈ 0.74 means overlapping "
+                "scheme underestimates σ by ~26% relative to non-overlapping 2×2×2 tile resampling; "
+                "2σ significance checks using random-origin std are therefore conservative "
+                "(harder to reject null). Not a formal hypothesis test — descriptive sensitivity only."
+            ),
         },
         "note": "ΔMoran/Δξ(r=1) vs 2×pooled bootstrap std — descriptive only",
     }
@@ -367,22 +514,49 @@ def brush_sample_recall(flat: np.ndarray, lo: float, hi: float, max_points: int 
     }
 
 
-def lyalpha_flux_pdf_proxy(vol: np.ndarray, n_lines: int = 2000, seed: int = 7) -> dict:
-    """Column-integrated density along random XY sightlines → flux proxy PDF."""
+def _bootstrap_flux_std(fluxes: np.ndarray, n_boot: int = 40, seed: int = 11) -> dict:
     rng = np.random.default_rng(seed)
-    fluxes = []
+    n = len(fluxes)
+    stds = [float(fluxes[rng.integers(0, n, size=n)].std()) for _ in range(n_boot)]
+    arr = np.array(stds, dtype=np.float64)
+    return {
+        "nBootstrap": n_boot,
+        "stdBootMean": float(arr.mean()),
+        "stdBootStd": float(arr.std(ddof=1)) if len(arr) > 1 else 0.0,
+        "stdBootCi95": [float(np.percentile(arr, 2.5)), float(np.percentile(arr, 97.5))],
+        "method": "sightline-level: resample n sightline column means with replacement, n_boot=40",
+    }
+
+
+def lyalpha_column_fluxes(
+    vol: np.ndarray, direction: str, n_lines: int = 2000, seed: int = 7
+) -> np.ndarray:
+    """Column-mean density along +x / +y / +z sightlines (128-cell integration each)."""
+    rng = np.random.default_rng(seed)
+    fluxes: list[float] = []
+    d = direction.lower().lstrip("+")
     for _ in range(n_lines):
-        x = int(rng.integers(0, GRID))
-        y = int(rng.integers(0, GRID))
-        col = vol[x, y, :]
-        # τ ∝ ∫ n_H dl ; use mean column density as 1D proxy
-        fluxes.append(float(col.mean()))
-    fluxes = np.array(fluxes)
+        if d == "z":
+            x = int(rng.integers(0, GRID))
+            y = int(rng.integers(0, GRID))
+            fluxes.append(float(vol[x, y, :].mean()))
+        elif d == "x":
+            y = int(rng.integers(0, GRID))
+            z = int(rng.integers(0, GRID))
+            fluxes.append(float(vol[:, y, z].mean()))
+        elif d == "y":
+            x = int(rng.integers(0, GRID))
+            z = int(rng.integers(0, GRID))
+            fluxes.append(float(vol[x, :, z].mean()))
+        else:
+            raise ValueError(f"unsupported sightline direction: {direction}")
+    return np.array(fluxes)
+
+
+def _flux_pdf_from_array(fluxes: np.ndarray) -> dict:
     p10, p50, p90 = np.percentile(fluxes, [10, 50, 90])
     hist, edges = np.histogram(fluxes, bins=32, density=True)
     return {
-        "nSightlines": n_lines,
-        "randomSeed": seed,
         "fluxMean": float(fluxes.mean()),
         "fluxStd": float(fluxes.std()),
         "p10": float(p10),
@@ -390,12 +564,36 @@ def lyalpha_flux_pdf_proxy(vol: np.ndarray, n_lines: int = 2000, seed: int = 7) 
         "p90": float(p90),
         "hist": hist.tolist(),
         "edges": edges.tolist(),
+    }
+
+
+def lyalpha_flux_pdf_proxy(
+    vol: np.ndarray, n_lines: int = 2000, seed: int = 7, direction: str = "+z"
+) -> dict:
+    """Column-integrated density along random sightlines → flux proxy PDF."""
+    fluxes = lyalpha_column_fluxes(vol, direction, n_lines, seed)
+    pdf = _flux_pdf_from_array(fluxes)
+    dir_label = {
+        "+x": "+x (parallel to box x-axis)",
+        "+y": "+y (parallel to box y-axis)",
+        "+z": "+z (parallel to box z-axis)",
+    }.get(direction, direction)
+    face_note = {
+        "+x": "uniform random integer (y, z) on the 128×128 yz-face",
+        "+y": "uniform random integer (x, z) on the 128×128 xz-face",
+        "+z": "uniform random integer (x, y) on the 128×128 xy-face",
+    }.get(direction, "random face start")
+    integ_axis = {"+x": "x=0..127", "+y": "y=0..127", "+z": "z=0..127"}.get(direction, "full axis")
+    return {
+        "nSightlines": n_lines,
+        "randomSeed": seed,
+        **pdf,
         "method": {
-            "sightlineDirection": "+z (fixed, parallel to box z-axis)",
+            "sightlineDirection": dir_label,
             "isotropicDirections": False,
-            "startSampling": "uniform random integer (x, y) on the 128×128 face",
-            "integration": "full column z=0..127, arithmetic mean of ρ (not radiative τ)",
-            "domainCoverage": "each line spans the entire 128-cell z extent of the subvolume",
+            "startSampling": face_note,
+            "integration": f"full column {integ_axis}, arithmetic mean of ρ (not radiative τ)",
+            "domainCoverage": "each line spans the entire 128-cell axis extent of the subvolume",
             "redshiftMapping": (
                 "none — t is simulation timestep index (0…99); "
                 "赛题未提供 cosmological redshift z or lookback time"
@@ -403,7 +601,85 @@ def lyalpha_flux_pdf_proxy(vol: np.ndarray, n_lines: int = 2000, seed: int = 7) 
             "crossTimeComparison": "same geometry at t=0 and t=99; compares contrast evolution only",
             "reproduce": "tools/python/validation_suite.py :: lyalpha_flux_pdf_proxy",
         },
-        "note": "非辐射传输合成谱；+z 列平均密度作通量涨落代理（非各向同性视线）",
+        "note": f"非辐射传输合成谱；{direction} 列平均密度作通量涨落代理（非各向同性视线）",
+    }
+
+
+def lyalpha_direction_sensitivity(
+    vol0: np.ndarray, vol99: np.ndarray, n_lines: int = 2000, seed: int = 7
+) -> dict:
+    """Compare +x/+y/+z flux PDF proxies at t=0 and t=99 (same seed & line count)."""
+    directions = ["+x", "+y", "+z"]
+
+    def per_timestep(vol: np.ndarray, *, include_boot: bool, boot_seed: int) -> dict:
+        out: dict = {}
+        for i, d in enumerate(directions):
+            fluxes = lyalpha_column_fluxes(vol, d, n_lines, seed)
+            entry = _flux_pdf_from_array(fluxes)
+            if include_boot:
+                entry["fluxStdBootstrap"] = _bootstrap_flux_std(fluxes, n_boot=40, seed=boot_seed + i)
+            out[d] = entry
+        return out
+
+    t0 = per_timestep(vol0, include_boot=False, boot_seed=seed + 100)
+    t99 = per_timestep(vol99, include_boot=True, boot_seed=seed + 200)
+
+    def hist_l1(a: str, b: str, bucket: dict) -> float:
+        ha = np.array(bucket[a]["hist"], dtype=float)
+        hb = np.array(bucket[b]["hist"], dtype=float)
+        ha = ha / ha.sum() if ha.sum() > 0 else ha
+        hb = hb / hb.sum() if hb.sum() > 0 else hb
+        return float(np.sum(np.abs(ha - hb)))
+
+    pairs_t99: dict[str, float] = {}
+    for i, a in enumerate(directions):
+        for b in directions[i + 1 :]:
+            pairs_t99[f"{a}_vs_{b}"] = hist_l1(a, b, t99)
+
+    stds = {d: t99[d]["fluxStd"] for d in directions}
+    means = {d: t99[d]["fluxMean"] for d in directions}
+    std_min = min(stds.values())
+    std_max = max(stds.values())
+    std_spread_pct = (std_max - std_min) / std_min * 100 if std_min > 1e-9 else 0.0
+    mean_spread_pct = (max(means.values()) - min(means.values())) / min(means.values()) * 100
+
+    z_ci = t99["+z"].get("fluxStdBootstrap", {}).get("stdBootCi95", [])
+    x_ci = t99["+x"].get("fluxStdBootstrap", {}).get("stdBootCi95", [])
+    y_ci = t99["+y"].get("fluxStdBootstrap", {}).get("stdBootCi95", [])
+    ci_overlap_xz = bool(z_ci and x_ci and x_ci[0] <= z_ci[1] and x_ci[1] >= z_ci[0])
+    ci_overlap_yz = bool(z_ci and y_ci and y_ci[0] <= z_ci[1] and y_ci[1] >= z_ci[0])
+
+    return {
+        "nSightlines": n_lines,
+        "randomSeed": seed,
+        "directions": directions,
+        "t0": t0,
+        "t99": t99,
+        "t99Comparison": {
+            "fluxStdByDirection": stds,
+            "fluxMeanByDirection": means,
+            "stdSpreadRelPct": float(std_spread_pct),
+            "meanSpreadRelPct": float(mean_spread_pct),
+            "histL1Distance": pairs_t99,
+            "histL1Method": (
+                "32-bin numpy histogram (density=True) on 2000 sightline column means; "
+                "each bin vector normalized to sum=1; "
+                "L1 = Σ|p_dir − p_+z| over bins (unitless)"
+            ),
+            "maxHistL1": float(max(pairs_t99.values())),
+            "stdBootstrapT99": {
+                d: t99[d].get("fluxStdBootstrap", {}) for d in directions
+            },
+            "plusZCiOverlapsPlusX": ci_overlap_xz,
+            "plusZCiOverlapsPlusY": ci_overlap_yz,
+            "interpretation": (
+                "Same seed & n lines: +x/+y/+z PDFs differ modestly at t=99 "
+                "(std spread & L1 distances quantify anisotropy); bootstrap 95% CI on σ "
+                "reported per direction — overlap with +z CI indicates differences may "
+                "not exceed sightline resampling noise."
+            ),
+        },
+        "reproduce": "tools/python/validation_suite.py :: lyalpha_direction_sensitivity",
     }
 
 
@@ -444,6 +720,7 @@ def export_validation_extended(timeline: dict, out: Path) -> dict:
             "可能低估细丝断裂风险。赛题无 512³ 独立场，本实验仅为下界参考。"
         ),
         "resolutionCoarseningT99": resolution_coarsening(vol99, s99["p99"]),
+        "resolutionJaccardBootstrapT99": resolution_jaccard_offset_bootstrap(vol99, factor=2, n_rep=8),
         "cameraFov": camera_fov_consistency(),
         "bootstrapSpatial": bootstrap_spatial_ci(vol0, vol99),
         "binSensitivityT99": histogram_bin_sensitivity(vol99, timeline["globalMin"], timeline["globalMax"]),
@@ -459,6 +736,7 @@ def export_validation_extended(timeline: dict, out: Path) -> dict:
             "t0": lyalpha_flux_pdf_proxy(vol0),
             "t99": lyalpha_flux_pdf_proxy(vol99),
         },
+        "lyalphaDirectionSensitivity": lyalpha_direction_sensitivity(vol0, vol99),
         "lighting": lighting_vectors(),
         "dataPackage": timeline.get("dataScope", {}),
     }

@@ -44,6 +44,12 @@ export function PosterHeroVolume({
     const el = wrapRef.current;
     if (!el) return;
 
+    const forceRender = new URLSearchParams(window.location.search).has('posterCapture');
+    if (forceRender) {
+      setInView(true);
+      return;
+    }
+
     const io = new IntersectionObserver(
       ([entry]) => setInView(entry?.isIntersecting ?? false),
       { root: null, threshold: 0.12 },

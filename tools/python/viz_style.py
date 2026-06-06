@@ -108,11 +108,43 @@ def _draw_panel_shadow(canvas: Image.Image, x: int, y: int, w: int, h: int) -> N
     canvas.paste(shadow, (x - 1, y + 1), shadow)
 
 
+def _draw_corner_badge(canvas: Image.Image, letter: str, x: int, y: int) -> None:
+    """Bold panel letter badge at top-left of subplot content (e.g. (a))."""
+    text = letter if letter.startswith("(") else f"({letter.lower()})"
+    draw = ImageDraw.Draw(canvas)
+    font = load_ui_font(28, bold=True)
+    tw = int(draw.textlength(text, font=font))
+    pad_x, pad_y = 12, 8
+    bw, bh = tw + pad_x * 2, 36
+    _rounded_rect(
+        draw,
+        (x, y, x + bw - 1, y + bh - 1),
+        8,
+        fill=(10, 16, 32, 250),
+        outline=(120, 220, 255, 255),
+        width=3,
+    )
+    draw.text((x + pad_x, y + pad_y - 4), text, fill=(255, 255, 255, 255), font=font)
+
+
+def split_panel_label(label: str) -> tuple[str | None, str]:
+    """'(a) Moran's I 时序' → ('(a)', \"Moran's I 时序\")."""
+    import re
+
+    m = re.match(r"^\(([a-z])\)\s*(.*)$", label.strip(), re.I)
+    if not m:
+        return None, label
+    letter = f"({m.group(1).lower()})"
+    caption = m.group(2).strip()
+    return letter, caption or label
+
+
 def wrap_panel(
     img: Image.Image | Path | str,
     *,
     label: str | None = None,
     subtitle: str | None = None,
+    corner_letter: str | None = None,
     accent: str = THEME["cyan"],
     content_height: int | None = None,
     max_content_width: int | None = None,
@@ -158,6 +190,9 @@ def wrap_panel(
     )
     body.paste(content, (PANEL_PAD, PANEL_PAD), content)
     card.paste(body, (0, 0), body)
+
+    if corner_letter:
+        _draw_corner_badge(card, corner_letter, PANEL_PAD + 8, PANEL_PAD + 8)
 
     if bar_h:
         bar_y = card_h - bar_h
