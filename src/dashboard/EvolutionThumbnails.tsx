@@ -1,5 +1,6 @@
 import { MARK_STEPS } from '@/dashboard/evolutionPhase';
 import type { TimelineData } from '@/data/types';
+import { ZoomableImage } from '@/components/ImageLightbox';
 
 const EVO_FIGURES = MARK_STEPS.map(
   (t) => `/figures/task1_evo_t${String(t).padStart(4, '0')}.png`,
@@ -26,7 +27,7 @@ export function EvolutionThumbnails({ timeline, active, onSelect }: EvolutionThu
             onClick={() => onSelect(t)}
           >
             <div className="evo-thumb-media">
-              <img
+              <ZoomableImage
                 src={EVO_FIGURES[i]}
                 alt={`t=${t} 密度投影演化`}
                 loading="lazy"

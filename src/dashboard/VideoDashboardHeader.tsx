@@ -1,4 +1,5 @@
 import { evolutionPhase, MARK_STEPS } from '@/dashboard/evolutionPhase';
+import type { VideoSceneId } from '@/video/sceneRegistry';
 import type { TimelineData } from '@/data/types';
 
 const PHASES = [
@@ -13,6 +14,7 @@ export interface VideoDashboardHeaderProps {
   timestepCount: number;
   stats: TimelineData['timesteps'][0] | undefined;
   recordMode: boolean;
+  sceneId?: VideoSceneId;
   onSliderChange: (v: number) => void;
   onSliderDragStart: () => void;
   onSliderCommit: () => void;
@@ -25,6 +27,7 @@ export function VideoDashboardHeader({
   timestepCount,
   stats,
   recordMode,
+  sceneId,
   onSliderChange,
   onSliderDragStart,
   onSliderCommit,
@@ -33,9 +36,10 @@ export function VideoDashboardHeader({
   const phase = evolutionPhase(timestep);
   const activePhaseIdx =
     phase.id === 'linear' ? 0 : phase.id === 'nonlinear' ? 1 : 2;
+  const compactRecord = recordMode && sceneId !== 'intro';
 
   return (
-    <header className="vd-header">
+    <header className={`vd-header${compactRecord ? ' vd-header--record-compact' : ''}`}>
       <div className="vd-header-left">
         <span className="vd-brand">NyxViz v2.0</span>
         <div className="vd-meta-chips">
@@ -50,17 +54,19 @@ export function VideoDashboardHeader({
       <div className="vd-header-center">
         <h1 className="vd-title">宇宙网诞生记</h1>
         <p className="vd-subtitle">从近乎均匀的涨落到支配宇宙的大尺度结构</p>
-        <div className="vd-phase-pills" role="tablist" aria-label="演化阶段">
-          {PHASES.map((p, i) => (
-            <span
-              key={p.id}
-              className={`vd-phase-pill${i === activePhaseIdx ? ' on' : ''}`}
-            >
-              <strong>{p.id}</strong>
-              {p.range} · {p.label}
-            </span>
-          ))}
-        </div>
+        {!compactRecord && (
+          <div className="vd-phase-pills" role="tablist" aria-label="演化阶段">
+            {PHASES.map((p, i) => (
+              <span
+                key={p.id}
+                className={`vd-phase-pill${i === activePhaseIdx ? ' on' : ''}`}
+              >
+                <strong>{p.id}</strong>
+                {p.range} · {p.label}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="vd-header-right">
@@ -91,9 +97,10 @@ export function VideoDashboardHeader({
             </button>
           ))}
         </div>
-        {stats && !recordMode && (
+        {stats && (!recordMode || sceneId !== 'intro') && (
           <span className="vd-header-stats">
-            μ={stats.mean.toFixed(2)} σ={stats.std.toFixed(3)}
+            σ={stats.std.toFixed(4)} · p99={stats.p99.toFixed(4)}
+            {!recordMode && ` · μ=${stats.mean.toFixed(2)}`}
           </span>
         )}
       </div>

@@ -8,6 +8,8 @@ export interface ChartSizeOptions {
   aspect?: number;
   maxHeight?: number;
   fillContainer?: boolean;
+  /** 录屏可读性：更大轴标签与更高对比度主题 */
+  videoReadable?: boolean;
 }
 
 export function useChartSize(

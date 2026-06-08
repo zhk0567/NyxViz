@@ -43,6 +43,8 @@ interface VolumeSceneProps {
   renderActive?: boolean;
   /** >1 zooms in (video dashboard uses ~1.1). */
   cameraZoom?: number;
+  /** 录屏页关闭方向轴控件以加快初始化 */
+  showOrientation?: boolean;
   className?: string;
   onRendered?: () => void;
 }
@@ -59,6 +61,7 @@ export function VolumeScene({
   useLogScale = true,
   renderActive = true,
   cameraZoom = 1,
+  showOrientation = true,
   className,
   onRendered,
 }: VolumeSceneProps) {
@@ -83,8 +86,8 @@ export function VolumeScene({
     otf: ReturnType<typeof vtkPiecewiseFunction.newInstance>;
     orientationWidget: ReturnType<
       typeof vtkOrientationMarkerWidget.newInstance
-    >;
-    axesActor: ReturnType<typeof vtkAxesActor.newInstance>;
+    > | null;
+    axesActor: ReturnType<typeof vtkAxesActor.newInstance> | null;
   } | null>(null);
 
   const frameCamera = () => {
@@ -97,15 +100,15 @@ export function VolumeScene({
         : 1;
     ctx.fullScreenRenderer.resize();
     fitVolumeCamera(ctx.renderer, ctx.imageData, aspect, cameraZoomRef.current);
-    ctx.orientationWidget.updateViewport();
-    ctx.orientationWidget.updateMarkerOrientation();
+    ctx.orientationWidget?.updateViewport();
+    ctx.orientationWidget?.updateMarkerOrientation();
     ctx.fullScreenRenderer.getRenderWindow().render();
   };
 
   const requestRender = () => {
     const ctx = contextRef.current;
     if (!ctx || !renderActiveRef.current) return;
-    ctx.orientationWidget.updateMarkerOrientation();
+    ctx.orientationWidget?.updateMarkerOrientation();
     ctx.fullScreenRenderer.getRenderWindow().render();
   };
 
@@ -186,37 +189,44 @@ export function VolumeScene({
       cameraZoomRef.current,
     );
 
-    const axesActor = vtkAxesActor.newInstance({
-      config: {
-        recenter: false,
-        tipRadius: 0.14,
-        shaftRadius: 0.05,
-        tipLength: 0.26,
-      },
-    });
-    axesActor.setXAxisColor([235, 72, 72]);
-    axesActor.setYAxisColor([72, 210, 92]);
-    axesActor.setZAxisColor([72, 140, 255]);
-    axesActor.update();
+    let orientationWidget: ReturnType<
+      typeof vtkOrientationMarkerWidget.newInstance
+    > | null = null;
+    let axesActor: ReturnType<typeof vtkAxesActor.newInstance> | null = null;
 
-    const orientationWidget = vtkOrientationMarkerWidget.newInstance({
-      actor: axesActor,
-      interactor: renderWindow.getInteractor(),
-      parentRenderer: renderer,
-    });
-    orientationWidget.setViewportCorner(
-      vtkOrientationMarkerWidget.Corners.BOTTOM_LEFT,
-    );
-    orientationWidget.setViewportSize(0.2);
-    orientationWidget.setMinPixelSize(80);
-    orientationWidget.setMaxPixelSize(128);
-    orientationWidget.setEnabled(true);
+    if (showOrientation) {
+      axesActor = vtkAxesActor.newInstance({
+        config: {
+          recenter: false,
+          tipRadius: 0.14,
+          shaftRadius: 0.05,
+          tipLength: 0.26,
+        },
+      });
+      axesActor.setXAxisColor([235, 72, 72]);
+      axesActor.setYAxisColor([72, 210, 92]);
+      axesActor.setZAxisColor([72, 140, 255]);
+      axesActor.update();
 
-    requestAnimationFrame(() => {
-      orientationWidget.updateViewport();
-      orientationWidget.updateMarkerOrientation();
-      renderWindow.render();
-    });
+      orientationWidget = vtkOrientationMarkerWidget.newInstance({
+        actor: axesActor,
+        interactor: renderWindow.getInteractor(),
+        parentRenderer: renderer,
+      });
+      orientationWidget.setViewportCorner(
+        vtkOrientationMarkerWidget.Corners.BOTTOM_LEFT,
+      );
+      orientationWidget.setViewportSize(0.2);
+      orientationWidget.setMinPixelSize(80);
+      orientationWidget.setMaxPixelSize(128);
+      orientationWidget.setEnabled(true);
+
+      requestAnimationFrame(() => {
+        orientationWidget?.updateViewport();
+        orientationWidget?.updateMarkerOrientation();
+        renderWindow.render();
+      });
+    }
 
     contextRef.current = {
       fullScreenRenderer,
@@ -240,9 +250,11 @@ export function VolumeScene({
     return () => {
       resize.cancel();
       ro.disconnect();
-      orientationWidget.setEnabled(false);
-      orientationWidget.delete();
-      axesActor.delete();
+      if (orientationWidget) {
+        orientationWidget.setEnabled(false);
+        orientationWidget.delete();
+      }
+      if (axesActor) axesActor.delete();
       volume.delete();
       mapper.delete();
       otf.delete();
@@ -252,7 +264,7 @@ export function VolumeScene({
       fullScreenRenderer.delete();
       contextRef.current = null;
     };
-  }, []);
+  }, [showOrientation]);
 
   useEffect(() => {
     const ctx = contextRef.current;

@@ -6,6 +6,7 @@ import type { TimelineData } from '@/data/types';
 import { TIMESTEP_COUNT, VOXEL_COUNT, type DensityStats } from '@/data/types';
 import { getGlobalTfDomain } from '@/volume/transferFunction';
 import type { VolumeQuality } from '@/volume/VolumeScene';
+import { isPresentationReady, markPresentationReady } from '@/volume/volumeQualityCache';
 import { usePrefetchTimestep } from '@/hooks/usePrefetchTimestep';
 
 export interface UseDashboardInteractionOptions {
@@ -13,6 +14,10 @@ export interface UseDashboardInteractionOptions {
   onPresetBrush?: () => void;
   /** 录屏页默认开启高清体渲染 */
   defaultHighQuality?: boolean;
+  /** 先 high 快速出图，首帧后再切 presentation */
+  progressiveQuality?: boolean;
+  /** 保活模式下 scene 切换不重置 progressive 草稿阶段 */
+  keepVolumeAlive?: boolean;
 }
 
 function exactPresetBrushCount(stats: DensityStats, preset: BrushPresetId): number | null {
@@ -30,12 +35,16 @@ export function useDashboardInteraction(
   loading: boolean,
   options: UseDashboardInteractionOptions = {},
 ) {
-  const { onPresetBrush, defaultHighQuality = false } = options;
+  const { onPresetBrush, defaultHighQuality = false, progressiveQuality = false, keepVolumeAlive = false } =
+    options;
 
   const [sliderStep, setSliderStep] = useState(0);
   const [sliderDragging, setSliderDragging] = useState(false);
   const [highQuality, setHighQuality] = useState(defaultHighQuality);
-  const [volumeReady, setVolumeReady] = useState(true);
+  const [volumeReady, setVolumeReady] = useState(false);
+  const [qualityPhase, setQualityPhase] = useState<'draft' | 'final'>(
+    progressiveQuality ? 'draft' : 'final',
+  );
   const [scanning, setScanning] = useState(false);
 
   usePrefetchTimestep(sliderStep, sliderDragging);
@@ -51,8 +60,13 @@ export function useDashboardInteraction(
 
   useEffect(() => {
     setSliderStep(timestep);
-    setVolumeReady(false);
-  }, [timestep]);
+    if (!keepVolumeAlive) {
+      setVolumeReady(false);
+    }
+    if (progressiveQuality) {
+      setQualityPhase(isPresentationReady(timestep) ? 'final' : 'draft');
+    }
+  }, [timestep, progressiveQuality, keepVolumeAlive]);
 
   const stats = timeline.timesteps[sliderDragging ? sliderStep : timestep];
   const tfDomain = getGlobalTfDomain(timeline);
@@ -61,9 +75,20 @@ export function useDashboardInteraction(
   const volumeQuality: VolumeQuality =
     loading || scanning
       ? 'interactive'
-      : highQuality
-        ? 'presentation'
-        : 'interactive';
+      : progressiveQuality && qualityPhase === 'draft'
+        ? 'high'
+        : highQuality
+          ? 'presentation'
+          : 'interactive';
+
+  const onVolumeRendered = useCallback(() => {
+    setVolumeReady(true);
+    if (progressiveQuality && qualityPhase === 'draft') {
+      requestAnimationFrame(() => setQualityPhase('final'));
+    } else if (!progressiveQuality || qualityPhase === 'final') {
+      markPresentationReady(timestep);
+    }
+  }, [progressiveQuality, qualityPhase, timestep]);
 
   const prevBrushRef = useRef<{ min: number; max: number } | null>(null);
 
@@ -168,6 +193,7 @@ export function useDashboardInteraction(
     setHighQuality,
     volumeReady,
     setVolumeReady,
+    onVolumeRendered,
     scanning,
     brushRange,
     brushedCount,
@@ -177,6 +203,7 @@ export function useDashboardInteraction(
     dataMin,
     dataMax,
     volumeQuality,
+    qualityPhase,
     highlight,
     applyTop1,
     applyBottom1,

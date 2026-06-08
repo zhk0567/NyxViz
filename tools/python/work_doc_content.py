@@ -524,7 +524,7 @@ def build_blocks(timeline: dict) -> list[Block]:
             "**（3）答辩 mp4/GIF：**按大会要求上传 **30–60 s** OBS 录屏"
             "（推荐流程：Top 1% 预设 → 体渲染高亮 → XY 投影金斑 → 切换纤维带 90–99%）；"
             "亦可导出 GIF 作附录，但本 docx **不嵌入**动图文件（体积与 Word 兼容性）。"
-            "录屏分镜脚本见仓库 **`docs/competition/VIDEO_SCRIPT.md`**。"
+            "完整旁白见 **`docs/competition/VIDEO_NARRATION.md`**，录屏步骤见 **`docs/competition/VIDEO_SCRIPT.md`**。"
         )
     )
     blocks.append(

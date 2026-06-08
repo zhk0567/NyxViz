@@ -223,13 +223,10 @@ export function VideoDashboardLayout({
         </aside>
       </div>
 
-      <VideoFindingsStrip timeline={timeline} />
-
-      <footer className="vd-footer">
-        <p className="vd-footer-quote">
-          从近乎均匀的微小涨落，到由引力塑造的宇宙网 —— 这就是结构的诞生。
-        </p>
-      </footer>
+      <div className="vd-bottom">
+        <VideoFindingsStrip timeline={timeline} />
+        <div className="vd-letterbox" aria-hidden />
+      </div>
     </>
   );
 }

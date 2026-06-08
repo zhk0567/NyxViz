@@ -299,13 +299,23 @@ def task2_evolution_story(timeline: dict) -> None:
     std = [s["std"] for s in steps]
     skew = [s["skewness"] for s in steps]
 
-    fig, axes = plt.subplots(2, 2, figsize=(14, 5))
     specs = [
         (span, THEME["purple"], "分位跨度 p99−p01（团块化）"),
         (std, THEME["cyan"], "标准差 σ(t)"),
         (tail, THEME["gold"], "高密度尾体积占比 ≥p99 (%)"),
         (skew, THEME["coral"], "偏度 skew(t)"),
     ]
+
+    for idx, (y, color, title) in enumerate(specs):
+        fig, ax = plt.subplots(figsize=(6.8, 3.1))
+        ax.fill_between(ts, y, alpha=0.12, color=color)
+        ax.plot(ts, y, color=color, lw=LINE_WIDTH)
+        ax.set_title(title, fontsize=11)
+        ax.set_xlabel("时间步", fontsize=10)
+        style_axes(ax)
+        save_figure(fig, OUT / f"task2_evolution_panel_{idx}.png", pad=0.16)
+
+    fig, axes = plt.subplots(2, 2, figsize=(14, 5))
     for ax, (y, color, title) in zip(axes.flat, specs):
         ax.fill_between(ts, y, alpha=0.12, color=color)
         ax.plot(ts, y, color=color, lw=LINE_WIDTH)

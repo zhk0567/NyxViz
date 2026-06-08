@@ -31,11 +31,17 @@ export function DensityHistogram({ timeline, sizeOpts }: DensityHistogramProps) 
     const svgEl = svgRef.current;
     if (!svgEl) return;
 
-    const compact = (sizeOpts?.maxHeight ?? 320) <= 200;
-    const theme = getChartTheme(compact ? 'compact' : 'default');
-    const margin = compact
-      ? { top: 14, right: 14, bottom: 32, left: 48 }
-      : { top: 16, right: 16, bottom: 36, left: 52 };
+    const videoReadable = sizeOpts?.videoReadable === true;
+    const compact =
+      !videoReadable && (sizeOpts?.maxHeight ?? 320) <= 200;
+    const theme = getChartTheme(
+      videoReadable ? 'video' : compact ? 'compact' : 'default',
+    );
+    const margin = videoReadable
+      ? { top: 16, right: 16, bottom: 36, left: 54 }
+      : compact
+        ? { top: 14, right: 14, bottom: 32, left: 48 }
+        : { top: 16, right: 16, bottom: 36, left: 52 };
     const innerW = width - margin.left - margin.right;
     const innerH = height - margin.top - margin.bottom;
 
@@ -130,7 +136,7 @@ export function DensityHistogram({ timeline, sizeOpts }: DensityHistogramProps) 
       .attr('y', innerH + 30)
       .attr('text-anchor', 'middle')
       .attr('fill', LABEL_FILL)
-      .attr('font-size', 11)
+      .attr('font-size', videoReadable ? 12 : 11)
       .text(`密度 (log) — 时间步 ${timestep} · Y=Probability mass×100`);
 
     const brush = d3

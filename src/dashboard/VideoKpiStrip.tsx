@@ -1,11 +1,15 @@
 import type { DensityStats, TimelineData } from '@/data/types';
+import {
+  NARRATION_LABELS,
+  type KpiDisplayMode,
+  type KpiItem,
+} from '@/video/narrationLabels';
 
-interface VideoKpiStripProps {
-  timeline: TimelineData;
-  stats: DensityStats;
-}
-
-export function VideoKpiStrip({ timeline, stats }: VideoKpiStripProps) {
+export function buildKpiItems(
+  timeline: TimelineData,
+  stats: DensityStats,
+  mode: KpiDisplayMode = 'variance',
+): KpiItem[] {
   const s0 = timeline.timesteps[0]!;
   const var0 = s0.std * s0.std;
   const varN = stats.std * stats.std;
@@ -14,30 +18,48 @@ export function VideoKpiStrip({ timeline, stats }: VideoKpiStripProps) {
   const tailN = stats.tailMassAboveP99 * 100;
   const tailMult = tail0 > 1e-6 ? tailN / tail0 : 1;
 
-  const items = [
+  return [
+    mode === 'sigma'
+      ? {
+          label: NARRATION_LABELS.sigma,
+          value: stats.std.toFixed(4),
+          badge: `+${(((stats.std - s0.std) / s0.std) * 100).toFixed(1)}% vs t=0`,
+          tone: 'gold' as const,
+        }
+      : {
+          label: '密度方差 σ²',
+          value: varN.toFixed(2),
+          badge: `↑${varMult.toFixed(1)}× vs 初值`,
+          tone: 'gold' as const,
+        },
     {
-      label: '密度方差 σ²',
-      value: varN.toFixed(2),
-      badge: `↑${varMult.toFixed(1)}× vs 初值`,
-      tone: 'gold' as const,
-    },
-    {
-      label: 'Top 1% 体积占比',
+      label: NARRATION_LABELS.tailAbove,
       value: `${tailN.toFixed(2)}%`,
       badge: tailMult > 1 ? `↑${tailMult.toFixed(1)}×` : undefined,
       tone: 'orange' as const,
     },
     {
-      label: 'Bottom 1% 体积占比',
+      label: NARRATION_LABELS.tailBelow,
       value: `${(stats.tailMassBelowP01 * 100).toFixed(1)}%`,
       tone: 'cyan' as const,
     },
     {
-      label: '平均密度',
+      label: NARRATION_LABELS.mean,
       value: stats.mean.toExponential(2),
       tone: 'blue' as const,
     },
   ];
+}
+
+interface VideoKpiStripProps {
+  timeline: TimelineData;
+  stats: DensityStats;
+  /** 旁白口径为 σ 时显示标准差（非 σ²） */
+  showSigma?: boolean;
+}
+
+export function VideoKpiStrip({ timeline, stats, showSigma }: VideoKpiStripProps) {
+  const items = buildKpiItems(timeline, stats, showSigma ? 'sigma' : 'variance');
 
   return (
     <div className="vd-kpi-strip">

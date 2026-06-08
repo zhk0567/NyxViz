@@ -1,0 +1,103 @@
+.image-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(4, 8, 18, 0.94);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  cursor: zoom-out;
+  box-sizing: border-box;
+}
+
+.image-lightbox-panel {
+  width: min(92vw, 920px);
+  max-height: 86vh;
+  overflow: auto;
+  cursor: default;
+  box-sizing: border-box;
+  /* Portal 到 body，需自带 video-dashboard 主题变量 */
+  --vd-orange: #ff6b2c;
+  --vd-cyan: #4ec4ff;
+  --vd-muted: #a8bdd8;
+  --vd-text: #f8fbff;
+  --vd-gradient-warm: linear-gradient(90deg, #ffb74d, #ff6b2c);
+  --cosmic-glass-bg: rgba(8, 16, 36, 0.82);
+  --cosmic-glass-glow: 0 0 24px rgba(78, 196, 255, 0.08);
+  color: var(--vd-text);
+  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+}
+
+.image-lightbox-panel .vd-finding-title,
+.image-lightbox-panel .vd-finding h3 {
+  background: var(--vd-gradient-warm);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.image-lightbox-panel .vd-finding-num {
+  color: var(--vd-cyan);
+}
+
+.image-lightbox-panel .vd-finding-evo figcaption,
+.image-lightbox-panel .vd-finding-note,
+.image-lightbox-panel .vd-finding-cap,
+.image-lightbox-panel .vd-finding-mass-label {
+  color: var(--vd-muted);
+}
+
+.image-lightbox-panel .vd-metric-em {
+  color: var(--vd-orange);
+  -webkit-text-fill-color: var(--vd-orange);
+}
+
+.image-lightbox-panel .vd-finding {
+  border: 1px solid rgba(78, 196, 255, 0.18);
+  background: var(--cosmic-glass-bg);
+  box-shadow: var(--cosmic-glass-glow);
+}
+
+.image-lightbox-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.45rem 0.9rem;
+  background: rgba(8, 16, 36, 0.92);
+  border: 1px solid rgba(78, 196, 255, 0.28);
+  color: #f8fbff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.88rem;
+}
+
+.image-lightbox-close:hover {
+  border-color: rgba(78, 196, 255, 0.5);
+  color: #4ec4ff;
+}
+
+.vd-zoomable {
+  cursor: zoom-in;
+}
+
+.vd-zoomable:hover {
+  filter: brightness(1.06);
+}
+
+.vd-lightbox-figure {
+  margin: 0;
+}
+
+.vd-lightbox-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 82vh;
+  object-fit: contain;
+  border-radius: 4px;
+}

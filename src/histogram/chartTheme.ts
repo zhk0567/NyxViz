@@ -1,6 +1,6 @@
 import type * as d3 from 'd3';
 
-export type ChartThemeTier = 'default' | 'compact' | 'poster';
+export type ChartThemeTier = 'default' | 'compact' | 'poster' | 'video';
 
 export interface ChartTheme {
   axisFill: string;
@@ -38,12 +38,22 @@ const POSTER_THEME: ChartTheme = {
   tickWidth: 1,
 };
 
+const VIDEO_THEME: ChartTheme = {
+  axisFill: '#d4e4f8',
+  gridStroke: 'rgba(200, 216, 236, 0.32)',
+  labelFill: '#e8f0fc',
+  domainWidth: 1.3,
+  tickWidth: 1.15,
+};
+
 export function getChartTheme(tier: ChartThemeTier): ChartTheme {
   switch (tier) {
     case 'compact':
       return COMPACT_THEME;
     case 'poster':
       return POSTER_THEME;
+    case 'video':
+      return VIDEO_THEME;
     default:
       return DEFAULT_THEME;
   }

@@ -99,8 +99,15 @@ export default defineConfig({
         capture: path.resolve(__dirname, 'pages/capture.html'),
       },
       output: {
-        manualChunks: {
-          vtk: ['@kitware/vtk.js'],
+        manualChunks(id) {
+          if (id.includes('@kitware/vtk.js')) return 'vtk';
+          if (
+            id.includes('/src/dashboard/Video') ||
+            id.includes('/src/volume/VolumeScene') ||
+            id.includes('/src/video-main')
+          ) {
+            return 'video';
+          }
         },
       },
     },
