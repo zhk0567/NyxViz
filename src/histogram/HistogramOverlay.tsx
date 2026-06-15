@@ -35,37 +35,22 @@ function shouldLegendBelow(
   innerW: number,
   tier: string,
   height: number,
-  externalLegend = false,
+  overlayLegend = false,
 ): boolean {
-  if (externalLegend) return false;
+  if (overlayLegend) return false;
   if (height < 130) return true;
   const sideReserve = LEGEND_BOX_W + LEGEND_GAP + 8;
   return tier === 'compact' || innerW - 52 - sideReserve < 180;
 }
 
-function HistogramLegendStrip() {
-  return (
-    <div className="hist-overlay-legend" aria-hidden>
-      {REPRESENTATIVE_STEPS.map((t, idx) => (
-        <span
-          key={t}
-          className="hist-overlay-legend-item"
-          style={{ color: COLORS[idx] }}
-        >
-          <span className="hist-overlay-legend-swatch" style={{ borderColor: COLORS[idx] }} />
-          t={t}
-        </span>
-      ))}
-    </div>
-  );
-}
+type LegendPosition = 'side' | 'below' | 'topRight';
 
 function drawLegend(
   g: d3.Selection<SVGGElement, unknown, null, undefined>,
   curveW: number,
   innerH: number,
   tier: 'poster' | 'default' | 'compact' | 'video',
-  below = false,
+  position: LegendPosition = 'side',
 ) {
   const n = REPRESENTATIVE_STEPS.length;
   const legendFont =
@@ -73,6 +58,8 @@ function drawLegend(
   const step =
     tier === 'poster' ? 16 : tier === 'video' ? 14 : tier === 'compact' ? 12 : 14;
   const boxH = n * step + 8;
+  const below = position === 'below';
+  const topRight = position === 'topRight';
 
   if (below) {
     const legendY0 = innerH + 30;
@@ -110,22 +97,26 @@ function drawLegend(
     return;
   }
 
-  const legendX = curveW + LEGEND_GAP;
-  const legendY0 = Math.max(0, (innerH - boxH) / 2);
+  const legendX = topRight ? Math.max(0, curveW - LEGEND_BOX_W - 8) : curveW + LEGEND_GAP;
+  const legendY0 = topRight ? 8 : Math.max(0, (innerH - boxH) / 2);
+  const panelFill = topRight ? 'rgba(6, 10, 20, 0.88)' : 'rgba(6, 10, 20, 0.82)';
 
-  g.insert('rect', ':first-child')
+  const legendG = g.append('g').attr('class', 'hist-overlay-legend-svg');
+  legendG
+    .append('rect')
     .attr('x', legendX)
     .attr('y', legendY0 - 6)
     .attr('width', LEGEND_BOX_W)
     .attr('height', boxH)
     .attr('rx', 6)
-    .attr('fill', 'rgba(6, 10, 20, 0.82)')
+    .attr('fill', panelFill)
     .attr('stroke', 'rgba(78, 196, 255, 0.22)');
 
   REPRESENTATIVE_STEPS.forEach((t, idx) => {
     const ly = legendY0 + idx * step;
     const color = COLORS[idx]!;
-    g.append('line')
+    legendG
+      .append('line')
       .attr('x1', legendX + 8)
       .attr('x2', legendX + 24)
       .attr('y1', ly)
@@ -133,7 +124,8 @@ function drawLegend(
       .attr('stroke', color)
       .attr('stroke-width', tier === 'poster' ? 3 : tier === 'video' ? 2.75 : 2.5)
       .attr('stroke-linecap', 'round');
-    g.append('text')
+    legendG
+      .append('text')
       .attr('x', legendX + 28)
       .attr('y', ly + 4)
       .attr('fill', color)
@@ -147,15 +139,13 @@ export function HistogramOverlay({ timeline, sizeOpts }: HistogramOverlayProps) 
   const wrapRef = useRef<HTMLDivElement>(null);
   const { width, height } = useChartSizeFromOpts(wrapRef, sizeOpts);
   const svgRef = useRef<SVGSVGElement>(null);
-  const externalLegend = Boolean(sizeOpts?.videoReadable);
-  const legendStripH = externalLegend ? 32 : 0;
-  const plotHeight = Math.max(96, height - legendStripH);
+  const overlayLegend = Boolean(sizeOpts?.videoReadable);
 
   useEffect(() => {
     const svgEl = svgRef.current;
     if (!svgEl || width < 80) return;
 
-    const tier = chartTier(sizeOpts, plotHeight);
+    const tier = chartTier(sizeOpts, height);
     const theme = getChartTheme(
       tier === 'poster'
         ? 'poster'
@@ -170,7 +160,7 @@ export function HistogramOverlay({ timeline, sizeOpts }: HistogramOverlayProps) 
       tier === 'poster'
         ? { top: 26, right: 14, bottom: 54, left: 64 }
         : tier === 'video'
-          ? { top: 14, right: 10, bottom: externalLegend ? 34 : 40, left: 54 }
+          ? { top: 14, right: 10, bottom: 40, left: 54 }
           : tier === 'compact'
             ? { top: 12, right: 8, bottom: 36, left: 46 }
             : { top: 16, right: 10, bottom: 38, left: 52 };
@@ -179,19 +169,19 @@ export function HistogramOverlay({ timeline, sizeOpts }: HistogramOverlayProps) 
     const legendBelow = shouldLegendBelow(
       preInnerW,
       tier,
-      plotHeight,
-      externalLegend,
+      height,
+      overlayLegend,
     );
-    const bottomLegendExtra = legendBelow ? legendBottomReserve(plotHeight) : 0;
+    const bottomLegendExtra = legendBelow ? legendBottomReserve(height) : 0;
     const margin = {
       ...baseMargin,
       bottom: baseMargin.bottom + bottomLegendExtra,
     };
     const innerW = width - margin.left - margin.right;
-    const innerH = plotHeight - margin.top - margin.bottom;
+    const innerH = height - margin.top - margin.bottom;
     const curveW = Math.max(
       40,
-      innerW - (legendBelow ? 0 : legendReserve),
+      innerW - (legendBelow || overlayLegend ? 0 : legendReserve),
     );
 
     const axisFont =
@@ -225,7 +215,7 @@ export function HistogramOverlay({ timeline, sizeOpts }: HistogramOverlayProps) 
 
     const svg = d3.select(svgEl);
     svg.selectAll('*').remove();
-    svg.attr('width', width).attr('height', plotHeight);
+    svg.attr('width', width).attr('height', height);
 
     svg
       .append('defs')
@@ -311,7 +301,7 @@ export function HistogramOverlay({ timeline, sizeOpts }: HistogramOverlayProps) 
         .attr('font-size', 13)
         .attr('font-weight', 600)
         .text('Probability mass×100');
-    } else if (!legendBelow && !externalLegend && tier !== 'compact') {
+    } else if (!legendBelow && !overlayLegend && tier !== 'compact') {
       g.append('text')
         .attr('x', curveW / 2)
         .attr('y', innerH + (tier === 'video' ? 32 : 30))
@@ -322,17 +312,20 @@ export function HistogramOverlay({ timeline, sizeOpts }: HistogramOverlayProps) 
         .text('密度 ρ (log)');
     }
 
-    if (!externalLegend) {
-      drawLegend(g, curveW, innerH, tier, legendBelow);
-    }
-  }, [timeline, width, height, plotHeight, externalLegend, sizeOpts]);
+    const legendPosition: LegendPosition = legendBelow
+      ? 'below'
+      : overlayLegend
+        ? 'topRight'
+        : 'side';
+    drawLegend(g, curveW, innerH, tier, legendPosition);
+  }, [timeline, width, height, overlayLegend, sizeOpts]);
 
   const fillContainer = sizeOpts?.fillContainer ?? false;
 
   return (
     <div
       ref={wrapRef}
-      className={`chart-responsive chart-responsive-fill histogram-overlay-wrap${externalLegend ? ' histogram-overlay-wrap--external-legend' : ''}`}
+      className="chart-responsive chart-responsive-fill histogram-overlay-wrap"
       style={
         fillContainer
           ? { width: '100%', height: '100%', minHeight: 0 }
@@ -342,11 +335,10 @@ export function HistogramOverlay({ timeline, sizeOpts }: HistogramOverlayProps) 
       <svg
         ref={svgRef}
         className="histogram-overlay"
-        viewBox={`0 0 ${width} ${plotHeight}`}
+        viewBox={`0 0 ${width} ${height}`}
         preserveAspectRatio="xMidYMid meet"
         aria-label="多时刻 log 直方图叠加"
       />
-      {externalLegend && <HistogramLegendStrip />}
     </div>
   );
 }
