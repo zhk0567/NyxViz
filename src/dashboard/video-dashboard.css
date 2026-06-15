@@ -1595,15 +1595,16 @@ html:has(.video-dashboard) body {
 }
 
 .vd-finding-verify {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 5px;
   flex: 1 1 0;
   min-height: 0;
+  align-content: start;
   overflow: hidden;
 }
 
 .vd-finding-verify-item {
-  flex: 1;
   min-width: 0;
   min-height: 0;
   margin: 0;
@@ -1636,28 +1637,28 @@ html:has(.video-dashboard) body {
 }
 
 .vd-finding-media-verify {
-  flex: 1 1 0;
-  min-height: 0;
+  flex: 0 0 auto;
   width: 100%;
-  aspect-ratio: unset;
-  max-height: none;
+  aspect-ratio: 1;
+  min-height: 0;
+  max-height: 100%;
 }
 
 .vd-finding-verify .vd-finding-media {
-  flex: 1 1 0;
+  flex: 0 0 auto;
+  width: 100%;
+  aspect-ratio: 1;
   min-height: 0;
-  aspect-ratio: unset;
-  max-height: none;
+  max-height: 100%;
 }
 
 .vd-finding-media-verify img,
 .vd-finding-verify .vd-finding-media img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center center;
   display: block;
-  background: rgba(2, 6, 14, 0.92);
 }
 
 .vd-finding-media-crop-right {
@@ -3198,6 +3199,8 @@ html.video-dashboard .vd-brush-hist-hint {
   grid-template-rows: 1fr 1fr;
   gap: 10px;
   padding-bottom: 4px;
+  width: 100%;
+  align-content: stretch;
 }
 
 /* ??????????????????flex-grow ???????? */
@@ -3275,6 +3278,8 @@ html.video-dashboard .vd-brush-hist-hint {
 .video-scene-findings .vd-findings--focus .vd-finding--metrics .vd-finding-media-wide {
   flex: 1 1 0;
   min-height: 0;
+  width: 100%;
+  align-self: stretch;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3308,10 +3313,10 @@ html.video-dashboard .vd-brush-hist-hint {
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: center;
+  justify-content: space-evenly;
   gap: 18px;
-  flex: 0 0 auto;
-  width: auto;
+  flex: 1 1 0;
+  width: 100%;
   max-width: 100%;
 }
 
@@ -3365,8 +3370,12 @@ html.video-dashboard .vd-brush-hist-hint {
 .video-scene-findings .vd-findings--focus .vd-finding--verify .vd-finding-verify {
   flex: 1 1 0;
   min-height: 0;
+  width: 100%;
   gap: 12px;
-  align-items: stretch;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-content: start;
+  align-items: start;
 }
 
 .video-scene-findings .vd-findings--focus .vd-finding-verify-item {
@@ -3380,18 +3389,17 @@ html.video-dashboard .vd-brush-hist-hint {
 }
 
 .video-scene-findings .vd-findings--focus .vd-finding-media-verify {
-  flex: 1 1 0;
+  flex: 0 0 auto;
+  width: 100%;
+  aspect-ratio: 1;
   min-height: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  max-height: none;
 }
 
 .video-scene-findings .vd-findings--focus .vd-finding-media-verify img {
   width: 100%;
   height: 100%;
-  max-height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center center;
 }
 
@@ -4262,6 +4270,23 @@ html.video-dashboard .vd-brush-hist-hint {
   max-height: var(--vd-findings-h);
 }
 
+/* 发现专场景：record/browse 均撑满 main-stack，勿沿用条带固定高度 */
+.video-record-mode.video-scene-findings .vd-main-stack > .vd-bottom:has(.vd-findings),
+.video-record-mode.video-browse-mode.video-scene-findings .vd-main-stack > .vd-bottom:has(.vd-findings) {
+  flex: 1 1 0;
+  height: auto;
+  max-height: none;
+  min-height: 0;
+}
+
+.video-record-mode.video-scene-findings .vd-bottom--findings-focus .vd-findings,
+.video-record-mode.video-scene-findings .vd-findings--focus {
+  flex: 1 1 0;
+  min-height: 0;
+  height: auto;
+  max-height: none;
+}
+
 .video-record-mode.video-browse-mode .vd-letterbox {
   display: none;
 }
@@ -4295,8 +4320,8 @@ html.video-dashboard .vd-brush-hist-hint {
   align-items: center;
   justify-content: center;
   gap: 6px 10px;
-  padding: 2px 4px 0;
-  margin-top: 2px;
+  padding: 4px 4px 2px;
+  margin-top: 4px;
 }
 
 .hist-overlay-legend-item {
