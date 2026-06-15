@@ -6,13 +6,16 @@ import { VideoSceneNav } from '@/dashboard/video-scenes/VideoSceneNav';
 import { useDashboardInteraction } from '@/dashboard/useDashboardInteraction';
 import { useVideoScene } from '@/video/useVideoScene';
 import { sceneLayoutStyle } from '@/video/sceneRegistry';
-import { loadTimestep } from '@/data/nyxLoader';
-import { getVtkScalarsAsync } from '@/data/vtkConvert';
 import type { VideoStatsBundle } from '@/data/statsLoader';
 import type { TimelineData } from '@/data/types';
 import type { ChartSizeOptions } from '@/hooks/useChartSize';
 import { CosmicBackdrop } from '@/components/CosmicBackdrop';
 import { useAppStore } from '@/store/useAppStore';
+import { useVolumeVisualProfile } from '@/hooks/useVolumeVisualProfile';
+import { VIDEO_CAMERA_ZOOM } from '@/volume/renderSpec';
+import { isVideoPosterCapture, useVideoPosterCapture } from '@/dashboard/useVideoPosterCapture';
+import { VideoSceneRecordBrowse } from '@/dashboard/video-scenes/VideoSceneRecordBrowse';
+import { isVideoBrowseMode } from '@/video/recordBrowse';
 
 const VIDEO_HIST_OVERLAY: ChartSizeOptions = {
   minHeight: 118,
@@ -29,9 +32,9 @@ const VIDEO_HISTOGRAM_SIZE: ChartSizeOptions = {
 };
 
 const VIDEO_RECORD_HIST_OVERLAY: ChartSizeOptions = {
-  minHeight: 150,
-  maxHeight: 220,
-  aspect: 2.0,
+  minHeight: 148,
+  maxHeight: 196,
+  aspect: 2.15,
   fillContainer: true,
   videoReadable: true,
 };
@@ -60,14 +63,15 @@ export function VideoDashboard({
   videoStats,
 }: VideoDashboardProps) {
   const { sceneId, sceneMeta, setScene, recordMode } = useVideoScene();
+  const browseMode = isVideoBrowseMode();
+  const posterCapture = isVideoPosterCapture();
   const setTimestep = useAppStore((s) => s.setTimestep);
   const sceneBrushApplied = useRef(false);
   const [volumeEverMounted, setVolumeEverMounted] = useState(false);
-  const warmedTimesteps = useRef(new Set<number>());
 
-  const keepVolumeAlive = !recordMode;
+  const keepVolumeAlive = false;
 
-  const recordReadable = recordMode && sceneId !== 'intro';
+  const recordReadable = recordMode;
 
   const layoutStyle = useMemo(
     () => sceneLayoutStyle(sceneMeta, recordMode),
@@ -85,9 +89,12 @@ export function VideoDashboard({
   );
 
   const ix = useDashboardInteraction(timeline, densityData, loading, {
-    defaultHighQuality: true,
+    defaultHighQuality: false,
     progressiveQuality: true,
-    keepVolumeAlive,
+    keepVolumeAlive: false,
+    instantVolume: false,
+    videoMode: true,
+    idleBoostDelayMs: recordMode ? 350 : 1200,
   });
 
   const {
@@ -98,6 +105,7 @@ export function VideoDashboard({
     setSliderDragging,
     volumeReady,
     onVolumeRendered,
+    onVolumeCameraActivity,
     brushRange,
     tfParams,
     stats,
@@ -117,20 +125,23 @@ export function VideoDashboard({
     timestepCount,
   } = ix;
 
+  const visualProfile = useVolumeVisualProfile(timeline, timestep, sceneId);
+  const volumeHighlightMin = highlight.highlightMin ?? visualProfile.highlightMin;
+  const volumeHighlightMax = highlight.highlightMax ?? visualProfile.highlightMax;
+
+  useVideoPosterCapture({
+    enabled: posterCapture,
+    recordMode,
+    sceneId,
+    loading,
+    volumeReady,
+  });
+
   useEffect(() => {
     setTimestep(sceneMeta.defaultTimestep);
     setSliderStep(sceneMeta.defaultTimestep);
     sceneBrushApplied.current = false;
   }, [sceneMeta.defaultTimestep, sceneMeta.id, setTimestep, setSliderStep]);
-
-  useEffect(() => {
-    const t = sceneMeta.defaultTimestep;
-    if (warmedTimesteps.current.has(t)) return;
-    warmedTimesteps.current.add(t);
-    void loadTimestep(t).then((data) => {
-      void getVtkScalarsAsync(t, data);
-    });
-  }, [sceneMeta.defaultTimestep]);
 
   useEffect(() => {
     if (!stats || sceneBrushApplied.current) return;
@@ -148,17 +159,23 @@ export function VideoDashboard({
     clearBrush,
   ]);
 
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.add('video-dashboard');
+    if (recordMode) root.classList.add('video-record-mode');
+    if (browseMode) root.classList.add('video-browse-mode');
+    return () => {
+      root.classList.remove('video-dashboard', 'video-record-mode', 'video-browse-mode');
+    };
+  }, [recordMode, browseMode]);
+
   return (
     <div
-      className={`video-dashboard cosmic-page-frame video-scene-${sceneId}${recordMode ? ' video-record-mode' : ''}`}
+      className={`video-dashboard cosmic-page-frame video-scene-${sceneId}${recordMode ? ' video-record-mode' : ''}${browseMode ? ' video-browse-mode' : ''}${posterCapture ? ' video-poster-capture-mode' : ''}`}
       data-scene={sceneId}
       style={layoutStyle}
     >
-      <CosmicBackdrop
-        variant="video"
-        intensity={recordMode ? 'subtle' : 'full'}
-      />
-      <VideoSceneChrome title={sceneMeta.title} recordMode={recordMode} />
+      <CosmicBackdrop variant="video" intensity="subtle" />
 
       {sceneMeta.showFindings === false || sceneId !== 'findings' ? (
         <VideoDashboardHeader
@@ -185,6 +202,8 @@ export function VideoDashboard({
         </header>
       )}
 
+      <VideoSceneChrome title={sceneMeta.title} recordMode={recordMode && !posterCapture} />
+
       {!recordMode && (
         <div className="vd-preview-bar">
           <div className="vd-preview-util">
@@ -206,16 +225,6 @@ export function VideoDashboard({
         </div>
       )}
 
-      {recordMode && sceneId === 'intro' && (
-        <div className="vd-preview-bar vd-preview-bar--record">
-          <VideoSceneNav
-            currentScene={sceneId}
-            recordMode={recordMode}
-            onSceneChange={setScene}
-          />
-        </div>
-      )}
-
       <VideoSceneLayout
         sceneId={sceneId}
         sceneMeta={sceneMeta}
@@ -227,14 +236,18 @@ export function VideoDashboard({
         stats={stats}
         dataMin={dataMin}
         dataMax={dataMax}
-        tfParams={tfParams}
+        volumeDataMin={visualProfile.dataMin}
+        volumeDataMax={visualProfile.dataMax}
+        tfParams={visualProfile.tfParams}
         volumeQuality={volumeQuality}
         qualityPhase={qualityPhase}
         volumeReady={volumeReady}
         onVolumeRendered={onVolumeRendered}
+        onVolumeCameraActivity={onVolumeCameraActivity}
         brushRange={brushRange}
-        highlightMin={highlight.highlightMin}
-        highlightMax={highlight.highlightMax}
+        highlightMin={volumeHighlightMin}
+        highlightMax={volumeHighlightMax}
+        volumeCameraZoom={visualProfile.cameraZoom ?? VIDEO_CAMERA_ZOOM}
         volumeRatio={volumeRatio}
         onTop1={applyTop1}
         onBottom1={applyBottom1}
@@ -247,6 +260,13 @@ export function VideoDashboard({
         volumeEverMounted={volumeEverMounted}
         onVolumeMounted={() => setVolumeEverMounted(true)}
         onSelectTimestep={selectTimestep}
+        volumeInteractive={true}
+        volumeFocusOnClick={sceneMeta.showCenter}
+        recordBrowse={
+          recordMode && browseMode && !posterCapture ? (
+            <VideoSceneRecordBrowse currentScene={sceneId} onSceneChange={setScene} />
+          ) : undefined
+        }
       />
     </div>
   );
