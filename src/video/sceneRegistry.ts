@@ -1,4 +1,5 @@
 import type { BrushPresetId } from '@/data/brushPreset';
+import { figuresUrl } from '@/config/publicPaths';
 import { NARRATION_LABELS } from '@/video/narrationLabels';
 
 export const VIDEO_SCENE_IDS = [
@@ -121,7 +122,7 @@ export const VIDEO_SCENES: VideoSceneMeta[] = [
   {
     id: 'task1-morph',
     title: '任务一 · 形态演化',
-    narrationIndex: 1,
+    narrationIndex: 2,
     defaultTimestep: 99,
     brushPreset: null,
     layout: 'focus-center',
@@ -140,7 +141,7 @@ export const VIDEO_SCENES: VideoSceneMeta[] = [
   {
     id: 'task2-evolution',
     title: '任务二 · 演化量化',
-    narrationIndex: 2,
+    narrationIndex: 3,
     defaultTimestep: 99,
     brushPreset: null,
     layout: 'focus-left',
@@ -153,19 +154,19 @@ export const VIDEO_SCENES: VideoSceneMeta[] = [
       kpiMode: 'sigma',
       figures: [
         {
-          src: '/figures/task2_evolution_panel_0.png',
+          src: figuresUrl('task2_evolution_panel_0.png'),
           caption: '分位跨度 p99−p01（团块化）',
         },
         {
-          src: '/figures/task2_evolution_panel_1.png',
+          src: figuresUrl('task2_evolution_panel_1.png'),
           caption: '标准差 σ(t)',
         },
         {
-          src: '/figures/task2_evolution_panel_2.png',
+          src: figuresUrl('task2_evolution_panel_2.png'),
           caption: '高密度尾体积占比 ≥p99 (%)',
         },
         {
-          src: '/figures/task2_evolution_panel_3.png',
+          src: figuresUrl('task2_evolution_panel_3.png'),
           caption: '偏度 skew(t)',
         },
       ],
@@ -174,7 +175,7 @@ export const VIDEO_SCENES: VideoSceneMeta[] = [
   {
     id: 'task2-void',
     title: '任务二 · void 双阈值',
-    narrationIndex: 2,
+    narrationIndex: 4,
     defaultTimestep: 99,
     brushPreset: null,
     layout: 'dedicated',
@@ -188,7 +189,7 @@ export const VIDEO_SCENES: VideoSceneMeta[] = [
   {
     id: 'task2-cases',
     title: '任务二 · 案例 A/B/C',
-    narrationIndex: 2,
+    narrationIndex: 5,
     defaultTimestep: 99,
     brushPreset: 'top',
     layout: 'focus-left',
@@ -207,7 +208,7 @@ export const VIDEO_SCENES: VideoSceneMeta[] = [
   {
     id: 'task2-spatial',
     title: '任务二 · 空间统计',
-    narrationIndex: 2,
+    narrationIndex: 6,
     defaultTimestep: 99,
     brushPreset: null,
     layout: 'dedicated',
@@ -221,7 +222,7 @@ export const VIDEO_SCENES: VideoSceneMeta[] = [
   {
     id: 'task3-hist',
     title: '任务三 · 密度时序统计',
-    narrationIndex: 3,
+    narrationIndex: 7,
     defaultTimestep: 99,
     brushPreset: null,
     layout: 'full',
@@ -237,15 +238,15 @@ export const VIDEO_SCENES: VideoSceneMeta[] = [
     },
     content: {
       figures: [
-        { src: '/figures/task3_peak_drift.png', caption: '主峰漂移' },
-        { src: '/figures/task3_evolution_metrics.png', caption: 'σ · 偏度 · 分位跨度' },
+        { src: figuresUrl('task3_peak_drift.png'), caption: '主峰漂移' },
+        { src: figuresUrl('task3_evolution_metrics.png'), caption: 'σ · 偏度 · 分位跨度' },
       ],
     },
   },
   {
     id: 'task4-brush',
     title: '任务四 · 相空间刷选',
-    narrationIndex: 4,
+    narrationIndex: 8,
     defaultTimestep: 99,
     brushPreset: null,
     layout: 'focus-right',
@@ -259,7 +260,7 @@ export const VIDEO_SCENES: VideoSceneMeta[] = [
   {
     id: 'task4-validate',
     title: '任务四 · 验证与早停',
-    narrationIndex: 4,
+    narrationIndex: 9,
     defaultTimestep: 99,
     brushPreset: 'top',
     layout: 'focus-right',
@@ -273,7 +274,7 @@ export const VIDEO_SCENES: VideoSceneMeta[] = [
   {
     id: 'findings',
     title: '发现卡 · 结语',
-    narrationIndex: 5,
+    narrationIndex: 10,
     defaultTimestep: 99,
     brushPreset: null,
     layout: 'focus-bottom',
@@ -321,10 +322,18 @@ export function sceneLayoutStyle(
 ): Record<string, string> {
   const findingsH = resolveFindingsHeight(meta, recordMode);
   const centerMin = resolveCenterMinHeight(meta, recordMode);
+  const bodyGap = recordMode ? '10px' : '12px';
+  const colLeft = recordMode ? '1.02fr' : '1.02fr';
+  const colCenter = recordMode ? '1.35fr' : '1.28fr';
+  const colRight = recordMode ? '0.82fr' : '0.88fr';
   return {
     '--vd-findings-h': `${findingsH}px`,
     '--scene-findings-h': `${findingsH}px`,
     '--scene-center-min-h': centerMin > 0 ? `${centerMin}px` : '0px',
+    '--vd-body-gap': bodyGap,
+    '--vd-col-left': colLeft,
+    '--vd-col-center': colCenter,
+    '--vd-col-right': colRight,
   };
 }
 
@@ -339,6 +348,13 @@ export function parseSceneId(raw: string | null): VideoSceneId {
 
 export function getSceneMeta(id: VideoSceneId): VideoSceneMeta {
   return SCENE_MAP.get(id)!;
+}
+
+/** 录屏 browse 条 pill 文案：取 title 中「 · 」后的子场景名（与预览 tab 完整 title 一致的后半段） */
+export function sceneBrowseLabel(meta: VideoSceneMeta): string {
+  const sep = ' · ';
+  const idx = meta.title.indexOf(sep);
+  return idx >= 0 ? meta.title.slice(idx + sep.length) : meta.title;
 }
 
 export function sceneUrl(id: VideoSceneId, record = false): string {
