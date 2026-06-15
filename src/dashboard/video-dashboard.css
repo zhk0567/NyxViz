@@ -1636,24 +1636,22 @@ html:has(.video-dashboard) body {
   flex-shrink: 0;
 }
 
-.vd-finding-media-verify {
-  flex: 0 0 auto;
-  width: 100%;
-  aspect-ratio: 1;
-  min-height: 0;
-  max-height: 100%;
-}
-
+.vd-finding-media-verify,
 .vd-finding-verify .vd-finding-media {
   flex: 0 0 auto;
   width: 100%;
   aspect-ratio: 1;
   min-height: 0;
   max-height: 100%;
+  display: block;
+  position: relative;
+  padding: 0;
 }
 
 .vd-finding-media-verify img,
 .vd-finding-verify .vd-finding-media img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -3371,16 +3369,18 @@ html.video-dashboard .vd-brush-hist-hint {
   flex: 1 1 0;
   min-height: 0;
   width: 100%;
+  height: 100%;
   gap: 12px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  align-content: start;
-  align-items: start;
+  align-content: stretch;
+  align-items: stretch;
 }
 
 .video-scene-findings .vd-findings--focus .vd-finding-verify-item {
   gap: 4px;
   min-height: 0;
+  height: 100%;
 }
 
 .video-scene-findings .vd-findings--focus .vd-finding-cap {
@@ -3388,15 +3388,21 @@ html.video-dashboard .vd-brush-hist-hint {
   flex-shrink: 0;
 }
 
-.video-scene-findings .vd-findings--focus .vd-finding-media-verify {
-  flex: 0 0 auto;
+.video-scene-findings .vd-findings--focus .vd-finding-media-verify,
+.video-scene-findings .vd-findings--focus .vd-finding-verify .vd-finding-media {
+  flex: 1 1 0;
   width: 100%;
+  height: auto;
+  max-height: 100%;
   aspect-ratio: 1;
+  align-self: center;
   min-height: 0;
-  max-height: none;
 }
 
-.video-scene-findings .vd-findings--focus .vd-finding-media-verify img {
+.video-scene-findings .vd-findings--focus .vd-finding-media-verify img,
+.video-scene-findings .vd-findings--focus .vd-finding-verify .vd-finding-media img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -4302,42 +4308,6 @@ html.video-dashboard .vd-brush-hist-hint {
 .video-record-mode .vd-panel-left .vd-panel-hist .histogram-overlay-wrap {
   height: 100%;
   max-height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.video-record-mode .vd-panel-left .vd-panel-hist .histogram-overlay-wrap--external-legend .histogram-overlay {
-  flex: 1 1 0;
-  min-height: 0;
-  width: 100%;
-  height: auto;
-}
-
-.hist-overlay-legend {
-  flex: 0 0 auto;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 6px 10px;
-  padding: 4px 4px 2px;
-  margin-top: 4px;
-}
-
-.hist-overlay-legend-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.68rem;
-  font-weight: 600;
-  line-height: 1.1;
-  white-space: nowrap;
-}
-
-.hist-overlay-legend-swatch {
-  width: 14px;
-  border-top: 2.5px solid;
-  border-radius: 1px;
 }
 
 .video-record-mode .vd-panel-left .vd-panel-hist .chart-responsive-fill svg {
@@ -4360,7 +4330,7 @@ html.video-dashboard .vd-brush-hist-hint {
 .vd-band-static {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center center;
   display: block;
   background: rgba(2, 6, 14, 0.92);
