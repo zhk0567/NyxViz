@@ -4302,12 +4302,13 @@ html.video-dashboard .vd-brush-hist-hint {
   height: clamp(148px, 20vh, 196px);
   max-height: 196px;
   min-height: 148px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .video-record-mode .vd-panel-left .vd-panel-hist .histogram-overlay-wrap {
   height: 100%;
   max-height: 100%;
+  overflow: hidden;
 }
 
 .video-record-mode .vd-panel-left .vd-panel-hist .chart-responsive-fill svg {
@@ -4411,6 +4412,17 @@ html.video-dashboard .vd-brush-hist-hint {
 
 .video-record-mode.video-scene-intro .vd-finding-card {
   padding: 10px 12px;
+}
+
+.video-record-mode.video-browse-mode.video-scene-task2-spatial .vd-main-stack {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.video-record-mode.video-browse-mode.video-scene-task2-spatial .vd-body.vd-body--spatial {
+  flex: 1 1 0;
+  min-height: 0;
+  height: auto;
 }
 
 .video-record-mode.video-scene-intro .vd-body {

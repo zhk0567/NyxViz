@@ -1,4 +1,9 @@
 import { figuresUrl, isStaticFiguresOnly } from '@/config/publicPaths';
+import {
+  VIDEO_BRUSH_BAND_FALLBACKS,
+  VIDEO_BRUSH_BAND_FIGURES,
+  type BrushBandId,
+} from '@/config/videoStaticFigures';
 import { useSharedProjection } from '@/hooks/useSharedProjection';
 import { BandPreviewCanvas } from '@/spatial/BandPreviewCanvas';
 import type { BrushPresetId } from '@/data/brushPreset';
@@ -44,18 +49,8 @@ const BANDS: {
   { id: 'top', label: 'Top 1%', preset: 'top' },
 ];
 
-const STATIC_BAND_FIGURES: Record<(typeof BANDS)[number]['id'], string> = {
-  bottom: 'task4_brush_bottom_proj.png',
-  mid: 'task4_discovery_context_t99.png',
-  filament: 'task4_spatial_filament.png',
-  top: 'task4_brush_top1.png',
-};
-
-const STATIC_BAND_FALLBACKS: Partial<Record<(typeof BANDS)[number]['id'], string>> = {
-  bottom: 'task4_brush_bottom_hl.png',
-  filament: 'task4_panel_filament.png',
-  top: 'task4_brush_top1_viz.png',
-};
+const STATIC_BAND_FIGURES = VIDEO_BRUSH_BAND_FIGURES;
+const STATIC_BAND_FALLBACKS = VIDEO_BRUSH_BAND_FALLBACKS;
 
 export function VideoBrushPreviews({
   stats,
@@ -85,7 +80,7 @@ export function VideoBrushPreviews({
       {BANDS.map((b) => {
         const range = bandRange(stats, b.id);
         const onClick = b.preset ? handlers[b.preset] : undefined;
-        const staticSrc = staticOnly ? STATIC_BAND_FIGURES[b.id] : undefined;
+        const staticSrc = staticOnly ? STATIC_BAND_FIGURES[b.id as BrushBandId] : undefined;
         return (
           <button
             key={b.id}
@@ -112,7 +107,7 @@ export function VideoBrushPreviews({
                   alt={b.label}
                   loading="lazy"
                   onError={(e) => {
-                    const fb = STATIC_BAND_FALLBACKS[b.id];
+                    const fb = STATIC_BAND_FALLBACKS[b.id as BrushBandId];
                     if (fb && !e.currentTarget.dataset.fallback) {
                       e.currentTarget.dataset.fallback = '1';
                       e.currentTarget.src = figuresUrl(fb);

@@ -1,9 +1,15 @@
 import { useCallback, useState, type KeyboardEvent } from 'react';
+import { figuresUrl } from '@/config/publicPaths';
+import { VIDEO_FINDINGS_VERIFY } from '@/config/videoStaticFigures';
 import { OverlayLightbox } from '@/components/ImageLightbox';
+import {
+  MARK_STEPS,
+  evolutionThumbnailSrc,
+  handleEvolutionThumbnailError,
+  setFigureFallbackOnce,
+} from '@/dashboard/evolutionPhase';
 import { computeStoryMetrics } from '@/results/storyMetrics';
 import type { TimelineData } from '@/data/types';
-
-const EVO_STEPS = [0, 25, 50, 75, 99] as const;
 
 type FindingId = '01' | '02' | '03' | '04';
 type FindingVariant = 'strip' | 'lightbox';
@@ -49,14 +55,12 @@ function expandableProps(label: string, onExpand?: () => void) {
 function EvoFigure({ t }: { t: number }) {
   return (
     <figure>
-      <div className="vd-finding-media vd-finding-media-square">
+      <div className="vd-finding-media vd-finding-media-evo">
         <img
-          src={`/figures/task1_evo_t${String(t).padStart(4, '0')}.png`}
-          alt={`t=${t}`}
+          src={evolutionThumbnailSrc(t)}
+          alt={`t=${t} XY 投影`}
           loading="lazy"
-          onError={(e) => {
-            e.currentTarget.src = `/figures/task1_vol_t${String(t).padStart(4, '0')}.png`;
-          }}
+          onError={(e) => handleEvolutionThumbnailError(e.currentTarget, t)}
         />
       </div>
       <figcaption>t={t}</figcaption>
@@ -76,7 +80,7 @@ function FindingEvoCard({ variant, onExpand }: Omit<FindingCardProps, 'id' | 'ti
         <h3 className="vd-finding-title">宇宙网形成</h3>
       </header>
       <div className="vd-finding-evo">
-        {EVO_STEPS.map((t) => (
+        {MARK_STEPS.map((t) => (
           <EvoFigure key={t} t={t} />
         ))}
       </div>
@@ -110,7 +114,7 @@ function FindingMetricsCard({
       <div className="vd-finding-media vd-finding-media-wide vd-finding-media-zoom">
         <img
           className="vd-finding-img"
-          src="/figures/task3_evolution_metrics.png"
+          src={figuresUrl('task3_evolution_metrics.png')}
           alt="σ、偏度与 p99−p01 时序演化"
           loading="lazy"
         />
@@ -222,11 +226,11 @@ function FindingVerifyCard({
           </figcaption>
           <div className="vd-finding-media vd-finding-media-verify">
             <img
-              src="/figures/task4_brush_top1_viz.png"
+              src={figuresUrl(VIDEO_FINDINGS_VERIFY.top)}
               alt="Top 1% 空间投影"
               loading="lazy"
               onError={(e) => {
-                e.currentTarget.src = '/figures/task4_brush_top1.png';
+                setFigureFallbackOnce(e.currentTarget, VIDEO_FINDINGS_VERIFY.topFallback);
               }}
             />
           </div>
@@ -237,12 +241,11 @@ function FindingVerifyCard({
           </figcaption>
           <div className="vd-finding-media vd-finding-media-verify">
             <img
-              src="/figures/task4_brush_bottom_hl.png"
-              alt="Bottom 1% 刷选高亮"
+              src={figuresUrl(VIDEO_FINDINGS_VERIFY.bottom)}
+              alt="Bottom 1% 空间投影"
               loading="lazy"
               onError={(e) => {
-                e.currentTarget.src = '/figures/task4_brush_bottom1.png';
-                e.currentTarget.parentElement?.classList.add('vd-finding-media-crop-right');
+                setFigureFallbackOnce(e.currentTarget, VIDEO_FINDINGS_VERIFY.bottomFallback);
               }}
             />
           </div>

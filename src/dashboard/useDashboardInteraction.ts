@@ -1,13 +1,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { scanBrushRangeAsync } from '@/data/brushScan';
+import { estimateBrushCountFromHistogram } from '@/data/brushEstimate';
 import { matchBrushPreset, type BrushPresetId } from '@/data/brushPreset';
 import { useAppStore } from '@/store/useAppStore';
 import type { TimelineData } from '@/data/types';
 import { TIMESTEP_COUNT, VOXEL_COUNT, type DensityStats } from '@/data/types';
 import { getGlobalTfDomain } from '@/volume/transferFunction';
 import type { VolumeQuality } from '@/volume/VolumeScene';
+import { isVtkScalarsCached } from '@/data/nyxLoader';
+import { isStaticFiguresOnly } from '@/config/publicPaths';
+import { isTimestepVolumeReady } from '@/data/timelineVolumePreload';
 import { isPresentationReady, markPresentationReady } from '@/volume/volumeQualityCache';
 import { usePrefetchTimestep } from '@/hooks/usePrefetchTimestep';
+
+function canSkipDraftQuality(timestep: number, videoMode: boolean): boolean {
+  if (isPresentationReady(timestep)) return true;
+  if (videoMode) return false;
+  return isVtkScalarsCached(timestep) || isTimestepVolumeReady(timestep);
+}
 
 export interface UseDashboardInteractionOptions {
   /** Poster 模式：点预设刷选时打开探索浮层 */
@@ -18,6 +28,12 @@ export interface UseDashboardInteractionOptions {
   progressiveQuality?: boolean;
   /** 保活模式下 scene 切换不重置 progressive 草稿阶段 */
   keepVolumeAlive?: boolean;
+  /** 预载就绪后跳过草稿阶段（录屏页建议关闭） */
+  instantVolume?: boolean;
+  /** 录屏/预览页：画质上限 high，拖动时强制 interactive */
+  videoMode?: boolean;
+  /** 静止后升 presentation 的等待毫秒（录屏可设更短） */
+  idleBoostDelayMs?: number;
 }
 
 function exactPresetBrushCount(stats: DensityStats, preset: BrushPresetId): number | null {
@@ -35,17 +51,26 @@ export function useDashboardInteraction(
   loading: boolean,
   options: UseDashboardInteractionOptions = {},
 ) {
-  const { onPresetBrush, defaultHighQuality = false, progressiveQuality = false, keepVolumeAlive = false } =
+  const { onPresetBrush, defaultHighQuality = false, progressiveQuality = false, keepVolumeAlive = false, instantVolume = false, videoMode = false, idleBoostDelayMs = 1800 } =
     options;
+
+  const useProgressive = progressiveQuality && !videoMode;
 
   const [sliderStep, setSliderStep] = useState(0);
   const [sliderDragging, setSliderDragging] = useState(false);
   const [highQuality, setHighQuality] = useState(defaultHighQuality);
   const [volumeReady, setVolumeReady] = useState(false);
   const [qualityPhase, setQualityPhase] = useState<'draft' | 'final'>(
-    progressiveQuality ? 'draft' : 'final',
+    useProgressive ? 'draft' : 'final',
   );
   const [scanning, setScanning] = useState(false);
+  const [idleBoost, setIdleBoost] = useState(false);
+  const [activityTick, setActivityTick] = useState(0);
+
+  const resetIdleBoost = useCallback(() => {
+    setIdleBoost(false);
+    setActivityTick((t) => t + 1);
+  }, []);
 
   usePrefetchTimestep(sliderStep, sliderDragging);
 
@@ -59,36 +84,72 @@ export function useDashboardInteraction(
   const setTfParams = useAppStore((s) => s.setTfParams);
 
   useEffect(() => {
+    if (isStaticFiguresOnly() && videoMode) {
+      setVolumeReady(true);
+      setQualityPhase('final');
+    }
+  }, [timestep, videoMode]);
+
+  useEffect(() => {
     setSliderStep(timestep);
-    if (!keepVolumeAlive) {
+    const volumeReadyNow = instantVolume && isTimestepVolumeReady(timestep);
+    if (!keepVolumeAlive && !volumeReadyNow && !videoMode) {
       setVolumeReady(false);
     }
-    if (progressiveQuality) {
-      setQualityPhase(isPresentationReady(timestep) ? 'final' : 'draft');
+    if (videoMode || !useProgressive) {
+      setQualityPhase('final');
+    } else if (instantVolume && isTimestepVolumeReady(timestep)) {
+      setQualityPhase('final');
+    } else {
+      setQualityPhase(canSkipDraftQuality(timestep, videoMode) ? 'final' : 'draft');
     }
-  }, [timestep, progressiveQuality, keepVolumeAlive]);
+    resetIdleBoost();
+  }, [timestep, useProgressive, instantVolume, keepVolumeAlive, videoMode, resetIdleBoost]);
+
+  useEffect(() => {
+    resetIdleBoost();
+  }, [loading, scanning, sliderDragging, resetIdleBoost]);
+
+  useEffect(() => {
+    if (!volumeReady || loading || scanning || sliderDragging) {
+      setIdleBoost(false);
+      return;
+    }
+    const handle = window.setTimeout(() => setIdleBoost(true), idleBoostDelayMs);
+    return () => window.clearTimeout(handle);
+  }, [volumeReady, loading, scanning, sliderDragging, activityTick, idleBoostDelayMs]);
 
   const stats = timeline.timesteps[sliderDragging ? sliderStep : timestep];
   const tfDomain = getGlobalTfDomain(timeline);
   const dataMin = tfDomain?.min ?? stats?.min ?? 7.5;
   const dataMax = tfDomain?.max ?? stats?.max ?? 15;
+  const baseQuality: VolumeQuality = highQuality ? 'presentation' : 'cinematic';
+  const settledQuality: VolumeQuality = idleBoost ? 'presentation' : baseQuality;
+
   const volumeQuality: VolumeQuality =
-    loading || scanning
-      ? 'interactive'
-      : progressiveQuality && qualityPhase === 'draft'
-        ? 'high'
-        : highQuality
-          ? 'presentation'
-          : 'interactive';
+    (loading && !densityData) || scanning || sliderDragging
+      ? 'video'
+      : instantVolume && isTimestepVolumeReady(timestep)
+        ? settledQuality
+        : useProgressive && qualityPhase === 'draft'
+          ? 'interactive'
+          : settledQuality;
+
+  const onVolumeCameraActivity = resetIdleBoost;
 
   const onVolumeRendered = useCallback(() => {
     setVolumeReady(true);
-    if (progressiveQuality && qualityPhase === 'draft') {
-      requestAnimationFrame(() => setQualityPhase('final'));
-    } else if (!progressiveQuality || qualityPhase === 'final') {
+    if (useProgressive && qualityPhase === 'draft') {
+      const bump = () => setQualityPhase('final');
+      if (typeof requestIdleCallback !== 'undefined') {
+        requestIdleCallback(bump, { timeout: videoMode ? 800 : 120 });
+      } else {
+        window.setTimeout(bump, videoMode ? 200 : 32);
+      }
+    } else {
       markPresentationReady(timestep);
     }
-  }, [progressiveQuality, qualityPhase, timestep]);
+  }, [useProgressive, qualityPhase, timestep, videoMode]);
 
   const prevBrushRef = useRef<{ min: number; max: number } | null>(null);
 
@@ -115,7 +176,24 @@ export function useDashboardInteraction(
   }, [setBrushRange]);
 
   useEffect(() => {
-    if (!densityData || !brushRange) {
+    if (!brushRange) {
+      setBrushedCount(0);
+      setScanning(false);
+      prevBrushRef.current = null;
+      return;
+    }
+
+    if (!densityData) {
+      if (isStaticFiguresOnly()) {
+        const preset = matchBrushPreset(stats, brushRange);
+        const exactCount = preset ? exactPresetBrushCount(stats, preset) : null;
+        setBrushedCount(
+          exactCount ?? estimateBrushCountFromHistogram(timeline, timestep, brushRange),
+        );
+        setScanning(false);
+        prevBrushRef.current = { min: brushRange.min, max: brushRange.max };
+        return;
+      }
       setBrushedCount(0);
       setScanning(false);
       prevBrushRef.current = null;
@@ -157,7 +235,7 @@ export function useDashboardInteraction(
       cancelled = true;
       window.clearTimeout(handle);
     };
-  }, [densityData, brushRange, timestep, stats, setBrushedCount]);
+  }, [densityData, brushRange, timestep, stats, setBrushedCount, timeline]);
 
   const highlight = useMemo(() => {
     if (!brushRange) return {};
@@ -194,6 +272,7 @@ export function useDashboardInteraction(
     volumeReady,
     setVolumeReady,
     onVolumeRendered,
+    onVolumeCameraActivity,
     scanning,
     brushRange,
     brushedCount,
