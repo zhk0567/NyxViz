@@ -1,4 +1,6 @@
-import { DensityProjection } from '@/spatial/DensityProjection';
+import { figuresUrl, isStaticFiguresOnly } from '@/config/publicPaths';
+import { useSharedProjection } from '@/hooks/useSharedProjection';
+import { BandPreviewCanvas } from '@/spatial/BandPreviewCanvas';
 import type { BrushPresetId } from '@/data/brushPreset';
 import type { BrushRange, TimelineData } from '@/data/types';
 
@@ -42,10 +44,22 @@ const BANDS: {
   { id: 'top', label: 'Top 1%', preset: 'top' },
 ];
 
+const STATIC_BAND_FIGURES: Record<(typeof BANDS)[number]['id'], string> = {
+  bottom: 'task4_brush_bottom_proj.png',
+  mid: 'task4_discovery_context_t99.png',
+  filament: 'task4_spatial_filament.png',
+  top: 'task4_brush_top1.png',
+};
+
+const STATIC_BAND_FALLBACKS: Partial<Record<(typeof BANDS)[number]['id'], string>> = {
+  bottom: 'task4_brush_bottom_hl.png',
+  filament: 'task4_panel_filament.png',
+  top: 'task4_brush_top1_viz.png',
+};
+
 export function VideoBrushPreviews({
   stats,
   densityData,
-  volumeReady,
   loading,
   dataMin,
   dataMax,
@@ -54,6 +68,8 @@ export function VideoBrushPreviews({
   onFilament,
   onBottom1,
 }: VideoBrushPreviewsProps) {
+  const projection = useSharedProjection(densityData, 'xy');
+
   const handlers: Record<string, () => void> = {
     top: onTop1,
     filament: onFilament,
@@ -61,13 +77,15 @@ export function VideoBrushPreviews({
     mid: () => {},
   };
 
-  const canRender = densityData && volumeReady && !loading;
+  const canRender = densityData && projection && !loading;
+  const staticOnly = isStaticFiguresOnly();
 
   return (
     <div className="vd-band-previews">
       {BANDS.map((b) => {
         const range = bandRange(stats, b.id);
         const onClick = b.preset ? handlers[b.preset] : undefined;
+        const staticSrc = staticOnly ? STATIC_BAND_FIGURES[b.id] : undefined;
         return (
           <button
             key={b.id}
@@ -80,13 +98,26 @@ export function VideoBrushPreviews({
             <span className="vd-band-label">{b.label}</span>
             <div className="vd-band-media">
               {canRender ? (
-                <DensityProjection
-                  data={densityData}
+                <BandPreviewCanvas
+                  projection={projection}
                   brushRange={range}
                   domainMin={dataMin}
                   domainMax={dataMax}
                   className="vd-band-proj"
-                  compact
+                />
+              ) : staticSrc ? (
+                <img
+                  className="vd-band-proj vd-band-static"
+                  src={figuresUrl(staticSrc)}
+                  alt={b.label}
+                  loading="lazy"
+                  onError={(e) => {
+                    const fb = STATIC_BAND_FALLBACKS[b.id];
+                    if (fb && !e.currentTarget.dataset.fallback) {
+                      e.currentTarget.dataset.fallback = '1';
+                      e.currentTarget.src = figuresUrl(fb);
+                    }
+                  }}
                 />
               ) : (
                 <span className="vd-band-placeholder">…</span>
