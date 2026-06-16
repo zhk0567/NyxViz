@@ -5,7 +5,7 @@ export const VIEW_MARGIN = 0.88;
 export const CAMERA_DISTANCE_FACTOR = 1.75;
 export const CAMERA_OFFSET = { x: 0.92, y: 0.78, z: 0.68 } as const;
 export const CAPTURE_CAMERA_ZOOM = 1.0;
-export const VIDEO_CAMERA_ZOOM = 1.1;
+export const VIDEO_CAMERA_ZOOM = 1.24;
 
 export const VOLUME_LIGHTING = {
   key: {
@@ -20,7 +20,62 @@ export const VOLUME_LIGHTING = {
   },
 } as const;
 
-export const VOLUME_QUALITY_PRESETS = {
+/** Cinematic three-point lighting — key + fill + rim. */
+export const CINEMATIC_LIGHTING = {
+  key: {
+    offset: [8, 10, 12] as const,
+    color: [1, 0.98, 0.95] as const,
+    intensity: 1.05,
+  },
+  fill: {
+    offset: [-10, -6, -8] as const,
+    color: [0.45, 0.62, 0.95] as const,
+    intensity: 0.22,
+  },
+  rim: {
+    offset: [-4, 14, 6] as const,
+    color: [0.55, 0.75, 1] as const,
+    intensity: 0.42,
+  },
+} as const;
+
+/** Renderer background RGB — matches VIZ_BG #0a0e1a */
+export const VOLUME_RENDERER_BG: [number, number, number] = [0.039, 0.055, 0.102];
+
+export type VolumeQuality = 'video' | 'interactive' | 'high' | 'cinematic' | 'presentation';
+
+/** 录屏/预览页拖拽旋转时的粗采样（比 video 更省 GPU） */
+export const VIDEO_DRAG_SAMPLING = {
+  sampleDistance: 5.0,
+  maximumSamplesPerRay: 256,
+  shade: false,
+  ambient: 0.2,
+  diffuse: 0.55,
+  specular: 0.1,
+} as const;
+
+export type PerformanceMode = 'video' | 'interactive';
+
+export const VOLUME_QUALITY_PRESETS: Record<
+  VolumeQuality,
+  {
+    sampleDistance: number;
+    maximumSamplesPerRay: number;
+    shade: boolean;
+    ambient: number;
+    diffuse: number;
+    specular: number;
+  }
+> = {
+  video: {
+    // 域长约 14.2；8.0 会导致每射线仅 ~2 次采样，体渲染完全不可见
+    sampleDistance: 2.8,
+    maximumSamplesPerRay: 320,
+    shade: false,
+    ambient: 0.2,
+    diffuse: 0.55,
+    specular: 0.1,
+  },
   interactive: {
     sampleDistance: 4.0,
     maximumSamplesPerRay: 512,
@@ -37,13 +92,21 @@ export const VOLUME_QUALITY_PRESETS = {
     diffuse: 0.75,
     specular: 0.4,
   },
+  cinematic: {
+    sampleDistance: 1.6,
+    maximumSamplesPerRay: 1024,
+    shade: true,
+    ambient: 0.08,
+    diffuse: 0.82,
+    specular: 0.66,
+  },
   presentation: {
     sampleDistance: 0.65,
     maximumSamplesPerRay: 4096,
     shade: true,
-    ambient: 0.12,
+    ambient: 0.1,
     diffuse: 0.75,
-    specular: 0.4,
+    specular: 0.52,
   },
 } as const;
 

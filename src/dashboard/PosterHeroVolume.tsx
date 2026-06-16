@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 import type { TfParams } from '@/volume/transferFunction';
 import type { VolumeQuality } from '@/volume/VolumeScene';
+import { VIDEO_CAMERA_ZOOM } from '@/volume/renderSpec';
 
 const VolumeScene = lazy(() =>
   import('@/volume/VolumeScene').then((m) => ({ default: m.VolumeScene })),
@@ -23,6 +24,8 @@ export interface PosterHeroVolumeProps {
   highlightMax?: number;
   /** Pause GPU render when explore overlay is open. */
   paused?: boolean;
+  onCameraActivity?: () => void;
+  onRendered?: () => void;
 }
 
 export function PosterHeroVolume({
@@ -32,10 +35,12 @@ export function PosterHeroVolume({
   dataMin,
   dataMax,
   tfParams,
-  quality = 'interactive',
+  quality = 'cinematic',
   highlightMin,
   highlightMax,
   paused = false,
+  onCameraActivity,
+  onRendered,
 }: PosterHeroVolumeProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(true);
@@ -75,6 +80,12 @@ export function PosterHeroVolume({
             highlightMin={highlightMin}
             highlightMax={highlightMax}
             renderActive={renderActive}
+            cameraZoom={VIDEO_CAMERA_ZOOM}
+            interactiveCamera={!paused}
+            adaptivePrecisionZoom={!paused}
+            visualStyle="cinematic"
+            onCameraActivity={onCameraActivity}
+            onRendered={onRendered}
             className="vtk-panel pl-hero-vtk"
           />
         </Suspense>

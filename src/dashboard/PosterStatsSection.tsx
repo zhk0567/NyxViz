@@ -1,8 +1,12 @@
 import { PosterTrendChart } from '@/dashboard/PosterTrendChart';
+import { VideoKpiStrip } from '@/dashboard/VideoKpiStrip';
+import { VideoHistMethodStrip } from '@/dashboard/video-scenes/VideoHistMethodStrip';
+import { computeTailBadge } from '@/dashboard/video-scenes/layout/shared';
 import { HistogramOverlay } from '@/histogram/HistogramOverlay';
 import type { ChartSizeOptions } from '@/hooks/useChartSize';
 import { computeStoryMetrics } from '@/results/storyMetrics';
 import type { TimelineData } from '@/data/types';
+import type { ValidationExtendedData } from '@/data/statsLoader';
 
 const POSTER_HIST_OVERLAY: ChartSizeOptions = {
   minHeight: 360,
@@ -10,34 +14,20 @@ const POSTER_HIST_OVERLAY: ChartSizeOptions = {
   aspect: 2.15,
 };
 
-function KpiStrip({ timeline }: { timeline: TimelineData }) {
-  const s = timeline.timesteps[99]!;
-  const items = [
-    { label: '均值 μ', value: s.mean.toFixed(3) },
-    { label: '标准差 σ', value: s.std.toFixed(4) },
-    { label: 'p99', value: s.p99.toFixed(3) },
-    { label: '≥p99 体积', value: `${(s.tailMassAboveP99 * 100).toFixed(2)}%` },
-  ];
-  return (
-    <div className="pl-kpi-strip" aria-label="t=99 指标">
-      {items.map((it) => (
-        <div key={it.label} className="pl-kpi-card">
-          <span className="pl-kpi-label">{it.label}</span>
-          <span className="pl-kpi-value">{it.value}</span>
-        </div>
-      ))}
-    </div>
-  );
+interface PosterStatsSectionProps {
+  timeline: TimelineData;
+  validationExtended?: ValidationExtendedData | null;
 }
 
-export function PosterStatsSection({ timeline }: { timeline: TimelineData }) {
+export function PosterStatsSection({
+  timeline,
+  validationExtended = null,
+}: PosterStatsSectionProps) {
   const m = computeStoryMetrics(timeline);
+  const s99 = timeline.timesteps[99]!;
   const sigmaBadge = `+${m.sigmaPct.toFixed(1)}%`;
   const spanBadge = `+${m.spanPct.toFixed(1)}%`;
-  const tail0 = m.s0.tailMassAboveP99 * 100;
-  const tail99 = m.tailAbovePct;
-  const tailBadge =
-    tail0 > 1e-6 ? `+${(((tail99 - tail0) / tail0) * 100).toFixed(1)}%` : '—';
+  const tailBadge = computeTailBadge(timeline);
 
   return (
     <div className="pl-s03-body">
@@ -73,7 +63,9 @@ export function PosterStatsSection({ timeline }: { timeline: TimelineData }) {
         />
       </div>
 
-      <KpiStrip timeline={timeline} />
+      <VideoKpiStrip timeline={timeline} stats={s99} showSigma />
+
+      <VideoHistMethodStrip timeline={timeline} validation={validationExtended} />
     </div>
   );
 }

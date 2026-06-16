@@ -1,7 +1,8 @@
 # NyxViz 答辩视频 · 录屏操作手册
 
 > **完整旁白（照读稿）** → **[`VIDEO_NARRATION.md`](./VIDEO_NARRATION.md)** ← 字幕与配音请用该文件，本文**不含**旁白全文。  
-> **目标**：≤5:30（旁白 ~5:00 + 操作停顿 ~0:30），成片 **≤50MB**  
+> **旁白同步操作** → **[`VIDEO_RECORDING_OPS.md`](./VIDEO_RECORDING_OPS.md)** ← 说到哪句时点什么、指哪里。  
+> **目标**：≤5:00 旁白/字幕整轨，≤5:30 成片（含操作停顿），**≤50MB**  
 > **方案**：**分段 URL 录屏** — 同一 `video.html` 下 11 个子场景（`scene=`），每段单独 OBS 录制后剪辑拼接
 
 ---
@@ -26,19 +27,19 @@ http://127.0.0.1:5173/video.html?record=1&scene=<id>
 
 按顺序录制，每段改浏览器地址后 OBS 开始/停止，后期按旁白时间轴拼接。
 
-| 顺序 | scene id | 录屏 URL | 旁白段 | 建议时长 | OBS 操作 |
+| 顺序 | scene id | 录屏 URL | TTS 行 | 建议时长 | OBS 操作 |
 |------|----------|----------|--------|----------|----------|
-| 1 | intro | `?record=1&scene=intro` | 开篇 | ~25s | 指三栏布局 |
-| 2 | task1-tf | `?record=1&scene=task1-tf` | 任务一 TF/光照 | ~20s | 指左栏七 α、Phong、辅光 |
-| 3 | task1-morph | `?record=1&scene=task1-morph` | 任务一 形态 | ~45s | t=0→25→50→75→99，各停 2s |
-| 4 | task2-evolution | `?record=1&scene=task2-evolution` | 任务二 量化 | ~25s | 指演化 KPI + σ/≥p99 趋势 |
-| 5 | task2-void | `?record=1&scene=task2-void` | 任务二 void | ~15s | 指 p10/p01 双阈值卡片 |
-| 6 | task2-cases | `?record=1&scene=task2-cases` | 任务二 案例 | ~20s | 指案例 A/B/C + Top1% 投影 |
-| 7 | task2-spatial | `?record=1&scene=task2-spatial` | 任务二 Moran/ξ | ~15s | 指空间统计图与数值 |
-| 8 | task3-hist | `?record=1&scene=task3-hist` | 任务三 | ~25s | 指五帧叠加 + 128 bins 条 |
-| 9 | task4-brush | `?record=1&scene=task4-brush` | 任务四 刷选 | ~90s | Top1%→纤维带→Bottom1%→拖拽→清除 |
-| 10 | task4-validate | `?record=1&scene=task4-validate` | 任务四 验证 | ~30s | 指 recall/精确/早停 KPI |
-| 11 | findings | `?record=1&scene=findings` | 发现卡+结语 | ~25s | 指四卡放大；GitHub 结语 |
+| 1 | intro | `?record=1&scene=intro` | 第 1 行 | ~25s | 指三栏布局 |
+| 2 | task1-tf | `?record=1&scene=task1-tf` | 第 2 行 | ~22s | 指七处 alpha、冯氏光照、右栏光照示意 |
+| 3 | task1-morph | `?record=1&scene=task1-morph` | 第 3 行 | ~27s | 第 0→25→50→75→99 步，各停 2s |
+| 4 | task2-evolution | `?record=1&scene=task2-evolution` | 第 4 行 | ~28s | 指左栏 KPI + 右栏四图 |
+| 5 | task2-void | `?record=1&scene=task2-void` | 第 5 行 | ~15s | 指 p10/p01 双阈值卡片 |
+| 6 | task2-cases | `?record=1&scene=task2-cases` | 第 6 行 | ~20s | 指案例 A/B/C + 中栏 Top 1% 投影 |
+| 7 | task2-spatial | `?record=1&scene=task2-spatial` | 第 7 行 | ~18s | 指 Moran/xi/D/峰度四图 + bootstrap |
+| 8 | task3-hist | `?record=1&scene=task3-hist` | 第 8 行 | ~25s | 指五帧叠加 + 128 分箱条 |
+| 9 | task4-brush | `?record=1&scene=task4-brush` | 第 9 行 | ~69s | Top 1%→纤维带→最暗 1%→拖拽框选→清除选区 |
+| 10 | task4-validate | `?record=1&scene=task4-validate` | 第 10 行 | ~26s | 指阈值对比/自定义误差/早停召回 |
+| 11 | findings | `?record=1&scene=findings` | 第 11 行 | ~30s | 指四卡放大；开源结语 |
 
 完整示例：
 
@@ -70,18 +71,21 @@ python run.py
 
 ### 录前检查
 
+- [ ] 浏览器 **1920×1080**、缩放 **100%**、**F11 全屏**；URL 带 **`?record=1`**
+- [ ] 录屏模式 **不显示** 预览条与「复制分段 URL」（OBS 画面无开发 UI）
+- [ ] **`intro` 与后续 scene 视觉一致**：同一套录屏字号/对比度；header 下可见 **场景标题条**
 - [ ] 各 scene URL 3–5 秒内体渲染出图（含 task1-tf、task2-spatial）
-- [ ] `intro`：左栏五帧叠加 + σ/≥p99/p99−p01 趋势；三栏副标题可见
-- [ ] `task1-tf`：七 α 阶梯、颜色 TF 条、Phong/辅光、光照示意图
-- [ ] `task1-morph`：右栏五帧缩略图可点切 t；阶段说明与 σ/p99 读数
+- [ ] `intro`：左栏五帧叠加 + sigma/p99 及以上/p99 减 p01 趋势；三栏副标题可见
+- [ ] `task1-tf`：七处 alpha 阶梯、颜色传递函数条、冯氏光照/辅光、光照示意图
+- [ ] `task1-morph`：右栏五帧缩略图可点切步；阶段说明与 sigma/p99 读数
 - [ ] `task2-evolution`：演化三卡 + task2_evolution_story 图
 - [ ] `task2-void`：p10/p01 双卡 + void 演化图（无中栏体渲染）
-- [ ] `task2-cases`：案例 A/B/C 配图 + Top1% 投影
-- [ ] `task2-spatial`：Moran/ξ 数值 + bootstrap 图
-- [ ] `task3-hist`：五帧叠加 + 128 bins/skew + peak_drift 图
+- [ ] `task2-cases`：案例 A/B/C 配图 + Top 1% 投影
+- [ ] `task2-spatial`：莫兰指数/xi 数值 + bootstrap 图
+- [ ] `task3-hist`：五帧叠加 + 128 分箱/skew + peak_drift 图
 - [ ] `task4-brush`：操作步骤条 + Top 1% 后体积/质量读数
 - [ ] `task4-validate`：recall/精确/早停 KPI + 验证摘要图
-- [ ] `findings` 四卡底边框完整、可点击放大
+- [ ] `findings` 四卡底边框完整、支持放大细读
 - [ ] `public/stats/*.json` 已生成（`npm run precompute`）
 
 ---
@@ -94,7 +98,7 @@ python run.py
 4. 在直方图上 **拖拽** 框选（如 p50–p99）
 5. **清除**
 
-验证段（`task4-validate`）已预置 Top 1%，指右栏下方验证摘要即可。
+验证段（`task4-validate`）已预置 Top 1%，指右栏阈值对比、自定义误差与早停召回三图。
 
 ---
 

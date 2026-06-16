@@ -1,5 +1,6 @@
 import { VideoVoidPanel } from '@/dashboard/video-scenes/VideoVoidPanel';
 import type { ValidationExtendedData } from '@/data/statsLoader';
+import { figuresUrl } from '@/config/publicPaths';
 import { ZoomableImage } from '@/components/ImageLightbox';
 
 interface VideoVoidSceneProps {
@@ -14,7 +15,7 @@ export function VideoVoidScene({ validation }: VideoVoidSceneProps) {
       </div>
       <figure className="vd-void-figure vd-void-col--chart">
         <ZoomableImage
-          src="/figures/task3_void_evolution.png"
+          src={figuresUrl('task3_void_evolution.png')}
           alt="void 占比随时间演化"
           loading="eager"
         />

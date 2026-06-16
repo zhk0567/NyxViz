@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import type { TimelineData } from '@/data/types';
 import { useAppStore } from '@/store/useAppStore';
@@ -26,12 +26,22 @@ export function DensityHistogram({ timeline, sizeOpts }: DensityHistogramProps) 
   const timestep = useAppStore((s) => s.timestep);
   const setBrushRange = useAppStore((s) => s.setBrushRange);
   const brushRange = useAppStore((s) => s.brushRange);
+  const videoReadable = sizeOpts?.videoReadable === true;
+  const [drawStep, setDrawStep] = useState(timestep);
+
+  useEffect(() => {
+    if (!videoReadable) {
+      setDrawStep(timestep);
+      return;
+    }
+    const t = window.setTimeout(() => setDrawStep(timestep), 280);
+    return () => window.clearTimeout(t);
+  }, [timestep, videoReadable]);
 
   useEffect(() => {
     const svgEl = svgRef.current;
     if (!svgEl) return;
 
-    const videoReadable = sizeOpts?.videoReadable === true;
     const compact =
       !videoReadable && (sizeOpts?.maxHeight ?? 320) <= 200;
     const theme = getChartTheme(
@@ -45,7 +55,7 @@ export function DensityHistogram({ timeline, sizeOpts }: DensityHistogramProps) 
     const innerW = width - margin.left - margin.right;
     const innerH = height - margin.top - margin.bottom;
 
-    const hist = timeline.histograms[timestep];
+    const hist = timeline.histograms[drawStep];
     if (!hist) return;
 
     const edges = timeline.logBinEdges;
@@ -137,7 +147,7 @@ export function DensityHistogram({ timeline, sizeOpts }: DensityHistogramProps) 
       .attr('text-anchor', 'middle')
       .attr('fill', LABEL_FILL)
       .attr('font-size', videoReadable ? 12 : 11)
-      .text(`密度 (log) — 时间步 ${timestep} · Y=Probability mass×100`);
+      .text(`密度 (log) — 时间步 ${drawStep} · Y=Probability mass×100`);
 
     const brush = d3
       .brushX()
@@ -156,7 +166,7 @@ export function DensityHistogram({ timeline, sizeOpts }: DensityHistogramProps) 
     g.append('g').attr('class', 'brush').call(brush);
 
     chartRef.current = { x, innerH, g, selection, bars, centers };
-  }, [timeline, timestep, width, height, setBrushRange, sizeOpts]);
+  }, [timeline, drawStep, width, height, setBrushRange, sizeOpts]);
 
   useEffect(() => {
     const chart = chartRef.current;
@@ -188,7 +198,7 @@ export function DensityHistogram({ timeline, sizeOpts }: DensityHistogramProps) 
         tip!.style.display = 'none';
         d3.select(this).attr('opacity', 0.92);
       });
-  }, [timestep, width, height]);
+  }, [drawStep, width, height]);
 
   useEffect(() => {
     const chart = chartRef.current;

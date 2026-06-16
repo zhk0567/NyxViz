@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { VideoSpatialPanel } from '@/dashboard/video-scenes/VideoSpatialPanel';
 import { VideoVoidScene } from '@/dashboard/video-scenes/VideoVoidScene';
 import { VideoValidateFigureColumn } from '@/dashboard/video-scenes/VideoValidateFigureColumn';
@@ -7,6 +7,7 @@ import { VideoRightColumn } from '@/dashboard/video-scenes/layout/VideoRightColu
 import { VideoFindingsRow } from '@/dashboard/video-scenes/layout/VideoFindingsRow';
 import { PersistentVolumePane } from '@/dashboard/video-scenes/layout/VideoCenterColumn';
 import type { VideoSceneLayoutProps } from '@/dashboard/video-scenes/layout/types';
+import { VIDEO_CAMERA_ZOOM } from '@/volume/renderSpec';
 
 export function VideoSceneLayout(props: VideoSceneLayoutProps) {
   const {
@@ -16,6 +17,7 @@ export function VideoSceneLayout(props: VideoSceneLayoutProps) {
     keepVolumeAlive,
     volumeEverMounted,
     onVolumeMounted,
+    recordBrowse,
   } = props;
 
   const showLeft = sceneMeta.showLeft;
@@ -39,21 +41,52 @@ export function VideoSceneLayout(props: VideoSceneLayoutProps) {
     ? volumeEverMounted || showCenter
     : showCenter;
 
-  const volumeProps = {
-    densityData: props.densityData,
-    loading: props.loading,
-    timestep: props.timestep,
-    dataMin: props.dataMin,
-    dataMax: props.dataMax,
-    tfParams: props.tfParams,
-    volumeQuality: props.volumeQuality,
-    qualityPhase: props.qualityPhase,
-    highlightMin: props.highlightMin,
-    highlightMax: props.highlightMax,
-    onVolumeRendered: props.onVolumeRendered,
-    renderActive: true,
-    progressiveQuality: true,
-  };
+  const volumeProps = useMemo(
+    () => ({
+      densityData: props.densityData,
+      loading: props.loading,
+      timestep: props.timestep,
+      dataMin: props.volumeDataMin ?? props.dataMin,
+      dataMax: props.volumeDataMax ?? props.dataMax,
+      tfParams: props.tfParams,
+      volumeQuality: props.volumeQuality,
+      qualityPhase: props.qualityPhase,
+      highlightMin: props.highlightMin,
+      highlightMax: props.highlightMax,
+      onVolumeRendered: props.onVolumeRendered,
+      onVolumeCameraActivity: props.onVolumeCameraActivity,
+      renderActive: showCenter,
+      progressiveQuality: true,
+      interactiveCamera: props.volumeInteractive ?? false,
+      focusOnClick: showCenter && (props.volumeFocusOnClick ?? false),
+      focusDensityThreshold: props.stats?.p75 ?? props.stats?.p50,
+      performanceMode: 'video' as const,
+      cameraZoom: props.volumeCameraZoom ?? VIDEO_CAMERA_ZOOM,
+      visualStyle: 'cinematic' as const,
+    }),
+    [
+      props.densityData,
+      props.loading,
+      props.timestep,
+      props.dataMin,
+      props.dataMax,
+      props.volumeDataMin,
+      props.volumeDataMax,
+      props.tfParams,
+      props.volumeQuality,
+      props.qualityPhase,
+      props.highlightMin,
+      props.highlightMax,
+      props.onVolumeRendered,
+      props.onVolumeCameraActivity,
+      showCenter,
+      props.volumeInteractive,
+      props.volumeFocusOnClick,
+      props.stats?.p75,
+      props.stats?.p50,
+      props.volumeCameraZoom,
+    ],
+  );
 
   const volumeInCenter =
     showCenter && volumeMounted ? (
@@ -140,6 +173,7 @@ export function VideoSceneLayout(props: VideoSceneLayoutProps) {
   return (
     <>
       <div className="vd-main-stack">
+        {recordBrowse}
         {body}
         <VideoFindingsRow
           sceneId={sceneId}

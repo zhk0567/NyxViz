@@ -1,23 +1,24 @@
+import { figuresUrl } from '@/config/publicPaths';
 import { ZoomableImage } from '@/components/ImageLightbox';
 
 const EVOLUTION_PANELS = [
   {
-    src: '/figures/task2_evolution_panel_0.png',
+    src: figuresUrl('task2_evolution_panel_0.png'),
     caption: '分位跨度 p99−p01（团块化）',
     alt: '分位跨度 p99−p01 时序',
   },
   {
-    src: '/figures/task2_evolution_panel_1.png',
+    src: figuresUrl('task2_evolution_panel_1.png'),
     caption: '标准差 σ(t)',
     alt: '标准差 σ 时序',
   },
   {
-    src: '/figures/task2_evolution_panel_2.png',
+    src: figuresUrl('task2_evolution_panel_2.png'),
     caption: '高密度尾体积占比 ≥p99 (%)',
     alt: '高密度尾体积占比时序',
   },
   {
-    src: '/figures/task2_evolution_panel_3.png',
+    src: figuresUrl('task2_evolution_panel_3.png'),
     caption: '偏度 skew(t)',
     alt: '偏度 skew 时序',
   },

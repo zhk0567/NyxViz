@@ -115,7 +115,7 @@
       26.566924999999998,
       24.07405
     ],
-    "effectiveZoom": 0.66,
+    "effectiveZoom": 0.8184,
     "renderSpecPath": "F:\\commercial\\NyxViz\\docs\\figures\\render_spec.json",
     "projectionCornerDensity": [
       {
@@ -149,28 +149,28 @@
     "screenshotCornerRgb": [
       {
         "timestep": 0,
-        "cornerRgbMean": 0.10647850285947712,
-        "cornerRgbStdWithinFrame": 0.04178669859610424
+        "cornerRgbMean": 0.0911203022875817,
+        "cornerRgbStdWithinFrame": 0.04461905802790537
       },
       {
         "timestep": 25,
-        "cornerRgbMean": 0.10647850285947712,
-        "cornerRgbStdWithinFrame": 0.04178669859610424
+        "cornerRgbMean": 0.0911203022875817,
+        "cornerRgbStdWithinFrame": 0.04461905802790537
       },
       {
         "timestep": 50,
-        "cornerRgbMean": 0.10647850285947712,
-        "cornerRgbStdWithinFrame": 0.04178669859610424
+        "cornerRgbMean": 0.0911203022875817,
+        "cornerRgbStdWithinFrame": 0.04461905802790537
       },
       {
         "timestep": 75,
-        "cornerRgbMean": 0.10647850285947712,
-        "cornerRgbStdWithinFrame": 0.04178669859610424
+        "cornerRgbMean": 0.0911203022875817,
+        "cornerRgbStdWithinFrame": 0.04461905802790537
       },
       {
         "timestep": 99,
-        "cornerRgbMean": 0.10647850285947712,
-        "cornerRgbStdWithinFrame": 0.04178669859610424
+        "cornerRgbMean": 0.0911203022875817,
+        "cornerRgbStdWithinFrame": 0.04461905802790537
       }
     ],
     "screenshotCornerRgbSpread": 0.0,
@@ -1270,9 +1270,9 @@
       "intensity": 0.3
     },
     "phong": {
-      "Ka": 0.12,
+      "Ka": 0.1,
       "Kd": 0.75,
-      "Ks": 0.4
+      "Ks": 0.52
     }
   },
   "dataPackage": {

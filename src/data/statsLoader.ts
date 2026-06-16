@@ -1,3 +1,5 @@
+import { statsUrl } from '@/config/publicPaths';
+
 export interface RenderSpecData {
   presentation: {
     sampleDistance: number;
@@ -71,9 +73,9 @@ async function fetchJson<T>(url: string): Promise<T | null> {
 
 export async function loadVideoStats(): Promise<VideoStatsBundle> {
   const [renderSpec, validationExtended, brushValidation] = await Promise.all([
-    fetchJson<RenderSpecData>('/stats/render_spec.json'),
-    fetchJson<ValidationExtendedData>('/stats/validation_extended.json'),
-    fetchJson<BrushValidationData>('/stats/brush_validation.json'),
+    fetchJson<RenderSpecData>(statsUrl('render_spec.json')),
+    fetchJson<ValidationExtendedData>(statsUrl('validation_extended.json')),
+    fetchJson<BrushValidationData>(statsUrl('brush_validation.json')),
   ]);
   return { renderSpec, validationExtended, brushValidation };
 }

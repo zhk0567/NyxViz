@@ -1,38 +1,90 @@
-import { GRID_SIZE, VOXEL_COUNT } from './types';
+import { convertZFastToVtk } from './vtkLayout';
 
-let worker: Worker | null = null;
 let jobId = 0;
 const vtkByTimestep = new Map<number, Float32Array>();
 const vtkByZFast = new WeakMap<Float32Array, Float32Array>();
-const pending = new Map<number, Promise<Float32Array>>();
+const pendingByTimestep = new Map<number, Promise<Float32Array>>();
 
-function getWorker(): Worker {
-  if (!worker) {
-    worker = new Worker(
-      new URL('../workers/vtkConvert.worker.ts', import.meta.url),
-      { type: 'module' },
-    );
+const MAX_VTK_TIMESTEP_CACHE = 12;
+
+let worker: Worker | null = null;
+const jobCallbacks = new Map<
+  number,
+  {
+    resolve: (v: Float32Array) => void;
+    reject: (e: unknown) => void;
+    timestep: number;
+    zFast: Float32Array;
   }
+>();
+
+function touchVtkTimestepCache(timestep: number, scalars: Float32Array): void {
+  if (vtkByTimestep.has(timestep)) vtkByTimestep.delete(timestep);
+  vtkByTimestep.set(timestep, scalars);
+  while (vtkByTimestep.size > MAX_VTK_TIMESTEP_CACHE) {
+    const oldest = vtkByTimestep.keys().next().value;
+    if (oldest === undefined) break;
+    vtkByTimestep.delete(oldest);
+  }
+}
+
+function ensureWorker(): Worker {
+  if (worker) return worker;
+  worker = new Worker(
+    new URL('../workers/vtkConvert.worker.ts', import.meta.url),
+    { type: 'module' },
+  );
+  worker.addEventListener('message', (ev: MessageEvent<{ id: number; buffer: ArrayBuffer }>) => {
+    const cb = jobCallbacks.get(ev.data.id);
+    if (!cb) return;
+    jobCallbacks.delete(ev.data.id);
+    const out = new Float32Array(ev.data.buffer);
+    touchVtkTimestepCache(cb.timestep, out);
+    vtkByZFast.set(cb.zFast, out);
+    cb.resolve(out);
+  });
+  worker.addEventListener('error', (ev) => {
+    worker = null;
+    for (const [, cb] of jobCallbacks) {
+      cb.reject(ev.error ?? new Error('vtkConvert worker failed'));
+    }
+    jobCallbacks.clear();
+  });
   return worker;
 }
 
-function convertOnMainThread(zFast: Float32Array): Float32Array {
-  const hit = vtkByZFast.get(zFast);
-  if (hit) return hit;
-  const out = new Float32Array(VOXEL_COUNT);
-  for (let x = 0; x < GRID_SIZE; x++) {
-    const xOff = x * GRID_SIZE * GRID_SIZE;
-    for (let y = 0; y < GRID_SIZE; y++) {
-      const yOff = xOff + y * GRID_SIZE;
-      for (let z = 0; z < GRID_SIZE; z++) {
-        const zIdx = yOff + z;
-        const vtkIdx = x + GRID_SIZE * (y + GRID_SIZE * z);
-        out[vtkIdx] = zFast[zIdx]!;
-      }
-    }
-  }
+function convertZFastToVtkSync(timestep: number, zFast: Float32Array): Float32Array {
+  const out = convertZFastToVtk(zFast);
+  touchVtkTimestepCache(timestep, out);
   vtkByZFast.set(zFast, out);
   return out;
+}
+
+function enqueueConvert(timestep: number, zFast: Float32Array): Promise<Float32Array> {
+  const cached = getCachedVtkScalars(timestep, zFast);
+  if (cached) return Promise.resolve(cached);
+
+  const inflight = pendingByTimestep.get(timestep);
+  if (inflight) return inflight;
+
+  const promise = new Promise<Float32Array>((resolve, reject) => {
+    const id = ++jobId;
+    jobCallbacks.set(id, { resolve, reject, timestep, zFast });
+    try {
+      const copy = new Float32Array(zFast);
+      ensureWorker().postMessage({ id, buffer: copy.buffer }, [copy.buffer]);
+    } catch (err) {
+      jobCallbacks.delete(id);
+      reject(err);
+    }
+  })
+    .catch(() => convertZFastToVtkSync(timestep, zFast))
+    .finally(() => {
+      pendingByTimestep.delete(timestep);
+    });
+
+  pendingByTimestep.set(timestep, promise);
+  return promise;
 }
 
 export function getCachedVtkScalars(
@@ -45,58 +97,20 @@ export function getCachedVtkScalars(
   return undefined;
 }
 
+export function isVtkScalarsCached(timestep: number): boolean {
+  return vtkByTimestep.has(timestep);
+}
+
 export function getVtkScalarsAsync(
   timestep: number,
   zFast: Float32Array,
 ): Promise<Float32Array> {
-  const cached = getCachedVtkScalars(timestep, zFast);
-  if (cached) return Promise.resolve(cached);
-
-  const inflight = pending.get(timestep);
-  if (inflight) return inflight;
-
-  const promise = new Promise<Float32Array>((resolve, reject) => {
-    const id = ++jobId;
-    const w = getWorker();
-    const copy = new Float32Array(zFast);
-
-    const onMessage = (ev: MessageEvent<{ id: number; buffer: ArrayBuffer }>) => {
-      if (ev.data.id !== id) return;
-      w.removeEventListener('message', onMessage);
-      w.removeEventListener('error', onError);
-      const out = new Float32Array(ev.data.buffer);
-      vtkByTimestep.set(timestep, out);
-      vtkByZFast.set(zFast, out);
-      pending.delete(timestep);
-      resolve(out);
-    };
-    const onError = () => {
-      w.removeEventListener('message', onMessage);
-      w.removeEventListener('error', onError);
-      pending.delete(timestep);
-      try {
-        const out = convertOnMainThread(zFast);
-        vtkByTimestep.set(timestep, out);
-        resolve(out);
-      } catch (e) {
-        reject(e);
-      }
-    };
-
-    w.addEventListener('message', onMessage);
-    w.addEventListener('error', onError);
-    w.postMessage({ id, buffer: copy.buffer }, [copy.buffer]);
-  });
-
-  pending.set(timestep, promise);
-  return promise;
+  return enqueueConvert(timestep, zFast);
 }
 
-/** Synchronous path — only if worker result already cached. */
-export function getVtkScalars(zFast: Float32Array): Float32Array {
-  const hit = vtkByZFast.get(zFast);
-  if (hit) return hit;
-  return convertOnMainThread(zFast);
+/** 仅当 Worker 结果已缓存时同步读取，否则返回 null */
+export function getVtkScalars(zFast: Float32Array): Float32Array | null {
+  return vtkByZFast.get(zFast) ?? null;
 }
 
 export const toVtkScalars = getVtkScalars;
@@ -106,5 +120,5 @@ export function prewarmVtkScalarsQuiet(
   zFast: Float32Array,
 ): void {
   if (getCachedVtkScalars(timestep, zFast)) return;
-  void getVtkScalarsAsync(timestep, zFast).catch(() => {});
+  void enqueueConvert(timestep, zFast).catch(() => {});
 }

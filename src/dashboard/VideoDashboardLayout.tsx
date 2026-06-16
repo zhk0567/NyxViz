@@ -14,6 +14,7 @@ import type { BrushPresetId } from '@/data/brushPreset';
 import type { ChartSizeOptions } from '@/hooks/useChartSize';
 import type { TfParams } from '@/volume/transferFunction';
 import type { VolumeQuality } from '@/volume/VolumeScene';
+import { VIDEO_CAMERA_ZOOM } from '@/volume/renderSpec';
 
 const VIDEO_MINI_TREND: ChartSizeOptions = {
   minHeight: 78,
@@ -146,10 +147,11 @@ export function VideoDashboardLayout({
                     tfParams={tfParams}
                     quality={volumeQuality}
                     renderActive
-                    cameraZoom={1.1}
+                    cameraZoom={VIDEO_CAMERA_ZOOM}
                     highlightMin={highlightMin}
                     highlightMax={highlightMax}
                     onRendered={onVolumeRendered}
+                    visualStyle="cinematic"
                     className="vd-vtk-panel"
                   />
                 </Suspense>

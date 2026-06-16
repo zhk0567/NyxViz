@@ -77,3 +77,22 @@ export function discoveryDetail(
       return '';
   }
 }
+
+/** 代表图封面：单行摘要 */
+export function discoveryChip(
+  id: (typeof DISCOVERY_CARDS)[number]['id'],
+  m: StoryMetrics,
+): string {
+  switch (id) {
+    case 'clump':
+      return `σ +${m.sigmaPct.toFixed(1)}% · p99−p01 +${m.spanPct.toFixed(1)}%`;
+    case 'polarize':
+      return `低密度 void ≤p01 体积 ${m.tailBelowPct.toFixed(1)}% · 右尾增厚`;
+    case 'tail':
+      return `≥p99 体积 ${m.tailAbovePct.toFixed(2)}% · 质量 ${m.massAbovePct.toFixed(1)}%`;
+    case 'link':
+      return `刷选召回 100% · 早停 ~37ms`;
+    default:
+      return '';
+  }
+}

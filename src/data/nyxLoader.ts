@@ -3,6 +3,8 @@ import {
   TIMESTEP_COUNT,
   VOXEL_COUNT,
 } from './types';
+import { nyxTimestepUrl, statsUrl } from '@/config/publicPaths';
+import { prewarmVtkScalarsQuiet } from './vtkConvert';
 
 /** z-fastest layout: flatIndex = z + GRID_SIZE * y + GRID_SIZE^2 * x */
 export function flatIndex(x: number, y: number, z: number): number {
@@ -19,11 +21,10 @@ export function getVoxel(
 }
 
 export function timestepUrl(timestep: number): string {
-  const step = Math.max(0, Math.min(TIMESTEP_COUNT - 1, timestep));
-  return `/Nyx/${String(step).padStart(4, '0')}.dat`;
+  return nyxTimestepUrl(timestep, TIMESTEP_COUNT - 1);
 }
 
-const MAX_TIMESTEP_CACHE = 8;
+const MAX_TIMESTEP_CACHE = 24;
 const prefetchCache = new Map<number, Float32Array>();
 
 function touchTimestepCache(timestep: number, data: Float32Array): void {
@@ -53,8 +54,14 @@ export function setPrefetchedTimestep(timestep: number, data: Float32Array): voi
 }
 
 export function prefetchTimestepQuiet(timestep: number): void {
-  if (prefetchCache.has(timestep)) return;
-  void loadTimestep(timestep).catch(() => {});
+  const cached = prefetchCache.get(timestep);
+  if (cached) {
+    prewarmVtkScalarsQuiet(timestep, cached);
+    return;
+  }
+  void loadTimestep(timestep)
+    .then((data) => prewarmVtkScalarsQuiet(timestep, data))
+    .catch(() => {});
 }
 
 export function hasTimestepCached(timestep: number): boolean {
@@ -131,7 +138,13 @@ export function computeMaxProjection(
   return out;
 }
 
-export { getVtkScalars, getVtkScalarsAsync, getCachedVtkScalars, prewarmVtkScalarsQuiet } from './vtkConvert';
+export {
+  getVtkScalars,
+  getVtkScalarsAsync,
+  getCachedVtkScalars,
+  isVtkScalarsCached,
+  prewarmVtkScalarsQuiet,
+} from './vtkConvert';
 
 export function scanBrushRange(
   data: Float32Array,
@@ -167,9 +180,9 @@ export async function loadTimelineStats(): Promise<import('./types').TimelineDat
   ).__NYX_TIMELINE__;
   if (embedded) return embedded;
 
-  const response = await fetch('/stats/timeline.json');
+  const response = await fetch(statsUrl('timeline.json'));
   if (!response.ok) {
-    throw new Error('Missing /stats/timeline.json — run: npm run precompute');
+    throw new Error('Missing stats/timeline.json — run: npm run precompute');
   }
   return response.json();
 }

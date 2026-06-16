@@ -1,13 +1,22 @@
 import { useEffect, useState } from 'react';
 import { DashboardCore } from '@/dashboard/DashboardCore';
 import { loadTimelineStats } from '@/data/nyxLoader';
+import { loadVideoStats, type VideoStatsBundle } from '@/data/statsLoader';
 import { useNyxTimestep } from '@/hooks/useNyxTimestep';
+import { useTimelineVolumePreload } from '@/hooks/useTimelineVolumePreload';
 import { useAppStore } from '@/store/useAppStore';
 import type { TimelineData } from '@/data/types';
 import './dashboard.css';
 
+const EMPTY_VIDEO_STATS: VideoStatsBundle = {
+  renderSpec: null,
+  validationExtended: null,
+  brushValidation: null,
+};
+
 export function App() {
   const [timeline, setTimeline] = useState<TimelineData | null>(null);
+  const [videoStats, setVideoStats] = useState<VideoStatsBundle>(EMPTY_VIDEO_STATS);
   const [initError, setInitError] = useState<string | null>(null);
 
   const densityData = useAppStore((s) => s.densityData);
@@ -15,6 +24,7 @@ export function App() {
   const error = useAppStore((s) => s.error);
 
   useNyxTimestep();
+  useTimelineVolumePreload(true);
 
   useEffect(() => {
     loadTimelineStats()
@@ -22,6 +32,7 @@ export function App() {
       .catch((e: unknown) =>
         setInitError(e instanceof Error ? e.message : String(e)),
       );
+    loadVideoStats().then(setVideoStats);
   }, []);
 
   if (initError) {
@@ -46,6 +57,7 @@ export function App() {
       densityData={densityData}
       loading={loading}
       error={error}
+      videoStats={videoStats}
     />
   );
 }

@@ -7,6 +7,10 @@ const projCache = new WeakMap<
   Float32Array,
   Map<ProjectionAxis, Float32Array>
 >();
+const inflight = new WeakMap<
+  Float32Array,
+  Map<ProjectionAxis, Promise<Float32Array>>
+>();
 
 function getWorker(): Worker {
   if (!worker) {
@@ -30,7 +34,15 @@ export function computeMaxProjectionAsync(
   const hit = perAxis.get(axis);
   if (hit) return Promise.resolve(hit);
 
-  return new Promise((resolve, reject) => {
+  let perInflight = inflight.get(data);
+  if (!perInflight) {
+    perInflight = new Map();
+    inflight.set(data, perInflight);
+  }
+  const pending = perInflight.get(axis);
+  if (pending) return pending;
+
+  const promise = new Promise<Float32Array>((resolve, reject) => {
     const id = ++jobId;
     const w = getWorker();
     const copy = new Float32Array(data);
@@ -41,11 +53,13 @@ export function computeMaxProjectionAsync(
       w.removeEventListener('error', onError);
       const out = new Float32Array(ev.data.buffer);
       perAxis!.set(axis, out);
+      perInflight!.delete(axis);
       resolve(out);
     };
     const onError = () => {
       w.removeEventListener('message', onMessage);
       w.removeEventListener('error', onError);
+      perInflight!.delete(axis);
       try {
         const out = computeMaxProjection(data, axis);
         perAxis!.set(axis, out);
@@ -59,4 +73,7 @@ export function computeMaxProjectionAsync(
     w.addEventListener('error', onError);
     w.postMessage({ id, buffer: copy.buffer, axis }, [copy.buffer]);
   });
+
+  perInflight.set(axis, promise);
+  return promise;
 }

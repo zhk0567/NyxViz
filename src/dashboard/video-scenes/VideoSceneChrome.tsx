@@ -3,7 +3,12 @@ interface VideoSceneChromeProps {
   recordMode: boolean;
 }
 
-/** 不占 grid 行；录屏/预览均不渲染，避免破坏 dashboard 行布局 */
-export function VideoSceneChrome(_props: VideoSceneChromeProps) {
-  return null;
+/** 录屏模式：header 下方单行场景标题，便于分段识别 */
+export function VideoSceneChrome({ title, recordMode }: VideoSceneChromeProps) {
+  if (!recordMode) return null;
+  return (
+    <div className="vd-scene-chrome" aria-hidden="true">
+      <span className="vd-scene-chrome-label">{title}</span>
+    </div>
+  );
 }

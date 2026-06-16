@@ -1,10 +1,11 @@
-import { startTransition, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   getPrefetchedTimestep,
   hasTimestepCached,
   loadTimestep,
   prewarmVtkScalarsQuiet,
 } from '@/data/nyxLoader';
+import { isStaticFiguresOnly } from '@/config/publicPaths';
 import { useAppStore } from '@/store/useAppStore';
 
 export function useNyxTimestep() {
@@ -15,31 +16,38 @@ export function useNyxTimestep() {
   const loadGenRef = useRef(0);
 
   useEffect(() => {
+    if (isStaticFiguresOnly()) {
+      setDensityData(null);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
     const gen = ++loadGenRef.current;
     let cancelled = false;
     setError(null);
 
-    const apply = (data: Float32Array) => {
+    const commit = (data: Float32Array, t: number) => {
       if (cancelled || gen !== loadGenRef.current) return;
-      prewarmVtkScalarsQuiet(timestep, data);
-      startTransition(() => {
-        setDensityData(data);
-        setLoading(false);
-      });
+      setDensityData(data);
+      setLoading(false);
+      prewarmVtkScalarsQuiet(t, data);
     };
 
     const prefetched = getPrefetchedTimestep(timestep);
     if (prefetched) {
-      apply(prefetched);
-      return;
+      commit(prefetched, timestep);
+      return () => {
+        cancelled = true;
+      };
     }
 
     if (!hasTimestepCached(timestep) && !useAppStore.getState().densityData) {
       setLoading(true);
     }
 
-    loadTimestep(timestep)
-      .then((data) => apply(data))
+    void loadTimestep(timestep)
+      .then((data) => commit(data, timestep))
       .catch((err: unknown) => {
         if (cancelled || gen !== loadGenRef.current) return;
         setError(err instanceof Error ? err.message : String(err));

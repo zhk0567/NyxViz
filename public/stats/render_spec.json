@@ -18,8 +18,8 @@
   ],
   "viewMargin": 0.88,
   "wideAspectBoost": 0.75,
-  "zoomFactor": 1.0,
-  "effectiveZoom": 0.66,
+  "zoomFactor": 1.24,
+  "effectiveZoom": 0.8184,
   "viewAspect": 1.7777777777777777,
   "lights": {
     "key": {
@@ -73,9 +73,9 @@
     "sampleDistance": 0.65,
     "maximumSamplesPerRay": 4096,
     "shade": true,
-    "ambient": 0.12,
+    "ambient": 0.1,
     "diffuse": 0.75,
-    "specular": 0.4,
+    "specular": 0.52,
     "scalarOpacityUnitDistance": 0.27822265625,
     "gpuTextureInterpolation": "trilinear (WebGL LINEAR on 3D texture)"
   },

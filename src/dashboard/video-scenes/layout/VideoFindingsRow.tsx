@@ -15,12 +15,7 @@ export function VideoFindingsRow({
       {showFindings && (
         <VideoFindingsStrip timeline={timeline} focusMode={sceneId === 'findings'} />
       )}
-      {sceneId === 'findings' && (
-        <p className="vd-outro-link">
-          github.com/zhk0567/NyxViz · 更多技术细节见作品说明
-        </p>
-      )}
-      {sceneId !== 'findings' && <div className="vd-letterbox" aria-hidden />}
+      <div className="vd-letterbox" aria-hidden />
     </div>
   );
 }

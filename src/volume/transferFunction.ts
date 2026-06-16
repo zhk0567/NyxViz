@@ -1,15 +1,19 @@
 import vtkColorTransferFunction from '@kitware/vtk.js/Rendering/Core/ColorTransferFunction';
 import vtkPiecewiseFunction from '@kitware/vtk.js/Common/DataModel/PiecewiseFunction';
 import {
-  COSMIC_COLOR_STOPS,
+  cinematicLegendGradient,
   cosmicLegendGradient,
+  getColorStops,
+  type ColormapStyle,
   densityToUnit,
   log10Safe,
 } from '@/viz/colormap';
 
 export type { TfDomain } from '@/viz/tfDomain';
 export { getGlobalTfDomain } from '@/viz/tfDomain';
-export { cosmicLegendGradient };
+export { cosmicLegendGradient, cinematicLegendGradient };
+
+export type VisualStyle = 'cinematic' | 'standard';
 
 export interface TfParams {
   opacityScale?: number;
@@ -23,6 +27,7 @@ export interface TransferFunctionOptions extends TfParams {
   highlightMin?: number;
   highlightMax?: number;
   useLogScale?: boolean;
+  visualStyle?: VisualStyle;
 }
 
 function valueAtNormT(
@@ -61,17 +66,63 @@ function mapT(
   return valueAtNormT(t, dataMin, dataMax, useLog) - gainShift;
 }
 
+function colormapStyle(visualStyle: VisualStyle = 'cinematic'): ColormapStyle {
+  return visualStyle === 'cinematic' ? 'cinematic' : 'cosmic';
+}
+
 export function fillColorTransferFunction(
   ctf: vtkColorTransferFunction,
   opts: TransferFunctionOptions,
 ): void {
-  const { dataMin, dataMax, densityGain = 0, useLogScale = true } = opts;
+  const {
+    dataMin,
+    dataMax,
+    densityGain = 0,
+    useLogScale = true,
+    visualStyle = 'cinematic',
+  } = opts;
 
   ctf.removeAllPoints();
-  for (const [t, r, g, b] of COSMIC_COLOR_STOPS) {
+  for (const [t, r, g, b] of getColorStops(colormapStyle(visualStyle))) {
     const x = mapT(t, dataMin, dataMax, densityGain, useLogScale);
     ctf.addRGBPoint(x, r, g, b);
   }
+}
+
+function fillStandardOpacity(
+  pwf: vtkPiecewiseFunction,
+  opts: TransferFunctionOptions,
+  at: (t: number) => number,
+  scale: (v: number) => number,
+): void {
+  const { dataMin, dataMax } = opts;
+  pwf.addPoint(dataMin, 0.0);
+  pwf.addPoint(at(0.12), scale(0.02));
+  pwf.addPoint(at(0.35), scale(0.06));
+  pwf.addPoint(at(0.55), scale(0.14));
+  pwf.addPoint(at(0.72), scale(0.32));
+  pwf.addPoint(at(0.88), scale(0.65));
+  pwf.addPoint(dataMax, scale(0.95));
+}
+
+function fillCinematicOpacity(
+  pwf: vtkPiecewiseFunction,
+  opts: TransferFunctionOptions,
+  at: (t: number) => number,
+  scale: (v: number) => number,
+): void {
+  const { dataMin, dataMax } = opts;
+  pwf.addPoint(dataMin, 0.0);
+  pwf.addPoint(at(0.08), 0.0);
+  pwf.addPoint(at(0.18), scale(0.004));
+  pwf.addPoint(at(0.35), scale(0.025));
+  pwf.addPoint(at(0.55), scale(0.08));
+  pwf.addPoint(at(0.72), scale(0.28));
+  pwf.addPoint(at(0.85), scale(0.58));
+  pwf.addPoint(at(0.90), scale(0.78));
+  pwf.addPoint(at(0.94), scale(0.92));
+  pwf.addPoint(at(0.97), scale(0.98));
+  pwf.addPoint(dataMax, scale(1.0));
 }
 
 export function fillOpacityTransferFunction(
@@ -87,6 +138,7 @@ export function fillOpacityTransferFunction(
     densityGain = 0,
     highlightBoost = 1,
     useLogScale = true,
+    visualStyle = 'cinematic',
   } = opts;
   const span = dataMax - dataMin || 1;
   const scale = (v: number) => Math.min(1, v * opacityScale);
@@ -97,10 +149,11 @@ export function fillOpacityTransferFunction(
 
   if (highlightMin !== undefined && highlightMax !== undefined) {
     const boost = highlightBoost;
-    pwf.addPoint(dataMin, scale(0.002));
+    const voidOpacity = visualStyle === 'cinematic' ? 0.0 : 0.002;
+    pwf.addPoint(dataMin, scale(voidOpacity));
     pwf.addPoint(
       mapDensity(highlightMin - span * 0.008, dataMin, dataMax, useLogScale),
-      scale(0.015),
+      scale(visualStyle === 'cinematic' ? 0.008 : 0.015),
     );
     pwf.addPoint(
       mapDensity(highlightMin, dataMin, dataMax, useLogScale),
@@ -112,19 +165,17 @@ export function fillOpacityTransferFunction(
     );
     pwf.addPoint(
       mapDensity(highlightMax + span * 0.008, dataMin, dataMax, useLogScale),
-      scale(0.15),
+      scale(visualStyle === 'cinematic' ? 0.08 : 0.15),
     );
-    pwf.addPoint(dataMax, scale(0.22));
+    pwf.addPoint(dataMax, scale(visualStyle === 'cinematic' ? 0.04 : 0.15));
     return;
   }
 
-  pwf.addPoint(dataMin, 0.0);
-  pwf.addPoint(at(0.12), scale(0.02));
-  pwf.addPoint(at(0.35), scale(0.06));
-  pwf.addPoint(at(0.55), scale(0.14));
-  pwf.addPoint(at(0.72), scale(0.32));
-  pwf.addPoint(at(0.88), scale(0.65));
-  pwf.addPoint(dataMax, scale(0.95));
+  if (visualStyle === 'cinematic') {
+    fillCinematicOpacity(pwf, opts, at, scale);
+  } else {
+    fillStandardOpacity(pwf, opts, at, scale);
+  }
 }
 
 export function buildColorTransferFunction(

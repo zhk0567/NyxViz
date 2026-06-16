@@ -108,7 +108,8 @@ async function main() {
     page.on('pageerror', (err) => console.error(`[pageerror] ${err.message}`));
 
     for (const t of STEPS) {
-      const url = `${BASE}/capture.html?t=${t}`;
+      // Evolution profile: global domain + progressive highlight reveal (getEvolutionCaptureProfile).
+      const url = `${BASE}/capture.html?t=${t}&domain=evolution`;
       console.log(`Capturing ${url}`);
       await page.goto(url, { waitUntil: 'networkidle', timeout: 120000 });
       await page.waitForFunction(

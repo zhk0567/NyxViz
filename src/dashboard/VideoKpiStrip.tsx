@@ -45,7 +45,9 @@ export function buildKpiItems(
     },
     {
       label: NARRATION_LABELS.mean,
-      value: stats.mean.toExponential(2),
+      value: stats.mean >= 100 || stats.mean < 0.01
+        ? stats.mean.toExponential(2)
+        : stats.mean.toFixed(2),
       tone: 'blue' as const,
     },
   ];

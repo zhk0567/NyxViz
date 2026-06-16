@@ -231,27 +231,20 @@ def _task3_compact(
             f"**回答：**以 **100 步 log 等距直方图**（默认 **{bins} bins**，每步 N=2,097,152，"
             f"纵轴 **Probability mass×100**）量化密度分布漂移。"
             f"**（1）两极分化：**σ **+{sigma_pct:.1f}%**，p99−p01 {span0:.3f}→{span99:.3f}；"
-            f"p50 由 {s0['p50']:.4f} 降至 {s99['p50']:.4f}，与 p99 缓升并存——「中心下移 + 右尾抬高」（**图10–11**）。"
+            f"p50 由 {s0['p50']:.4f} 降至 {s99['p50']:.4f}，与 p99 缓升并存——「中心下移 + 右尾抬高」（**任务二图6–7**）。"
             f"**（2）void 扩张：**固定 t=0 阈值 ρ_p10(t=0) 的体积分数 "
-            f"{void_t0p10_0:.2f}%→{void_t0p10_99:.2f}%，与赛题「空洞扩大」一致（**图11**）。"
+            f"{void_t0p10_0:.2f}%→{void_t0p10_99:.2f}%，与赛题「空洞扩大」一致（**图10**）。"
             f"**（3）与任务一对照：**右尾增厚对应体渲染 filament 亮脊；"
             f"p999 **×{p999_ratio:.3f}**（t=99/t=0）、偏度 +{skew_delta_pct:.2f}% 为辅证。"
             f"128 bin 曲线锯齿来自 log 域宽动态范围与多峰结构（平均每箱约 **{samples_per_bin:,}** 点），"
-            "**分箱敏感度 64/128/256 对比见附录 5.3**（**图21–22**）。"
+            "**分箱敏感度 64/128/256 对比见附录 5.3**（**附录图18–19**）。"
         )
     )
     blocks.append(
         Figure(
-            "task3_story_panel.png",
-            "直方图故事板：五步叠加 + σ/span 趋势 + t=99 KPI",
-            16.0,
-        )
-    )
-    blocks.append(
-        Figure(
-            "task3_histogram_summary.png",
-            "时序指标汇总：σ/span 三联 · p50 轨迹 · void 扩张",
-            15.5,
+            "task3_void_evolution.png",
+            "void 扩张：固定 t=0 低密度分位阈值下的体素占比与 p01/p10 轨迹",
+            15.0,
         )
     )
     blocks.append(
@@ -302,22 +295,15 @@ def _task4_compact(
         Text(
             f"**回答：**三栏仪表盘（**/app.html**）实现 log 直方图、体渲染与 XY 投影联动刷选。"
             f"**Top 1%**（ρ≥该步 p99；t=99 为 **{s99['p99']:.4f}**）刷选后，"
-            "投影呈丝状/节点聚集而非随机散点，体渲染高亮与统计区间一致（**图12**，(a) 直方图 · (b) 体渲染 · (c) 投影）——完成「统计→空间」。"
-            f"反向以 P88 亮脊反查密度带 **ρ∈[{band_lo:.2f},{band_hi:.2f}]**，与 Top 1% 相容（**图14**）。"
+            "投影呈丝状/节点聚集而非随机散点，体渲染高亮与统计区间一致（**任务二图9**，(a–c)）——完成「统计→空间」。"
+            f"反向以 P88 亮脊反查密度带 **ρ∈[{band_lo:.2f},{band_hi:.2f}]**，与 Top 1% 相容（**图9 (d)**）。"
             f"离线验证：filament 代理对 Top 1% **召回率 {rec:.1f}%**，刷选内误报率 **{fp_rate:.1f}%**（密度分位 ⊃ 形态脊线，符合预期）。"
             f"Worker 早停 **{early_ms:.0f} ms** vs 全网格 **{full_ms:.0f} ms**（复现见 **附录 5.4** 耗时表）。"
             f"**局限（量化）：**自定义拖拽 KPI 为 stride=2、maxPoints=8000 的采样估计——"
             f"宽区间 p50–p99 显示数可仅为真值 **≈{custom_wide_pct:.2f}%**（t=99），"
             f"p25–p75 约 **≈{custom_mid_pct:.2f}%**；Top 1% 早停召回约 **{sample_recall_pct:.1f}%**。"
             "**体渲染/投影高亮**仍按密度阈值作用于全场，不受采样列表限制。"
-            "阈值对比、P88 敏感度等见**附录 5.4** 与 **图15–16**。"
-        )
-    )
-    blocks.append(
-        Figure(
-            "task4_brush_triptych.png",
-            "Top 1% 刷选三联：(a) log 直方图 · (b) 体渲染 · (c) XY 投影（子图左上角标注）",
-            15.5,
+            "阈值对比、P88 敏感度等见**附录 5.4** 与 **图11–13**。"
         )
     )
     blocks.append(
@@ -329,15 +315,8 @@ def _task4_compact(
     )
     blocks.append(
         Figure(
-            "task4_spatial_to_stats.png",
-            "空间→统计：filament 亮脊反查密度带",
-            15.5,
-        )
-    )
-    blocks.append(
-        Figure(
             "task4_brush_validation_summary.png",
-            "刷选验证汇总：(a) 阈值对比 · (b) 自定义 KPI 误差 · (c) Top 1% 早停召回",
+            "刷选验证汇总：(a) 阈值对比 · (b) 早停采样 KPI",
             16.0,
         )
     )
@@ -419,7 +398,7 @@ def supplement_appendix_blocks(
         Text(
             "本附录收纳任务一至四正文中「详见附录 5.x」的方法细节、验证与敏感度分析；"
             "与正文第 5 章「综合叙事」区分——第 5 章归纳科学发现，"
-            "附录 5 提供可复现参数与补充图表（图21–22 等）。"
+            "附录 5 提供可复现参数与补充图表（图18–19 等）。"
         )
     )
 
@@ -576,7 +555,7 @@ def supplement_appendix_blocks(
         Text(
             f"128 bins 平均每箱 **{samples_per_bin:,}** 样本；锯齿主因 log 域宽动态范围与多峰。"
             "64/128/256 bins 对比：64 更平滑、256 更锯齿；128 为默认。"
-            "配图：**图21**（分箱叠加）、**图22**（CDF L∞ 距）；void 采用固定 t=0 分位阈值。"
+            "配图：**图18**（分箱叠加）、**图19**（CDF L∞ 距）；void 采用固定 t=0 分位阈值。"
         )
     )
     blocks.append(Figure("task3_bin_sensitivity.png", "分箱敏感度：64/128/256 bins（t=0 与 t=99）", 15.0))
@@ -653,7 +632,8 @@ def supplement_appendix_blocks(
         )
     blocks.append(
         Text(
-            "子图原件：task4_threshold_comparison、task4_custom_brush_error、task4_brush_sample_recall、"
+            "子图原件：task4_threshold_comparison、task4_brush_kpi_sampling、task4_custom_brush_error、"
+            "task4_brush_sample_recall、"
             "task4_projection_axes、task4_p88_sensitivity、task4_brush_precision、task4_ridge_methods。"
             "上表与正文任务四 KPI 数值一致；**体渲染/投影高亮**仍按密度阈值作用于全场，不受采样列表限制。"
         )

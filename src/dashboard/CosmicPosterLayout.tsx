@@ -9,6 +9,7 @@ import { PosterFlowchart } from '@/dashboard/PosterFlowchart';
 import { PosterBrushVerify } from '@/dashboard/PosterBrushVerify';
 import { computeStoryMetrics } from '@/results/storyMetrics';
 import type { TimelineData } from '@/data/types';
+import type { ValidationExtendedData } from '@/data/statsLoader';
 
 import { PosterStatsSection } from '@/dashboard/PosterStatsSection';
 import type { ReactNode } from 'react';
@@ -20,6 +21,8 @@ export interface CosmicPosterLayoutProps {
   timestep: number;
   onSelectTimestep: (t: number) => void;
   heroSlot?: ReactNode;
+  loading?: boolean;
+  validationExtended?: ValidationExtendedData | null;
 }
 
 export function CosmicPosterLayout({
@@ -29,6 +32,8 @@ export function CosmicPosterLayout({
   timestep,
   onSelectTimestep,
   heroSlot,
+  loading = false,
+  validationExtended = null,
 }: CosmicPosterLayoutProps) {
   const metrics = computeStoryMetrics(timeline);
   const phase = evolutionPhase(timestep);
@@ -94,7 +99,10 @@ export function CosmicPosterLayout({
           title="用数字证明变化：密度分布的两极化演化"
           subtitle={`σ +${metrics.sigmaPct.toFixed(1)}% · p99−p01 +${metrics.spanPct.toFixed(1)}% · 数据来自 timeline.json`}
         />
-        <PosterStatsSection timeline={timeline} />
+        <PosterStatsSection
+          timeline={timeline}
+          validationExtended={validationExtended}
+        />
       </section>
 
       <section id="story-04" className="pl-section pl-s04">
@@ -103,7 +111,12 @@ export function CosmicPosterLayout({
           title="统计与空间验证：相空间刷选与结构定位"
           subtitle="Top 1% / Bottom 1% 在直方图、体渲染与投影间双向联动"
         />
-        <PosterBrushVerify timeline={timeline} />
+        <PosterBrushVerify
+          timeline={timeline}
+          dataMin={dataMin}
+          dataMax={dataMax}
+          loading={loading}
+        />
         <p className="pl-conclusion">
           高密度区 → 节点/纤维聚集；低密度区 → IGM 空洞。统计刷选与空间结构一致。
         </p>

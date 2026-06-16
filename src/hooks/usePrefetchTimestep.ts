@@ -1,10 +1,15 @@
 import { useEffect } from 'react';
-import { loadTimestep, prefetchTimestepQuiet } from '@/data/nyxLoader';
+import {
+  hasTimestepCached,
+  isVtkScalarsCached,
+  prefetchTimestepQuiet,
+} from '@/data/nyxLoader';
+import { prewarmTimestepQuiet } from '@/data/timelineVolumePreload';
 import { TIMESTEP_COUNT } from '@/data/types';
 import { useAppStore } from '@/store/useAppStore';
 
 const NEIGHBOR_DELTAS = [-1, 1] as const;
-const SLIDER_PREFETCH_MS = 420;
+const NEIGHBOR_IDLE_MS = 3000;
 
 export function usePrefetchTimestep(
   previewStep?: number,
@@ -14,41 +19,22 @@ export function usePrefetchTimestep(
   const densityData = useAppStore((s) => s.densityData);
 
   useEffect(() => {
-    if (previewStep === undefined || previewStep === timestep) return;
-
-    if (sliderDragging) {
-      const t = window.setTimeout(
-        () => prefetchTimestepQuiet(previewStep),
-        SLIDER_PREFETCH_MS,
-      );
-      return () => window.clearTimeout(t);
-    }
-
+    if (!sliderDragging || previewStep === undefined) return;
     prefetchTimestepQuiet(previewStep);
-  }, [previewStep, timestep, sliderDragging]);
+  }, [previewStep, sliderDragging]);
 
   useEffect(() => {
-    if (!densityData || sliderDragging) return;
+    if (!densityData || sliderDragging || document.hidden) return;
 
-    const schedule =
-      typeof requestIdleCallback !== 'undefined'
-        ? (cb: () => void) =>
-            requestIdleCallback(cb, { timeout: 1200 })
-        : (cb: () => void) => window.setTimeout(cb, 400);
-
-    const cancel =
-      typeof cancelIdleCallback !== 'undefined'
-        ? cancelIdleCallback
-        : (id: number) => window.clearTimeout(id);
-
-    const id = schedule(() => {
+    const id = window.setTimeout(() => {
       for (const delta of NEIGHBOR_DELTAS) {
         const t = timestep + delta;
         if (t < 0 || t >= TIMESTEP_COUNT) continue;
-        void loadTimestep(t).catch(() => {});
+        if (hasTimestepCached(t) && isVtkScalarsCached(t)) continue;
+        prewarmTimestepQuiet(t);
       }
-    });
+    }, NEIGHBOR_IDLE_MS);
 
-    return () => cancel(id as number);
+    return () => window.clearTimeout(id);
   }, [timestep, densityData, sliderDragging]);
 }

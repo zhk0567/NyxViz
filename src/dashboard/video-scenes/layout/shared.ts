@@ -3,10 +3,11 @@ import type { VideoSceneLayoutProps } from '@/dashboard/video-scenes/layout/type
 export type { VideoSceneLayoutProps } from '@/dashboard/video-scenes/layout/types';
 
 export const VIDEO_MINI_TREND = {
-  minHeight: 78,
-  maxHeight: 78,
-  aspect: 1.35,
-  fillContainer: false,
+  minHeight: 86,
+  maxHeight: 92,
+  aspect: 1.55,
+  fillContainer: true,
+  videoReadable: true,
 } as const;
 
 export function computeTailBadge(timeline: VideoSceneLayoutProps['timeline']): string {

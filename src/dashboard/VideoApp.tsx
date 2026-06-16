@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { VideoDashboard } from '@/dashboard/VideoDashboard';
-import { VIDEO_WARM_TIMESTEPS } from '@/video/sceneRegistry';
-import { loadTimelineStats, loadTimestep, prefetchTimestepQuiet } from '@/data/nyxLoader';
-import { getVtkScalarsAsync } from '@/data/vtkConvert';
+import { loadTimelineStats } from '@/data/nyxLoader';
 import { loadVideoStats, type VideoStatsBundle } from '@/data/statsLoader';
 import { useNyxTimestep } from '@/hooks/useNyxTimestep';
+import { useTimelineVolumePreload } from '@/hooks/useTimelineVolumePreload';
 import { useAppStore } from '@/store/useAppStore';
+import { isStaticFiguresOnly } from '@/config/publicPaths';
 import type { TimelineData } from '@/data/types';
 
 const EMPTY_STATS: VideoStatsBundle = {
@@ -24,6 +24,7 @@ export function VideoApp() {
   const error = useAppStore((s) => s.error);
 
   useNyxTimestep();
+  useTimelineVolumePreload(!isStaticFiguresOnly());
 
   useEffect(() => {
     loadTimelineStats()
@@ -32,13 +33,6 @@ export function VideoApp() {
         setInitError(e instanceof Error ? e.message : String(e)),
       );
     loadVideoStats().then(setVideoStats);
-  }, []);
-
-  useEffect(() => {
-    for (const t of VIDEO_WARM_TIMESTEPS) prefetchTimestepQuiet(t);
-    void loadTimestep(99).then((data) => {
-      void getVtkScalarsAsync(99, data);
-    });
   }, []);
 
   if (initError) {

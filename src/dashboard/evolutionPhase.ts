@@ -1,3 +1,5 @@
+import { figuresUrl } from '@/config/publicPaths';
+
 export type EvolutionPhaseId = 'linear' | 'nonlinear' | 'web';
 
 export interface EvolutionPhase {
@@ -29,3 +31,33 @@ export function evolutionPhase(timestep: number): EvolutionPhase {
 }
 
 export const MARK_STEPS = [0, 25, 50, 75, 99] as const;
+
+/** XY max-projection frames — adaptive threshold shows sparse t=0 → web t=99. */
+export function evolutionThumbnailSrc(t: number): string {
+  return figuresUrl(`task1_evo_t${String(t).padStart(4, '0')}.png`);
+}
+
+export function handleEvolutionThumbnailError(
+  img: HTMLImageElement,
+  t: number,
+): void {
+  const pad = String(t).padStart(4, '0');
+  const stage = img.dataset.evoFallback ?? '0';
+  if (stage === '0' && img.src.includes(`task1_evo_t${pad}`)) {
+    img.dataset.evoFallback = '1';
+    img.src = figuresUrl(`task1_slice_t${pad}.png`);
+  } else if (stage === '1' && img.src.includes(`task1_slice_t${pad}`)) {
+    img.dataset.evoFallback = '2';
+    img.src = figuresUrl(`task1_vol_t${pad}.png`);
+  }
+}
+
+/** Swap img src once to fallback; avoids onError loops when fallback also 404s. */
+export function setFigureFallbackOnce(
+  img: HTMLImageElement,
+  fallbackName: string,
+): void {
+  if (img.dataset.figureFallback === fallbackName) return;
+  img.dataset.figureFallback = fallbackName;
+  img.src = figuresUrl(fallbackName);
+}

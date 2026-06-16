@@ -95,6 +95,13 @@ function yPadding(
   return span * 0.08;
 }
 
+function compactLeftMargin(width: number, tailDelta: boolean): number {
+  if (tailDelta) {
+    return Math.min(44, Math.max(34, Math.round(width * 0.28)));
+  }
+  return Math.min(40, Math.max(30, Math.round(width * 0.24)));
+}
+
 export function PosterTrendChart({
   timeline,
   title,
@@ -110,13 +117,22 @@ export function PosterTrendChart({
   const fillContainer = sizeOpts?.fillContainer ?? false;
   const compact =
     compactProp ?? (sizeOpts?.maxHeight != null && sizeOpts.maxHeight <= 110);
-  const sizeRef = wrapRef;
-  const { width, height } = useChartSizeFromOpts(sizeRef, sizeOpts);
+  const sizeRef = compact ? plotRef : wrapRef;
+  const chartSizeOpts = compact
+    ? {
+        minHeight: sizeOpts?.minHeight ?? 86,
+        maxHeight: sizeOpts?.maxHeight ?? 92,
+        aspect: sizeOpts?.aspect ?? 1.55,
+        fillContainer: true,
+        videoReadable: sizeOpts?.videoReadable,
+      }
+    : sizeOpts;
+  const { width, height } = useChartSizeFromOpts(sizeRef, chartSizeOpts);
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
     const svgEl = svgRef.current;
-    if (!svgEl || width < 48 || height < 36) return;
+    if (!svgEl || width < 40 || height < 32) return;
 
     const data = timeline.timesteps;
     const { values, tailDelta } = buildSeries(data, metric, compact);
@@ -129,16 +145,16 @@ export function PosterTrendChart({
     const ySpan = yMax - yMin;
     const pad = yPadding(yMin, yMax, metric, tailDelta);
 
-    const theme = getChartTheme(compact ? 'compact' : 'default');
+    const theme = getChartTheme(
+      sizeOpts?.videoReadable ? 'video' : compact ? 'compact' : 'default',
+    );
 
     const margin = compact
       ? {
-          top: 8,
-          right: 6,
-          bottom: 18,
-          left: tailDelta
-            ? Math.min(54, Math.max(48, Math.round(width * 0.36)))
-            : Math.min(46, Math.max(38, Math.round(width * 0.28))),
+          top: 6,
+          right: 4,
+          bottom: 16,
+          left: compactLeftMargin(width, tailDelta),
         }
       : { top: 36, right: 16, bottom: 36, left: 52 };
     const innerW = width - margin.left - margin.right;
@@ -272,7 +288,7 @@ export function PosterTrendChart({
         .attr('font-weight', 700)
         .text(badge);
     }
-  }, [timeline, width, height, title, badge, color, fill, metric, compact]);
+  }, [timeline, width, height, title, badge, color, fill, metric, compact, sizeOpts?.videoReadable]);
 
   return (
     <div

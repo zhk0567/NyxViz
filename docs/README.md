@@ -1,5 +1,9 @@
 # 文档目录
 
+技术方法清单：[`TOOLS_USAGE.md`](TOOLS_USAGE.md)（本作品实际采用的可视化方法与工具）
+
+**零基础解读**（答辩 / 读 Word / 录屏）：[`submission/NyxViz_零基础完全解读.md`](submission/NyxViz_零基础完全解读.md)
+
 | 目录 | 内容 | 命令 |
 |------|------|------|
 | [`submission/`](submission/) | **提交物**（作品说明 docx、官方答卷、代表图、清单） | `npm run submission-pack` |

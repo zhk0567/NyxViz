@@ -11,7 +11,7 @@ SPACING = DOMAIN_LENGTH / GRID
 VIEW_MARGIN = 0.88
 CAMERA_DISTANCE_FACTOR = 1.75
 CAMERA_OFFSET = (0.92, 0.78, 0.68)
-CAPTURE_CAMERA_ZOOM = 1.0
+CAPTURE_CAMERA_ZOOM = 1.24
 CAPTURE_ASPECT = 1920 / 1080
 
 COSMIC_COLOR_STOPS = [
@@ -24,6 +24,19 @@ COSMIC_COLOR_STOPS = [
     (1.0, (0.98, 0.92, 0.78)),
 ]
 
+CINEMATIC_COLOR_STOPS = [
+    (0.0, (0.01, 0.02, 0.06)),
+    (0.12, (0.02, 0.04, 0.12)),
+    (0.25, (0.04, 0.07, 0.20)),
+    (0.45, (0.15, 0.22, 0.55)),
+    (0.65, (0.35, 0.48, 0.78)),
+    (0.80, (0.95, 0.72, 0.35)),
+    (0.88, (1.0, 0.82, 0.42)),
+    (0.92, (1.0, 0.90, 0.58)),
+    (0.96, (1.0, 0.96, 0.86)),
+    (1.0, (1.0, 1.0, 0.96)),
+]
+
 COSMIC_OPACITY_STOPS = [
     (0.0, 0.0),
     (0.12, 0.02),
@@ -32,6 +45,19 @@ COSMIC_OPACITY_STOPS = [
     (0.72, 0.32),
     (0.88, 0.65),
     (1.0, 0.95),
+]
+
+CINEMATIC_OPACITY_STOPS = [
+    (0.0, 0.0),
+    (0.18, 0.004),
+    (0.35, 0.025),
+    (0.55, 0.08),
+    (0.72, 0.28),
+    (0.85, 0.58),
+    (0.90, 0.78),
+    (0.94, 0.92),
+    (0.97, 0.98),
+    (1.0, 1.0),
 ]
 
 VOLUME_LIGHTING = {
@@ -51,11 +77,21 @@ PRESENTATION_QUALITY = {
     "sampleDistance": 0.65,
     "maximumSamplesPerRay": 4096,
     "shade": True,
-    "ambient": 0.12,
+    "ambient": 0.10,
     "diffuse": 0.75,
-    "specular": 0.4,
+    "specular": 0.52,
     "scalarOpacityUnitDistance": SPACING * 2.5,
     "gpuTextureInterpolation": "trilinear (WebGL LINEAR on 3D texture)",
+}
+
+CINEMATIC_QUALITY = {
+    "sampleDistance": 1.6,
+    "maximumSamplesPerRay": 1024,
+    "shade": True,
+    "ambient": 0.08,
+    "diffuse": 0.82,
+    "specular": 0.66,
+    "scalarOpacityUnitDistance": SPACING * 2.5,
 }
 
 

@@ -348,55 +348,66 @@
   letter-spacing: 0.02em;
 }
 
-/* §02 演化五帧 */
+/* §02 演化五帧 — 横向宽比例条 */
 .pl-s02 .evo-thumbs {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 14px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
 }
 
 .pl-s02 .evo-thumb {
-  border: 1px solid var(--pl-border);
-  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(78, 196, 255, 0.22);
+  border-radius: 10px;
   overflow: hidden;
   padding: 0;
   background: #060c18;
   cursor: pointer;
   transition:
     border-color 0.15s,
-    box-shadow 0.15s;
+    box-shadow 0.15s,
+    transform 0.15s;
+}
+
+.pl-s02 .evo-thumb:hover:not(.active) {
+  border-color: rgba(255, 213, 106, 0.42);
+  box-shadow: 0 0 14px rgba(78, 196, 255, 0.14);
 }
 
 .pl-s02 .evo-thumb-media {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: clamp(120px, 14vw, 168px);
-  padding: 6px;
-  background: radial-gradient(ellipse at 50% 50%, #0a1428 0%, #03060e 100%);
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  min-height: 72px;
+  padding: 0;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 55%, #0a1428 0%, #03060e 100%);
 }
 
 .pl-s02 .evo-thumb img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   object-position: center;
   display: block;
 }
 
 .pl-s02 .evo-thumb.active {
-  border-color: var(--pl-orange);
-  box-shadow: 0 0 24px rgba(255, 107, 44, 0.35);
+  border-color: rgba(255, 213, 106, 0.65);
+  box-shadow:
+    0 0 20px rgba(255, 107, 44, 0.32),
+    inset 0 0 0 1px rgba(255, 213, 106, 0.18);
 }
 
 .pl-s02 .evo-thumb-label {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 8px 6px 10px;
-  font-size: var(--pl-fs-md);
+  gap: 6px;
+  padding: 6px 4px 7px;
+  font-size: var(--pl-fs-sm);
   font-weight: 700;
   color: var(--pl-cyan);
   text-align: center;
@@ -545,6 +556,103 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* §03 — video 组件在 poster 上下文中的样式映射 */
+.poster-layout .vd-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.poster-layout .vd-kpi-card {
+  padding: 20px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--cosmic-glass-border);
+  background: var(--cosmic-glass-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: var(--cosmic-glass-glow);
+  text-align: center;
+}
+
+.poster-layout .vd-kpi-label {
+  display: block;
+  font-size: var(--pl-fs-sm);
+  color: var(--pl-muted);
+  margin-bottom: 10px;
+}
+
+.poster-layout .vd-kpi-value {
+  display: block;
+  font-size: 1.65rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.poster-layout .vd-kpi-badge {
+  display: block;
+  margin-top: 6px;
+  font-size: var(--pl-fs-xs);
+  color: var(--pl-muted);
+}
+
+.poster-layout .vd-kpi-card.tone-gold .vd-kpi-value {
+  background-image: var(--pl-gradient-warm);
+}
+
+.poster-layout .vd-kpi-card.tone-orange .vd-kpi-value {
+  background-image: linear-gradient(90deg, #ffcc80, var(--pl-orange));
+}
+
+.poster-layout .vd-kpi-card.tone-cyan .vd-kpi-value {
+  background-image: var(--pl-gradient-cyan);
+}
+
+.poster-layout .vd-kpi-card.tone-blue .vd-kpi-value {
+  background-image: linear-gradient(90deg, #7eb8ff, var(--pl-cyan));
+}
+
+.poster-layout .vd-hist-method {
+  margin-top: 4px;
+  padding: 16px 18px;
+  border-radius: 12px;
+  border: 1px solid var(--pl-border);
+  background: rgba(8, 14, 28, 0.85);
+}
+
+.poster-layout .vd-hist-method .vd-scene-panel-head h3 {
+  margin: 0 0 10px;
+  font-size: var(--pl-fs-lg);
+  color: var(--pl-text);
+}
+
+.poster-layout .vd-hist-method .vd-spec-dl {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px 16px;
+  margin: 0;
+  font-size: var(--pl-fs-sm);
+}
+
+.poster-layout .vd-hist-method .vd-spec-dl dt {
+  color: var(--pl-muted);
+}
+
+.poster-layout .vd-hist-method .vd-spec-dl dd {
+  margin: 4px 0 0;
+  color: var(--pl-text);
+  font-weight: 600;
+}
+
+.poster-layout .vd-hist-method-note {
+  margin: 12px 0 0;
+  font-size: var(--pl-fs-xs);
+  color: var(--pl-muted);
+  line-height: 1.5;
+}
+
 /* §03 旧双列布局（已废弃） */
 .pl-s03-grid {
   display: none;
@@ -677,6 +785,19 @@
   border: none;
   border-radius: 0;
   background: transparent;
+}
+
+.pl-brush-proj {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+}
+
+.pl-brush-proj--zoom,
+.pl-brush-proj-fallback--zoom {
+  transform: scale(2.2);
+  transform-origin: center center;
 }
 
 .pl-brush-media--zoom {
@@ -1099,7 +1220,18 @@
   }
 
   .pl-s02 .evo-thumbs {
-    grid-template-columns: repeat(2, 1fr);
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    gap: 8px;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .pl-s02 .evo-thumb {
+    flex: 0 0 clamp(108px, 28vw, 168px);
+    min-width: 0;
+    scroll-snap-align: start;
   }
 
   .pl-s03-grid {
@@ -1115,7 +1247,8 @@
     padding: 8px 0;
   }
 
-  .pl-kpi-strip {
+  .pl-kpi-strip,
+  .poster-layout .vd-kpi-strip {
     grid-template-columns: repeat(2, 1fr);
   }
 
@@ -1136,5 +1269,308 @@
 
   .pl-kpi-strip {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ── 代表图：横向封面（?representative=1，目标 ~16∶9） ── */
+.poster-representative-capture {
+  --pr-cover-w: 1280px;
+  --pr-hero-h: 420px;
+  max-width: var(--pr-cover-w);
+  margin: 0 auto;
+  padding: 14px 18px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--pl-border, #1e2b48);
+  background: var(--cosmic-glass-bg, rgba(8, 14, 28, 0.94));
+  backdrop-filter: blur(var(--cosmic-glass-blur, 12px));
+  -webkit-backdrop-filter: blur(var(--cosmic-glass-blur, 12px));
+  box-shadow: inset 0 1px 0 rgba(78, 196, 255, 0.06);
+}
+
+.poster-representative-mode .poster-main {
+  max-width: none;
+  padding: 10px 14px 14px;
+}
+
+.poster-representative-mode {
+  padding-bottom: 16px !important;
+  min-height: auto !important;
+}
+
+.poster-capture-mode.poster-representative-mode .poster-main {
+  padding: 6px 8px 8px;
+}
+
+.poster-capture-mode .poster-representative-capture {
+  --pr-hero-h: 400px;
+  padding: 10px 14px 12px;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+}
+
+/* 顶栏：标题 + KPI 一行 */
+.poster-representative-capture .pr-cover-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-bottom: 10px;
+}
+
+.poster-representative-capture .pr-cover-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.poster-representative-capture .pr-cover-num {
+  font-size: 1.5rem;
+  font-weight: 900;
+  line-height: 1;
+  background-image: var(--pl-gradient-num, linear-gradient(135deg, #ffd56a, #ff6b2c));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.poster-representative-capture .pr-cover-title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.2;
+  background-image: var(--pl-gradient-title);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.poster-representative-capture .pr-cover-sub {
+  margin: 2px 0 0;
+  font-size: 0.72rem;
+  color: var(--pl-muted, #a8bdd8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.poster-representative-capture .pr-cover-kpis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 0 auto;
+  padding: 0;
+  list-style: none;
+}
+
+.poster-representative-capture .pr-cover-kpis li {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(78, 196, 255, 0.22);
+  background: rgba(6, 12, 24, 0.85);
+  min-width: 72px;
+}
+
+.poster-representative-capture .pr-cover-kpis span {
+  font-size: 0.62rem;
+  color: var(--pl-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.poster-representative-capture .pr-cover-kpis strong {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #e8f2ff;
+  font-variant-numeric: tabular-nums;
+}
+
+.poster-representative-capture .pr-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  justify-content: flex-end;
+}
+
+.poster-capture-mode .pr-top-actions,
+.poster-capture-mode .pr-save-toast {
+  display: none !important;
+}
+
+/* Hero + 横色标 */
+.poster-representative-capture .pr-cover-hero-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.poster-representative-capture .pr-cover-hero.pl-hero-frame {
+  min-height: var(--pr-hero-h);
+  height: var(--pr-hero-h);
+  max-height: var(--pr-hero-h);
+}
+
+.poster-representative-capture .pr-cover-hero .pl-hero-vtk-wrap,
+.poster-representative-capture .pr-cover-hero .pl-hero-vtk-wrap .pl-hero-vtk,
+.poster-representative-capture .pr-cover-hero .pl-hero-vtk-wrap .vtk-panel {
+  min-height: var(--pr-hero-h);
+  height: 100%;
+}
+
+.poster-representative-capture .horizontal-legend {
+  padding: 8px 12px;
+}
+
+.poster-representative-capture .horizontal-legend-head {
+  margin-bottom: 6px;
+}
+
+.poster-representative-capture .horizontal-legend-title {
+  font-size: 0.78rem;
+}
+
+.poster-representative-capture .horizontal-legend-note {
+  font-size: 0.68rem;
+}
+
+.poster-representative-capture .horizontal-legend-bar {
+  height: 12px;
+}
+
+.poster-representative-capture .horizontal-legend-labels {
+  font-size: 0.68rem;
+  margin-top: 4px;
+}
+
+/* 演化条：单行薄条 */
+.poster-representative-capture .pr-cover-evo {
+  margin-bottom: 10px;
+}
+
+.poster-representative-capture .pr-cover-evo .evo-thumbs {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+}
+
+.poster-representative-capture .pr-cover-evo .evo-thumb {
+  border-radius: 8px;
+  border: 1px solid rgba(78, 196, 255, 0.2);
+  background: #060c18;
+  overflow: hidden;
+}
+
+.poster-representative-capture .pr-cover-evo .evo-thumb-media {
+  aspect-ratio: 2.2 / 1;
+  min-height: 0;
+  max-height: 52px;
+}
+
+.poster-representative-capture .pr-cover-evo .evo-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.poster-representative-capture .pr-cover-evo .evo-thumb-label {
+  padding: 3px 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  gap: 4px;
+}
+
+.poster-representative-capture .pr-cover-evo .evo-thumb-sigma {
+  font-size: 0.62rem;
+}
+
+/* 发现：四列单行 */
+.poster-representative-capture .pr-cover-chips {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.poster-representative-capture .pr-cover-chip {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 107, 44, 0.22);
+  background: rgba(10, 16, 32, 0.92);
+  min-width: 0;
+}
+
+.poster-representative-capture .pr-cover-chip-num {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: #ffd56a;
+  background: rgba(255, 107, 44, 0.15);
+}
+
+.poster-representative-capture .pr-cover-chip h4 {
+  margin: 0 0 2px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.25;
+  color: #dce8ff;
+}
+
+.poster-representative-capture .pr-cover-chip p {
+  margin: 0;
+  font-size: 0.62rem;
+  line-height: 1.35;
+  color: #a8bdd8;
+}
+
+.poster-representative-capture .pr-save-toast {
+  margin: 0 0 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+}
+
+.poster-representative-capture .pr-save-toast--ok {
+  color: #9be7b0;
+  background: rgba(40, 120, 70, 0.18);
+  border: 1px solid rgba(80, 200, 120, 0.25);
+}
+
+.poster-representative-capture .pr-save-toast--err {
+  color: #ffb4b4;
+  background: rgba(120, 40, 40, 0.18);
+  border: 1px solid rgba(200, 80, 80, 0.25);
+}
+
+.poster-representative-capture .pr-save-btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+@media (max-width: 900px) {
+  .poster-representative-capture .pr-cover-kpis {
+    margin-left: 0;
+  }
+
+  .poster-representative-capture .pr-cover-chips {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .poster-representative-capture .pr-cover-evo .evo-thumbs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }

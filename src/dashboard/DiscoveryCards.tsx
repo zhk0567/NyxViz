@@ -9,7 +9,7 @@ import type { TimelineData } from '@/data/types';
 interface DiscoveryCardsProps {
   timeline: TimelineData;
   /** 长卷页：更大字号、2×2 布局 + 底部质量对比条 */
-  variant?: 'default' | 'poster';
+  variant?: 'default' | 'poster' | 'representative';
 }
 
 function MassHighlightPanel({ m }: { m: StoryMetrics }) {
@@ -51,9 +51,14 @@ function MassHighlightPanel({ m }: { m: StoryMetrics }) {
 export function DiscoveryCards({ timeline, variant = 'default' }: DiscoveryCardsProps) {
   const m = computeStoryMetrics(timeline);
   const poster = variant === 'poster';
+  const representative = variant === 'representative';
 
   return (
-    <div className={`discovery-grid${poster ? ' discovery-grid--poster' : ''}`}>
+    <div
+      className={`discovery-grid${
+        poster ? ' discovery-grid--poster' : ''
+      }${representative ? ' discovery-grid--representative' : ''}`}
+    >
       {DISCOVERY_CARDS.map((card, i) => (
         <article key={card.id} className={`discovery-tile discovery-tile-${i + 1}`}>
           <span className="discovery-num">{card.icon}</span>
@@ -63,7 +68,7 @@ export function DiscoveryCards({ timeline, variant = 'default' }: DiscoveryCards
       ))}
       {poster ? (
         <MassHighlightPanel m={m} />
-      ) : (
+      ) : representative ? null : (
         <figure className="discovery-mass">
           <img src="/figures/task5_mass_pie.png" alt="体积与质量占比" loading="lazy" />
           <figcaption>

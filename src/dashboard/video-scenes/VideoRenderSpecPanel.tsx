@@ -1,5 +1,6 @@
 import type { RenderSpecData } from '@/data/statsLoader';
 import type { TimelineData } from '@/data/types';
+import { figuresUrl } from '@/config/publicPaths';
 import { NARRATION_LABELS } from '@/video/narrationLabels';
 import { ZoomableImage } from '@/components/ImageLightbox';
 
@@ -127,7 +128,7 @@ export function VideoRenderSpecPanel({
       {showLightingFigure && (
         <figure className="vd-spec-figure vd-spec-figure--lighting">
           <ZoomableImage
-            src="/figures/task1_lighting_diagram.png"
+            src={figuresUrl('task1_lighting_diagram.png')}
             alt="Phong 主光与辅光示意"
             loading="lazy"
           />

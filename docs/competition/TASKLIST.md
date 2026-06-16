@@ -53,13 +53,13 @@ python run.py                # 本地预览 / 与 app.html
 |------|------|------|------|
 | **V0** | 布局规格书 | ✅ `LAYOUT_SPEC.md` + `layout_spec.py` + 参考图 `reference/` |
 | **V0b** | 灰度线框 | ✅ `npm run wireframe` → `wireframe_3840x6480.png` |
-| **V0c** | 3840×6480 成品 | ✅ `npm run poster:3840`（提交/代表图）；**`/app.html` 默认 HTML 分段长卷**（非单张拼版 PNG） |
+| **V0c** | 3840×5200 代表图 | ✅ `npm run capture-app-poster`（PIL 四幕叙事合成）；`poster:3840` 为 Spec 静态拼版（6480） |
 | **V1** | Hero 海报级首屏 | ✅ `task1_hero_poster.png` + 成果页 01 hero |
 | **V2** | 03 专图版式 | ✅ `task3_story_panel.png`（真实 σ/span/体积增幅 + t=99 四 KPI） |
 | **V3** | 04 双行四列静图 | ✅ `task4_brush_rows.png` |
 | **V4** | 05 质量占比 | ✅ `massFractionAbove/BelowP99` + `task5_mass_pie.png` |
 | **V5** | 06 流程图美化 | ✅ 七步 `task0_story_flow.png` |
-| **V6** | 单页长图导出 | ✅ `task6_story_poster.png` → 代表图 |
+| **V6** | 单页代表图导出 | ✅ `task6_story_poster.png`（40/20/25/15 四幕叙事，3840×5200）→ 提交代表图 |
 | **V7** | 交互页 vs 04 版式 | ✅ `/app.html` 右栏 `brush-verify-hint` 文案 |
 
 **建议顺序（时间紧可只做 V3+V6）**：V3 → V2 → V1 → V6；V4 需新统计再动；V7 最低优先级。

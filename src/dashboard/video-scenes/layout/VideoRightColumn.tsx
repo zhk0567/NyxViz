@@ -1,4 +1,5 @@
 import { DensityHistogram } from '@/histogram/DensityHistogram';
+import { figuresUrl } from '@/config/publicPaths';
 import { VideoBrushPreviews } from '@/dashboard/VideoBrushPreviews';
 import { VideoBrushValidationPanel } from '@/dashboard/video-scenes/VideoBrushValidationPanel';
 import { VideoMorphPanel } from '@/dashboard/video-scenes/VideoMorphPanel';
@@ -67,7 +68,7 @@ export function VideoRightColumn({
       <aside className="vd-panel vd-panel-right">
         <figure className="vd-spec-figure vd-lighting-figure">
           <ZoomableImage
-            src="/figures/task1_lighting_diagram.png"
+            src={figuresUrl('task1_lighting_diagram.png')}
             alt="Phong 主光与辅光示意"
             loading="lazy"
           />
@@ -135,11 +136,10 @@ export function VideoRightColumn({
           刷选密度区间 · 下方空间投影对应验证
         </p>
       )}
-      {stats && (
+        {stats && (
         <VideoBrushPreviews
           stats={stats}
           densityData={densityData}
-          volumeReady={volumeReady}
           loading={loading}
           dataMin={dataMin}
           dataMax={dataMax}

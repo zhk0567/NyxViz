@@ -84,10 +84,95 @@ function resolveProjectSrcPlugin(): Plugin {
   };
 }
 
+function readJsonBody(req: import('http').IncomingMessage): Promise<{ href?: string }> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    req.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+    req.on('end', () => {
+      try {
+        resolve(JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'));
+      } catch {
+        reject(new Error('Invalid JSON body'));
+      }
+    });
+    req.on('error', reject);
+  });
+}
+
+function posterSaveApiPlugin(): Plugin {
+  let saving = false;
+
+  return {
+    name: 'poster-save-api',
+    configureServer(server) {
+      server.middlewares.use('/__api/save-app-poster', (req, res, next) => {
+        if (req.method !== 'POST') {
+          (next as () => void)();
+          return;
+        }
+
+        void (async () => {
+          if (saving) {
+            res.statusCode = 429;
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            res.end(JSON.stringify({ ok: false, error: '已有保存任务进行中' }));
+            return;
+          }
+
+          saving = true;
+          try {
+            const body = await readJsonBody(req);
+            const href = body.href ?? '';
+            const origin = href ? new URL(href).origin : `http://127.0.0.1:${server.config.server.port ?? 5173}`;
+            const script = path.resolve(__dirname, 'tools/node/snapshot_app_poster_once.mjs');
+            const isWin = process.platform === 'win32';
+            const { spawn } = await import('node:child_process');
+            const stdout = await new Promise<string>((resolve, reject) => {
+              const child = spawn(
+                process.execPath,
+                [script, origin],
+                { cwd: __dirname, shell: isWin, stdio: ['ignore', 'pipe', 'pipe'] },
+              );
+              let out = '';
+              let err = '';
+              child.stdout?.on('data', (d) => {
+                out += String(d);
+              });
+              child.stderr?.on('data', (d) => {
+                err += String(d);
+              });
+              child.on('exit', (code) => {
+                if (code === 0) resolve(out);
+                else reject(new Error(err || `snapshot exit ${code}`));
+              });
+            });
+
+            const payload = JSON.parse(stdout);
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            res.end(JSON.stringify(payload));
+          } catch (err) {
+            res.statusCode = 500;
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            res.end(
+              JSON.stringify({
+                ok: false,
+                error: err instanceof Error ? err.message : String(err),
+              }),
+            );
+          } finally {
+            saving = false;
+          }
+        })();
+      });
+    },
+  };
+}
+
 export default defineConfig({
   root: path.resolve(__dirname, 'pages'),
   publicDir: path.resolve(__dirname, 'public'),
-  plugins: [react(), nyxDataPlugin(), resolveProjectSrcPlugin()],
+  plugins: [react(), nyxDataPlugin(), resolveProjectSrcPlugin(), posterSaveApiPlugin()],
   build: {
     outDir: path.resolve(__dirname, 'dist'),
     emptyOutDir: true,

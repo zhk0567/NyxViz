@@ -1,4 +1,5 @@
 import type { ValidationExtendedData } from '@/data/statsLoader';
+import { figuresUrl } from '@/config/publicPaths';
 import { ZoomableImage } from '@/components/ImageLightbox';
 
 interface VideoSpatialPanelProps {
@@ -7,22 +8,22 @@ interface VideoSpatialPanelProps {
 
 const METRIC_PANELS = [
   {
-    src: '/figures/task2_spatial_panel_0.png',
+    src: figuresUrl('task2_spatial_panel_0.png'),
     caption: "Moran's I 时序",
     alt: "Moran's I 时序",
   },
   {
-    src: '/figures/task2_spatial_panel_1.png',
+    src: figuresUrl('task2_spatial_panel_1.png'),
     caption: 'ξ(r=1) 时序',
     alt: 'ξ(r=1) 时序',
   },
   {
-    src: '/figures/task2_spatial_panel_2.png',
+    src: figuresUrl('task2_spatial_panel_2.png'),
     caption: '分形维 D',
     alt: '分形维 D 时序',
   },
   {
-    src: '/figures/task2_spatial_panel_3.png',
+    src: figuresUrl('task2_spatial_panel_3.png'),
     caption: '超额峰度 κ−3',
     alt: '超额峰度 κ−3 时序',
   },
@@ -46,7 +47,7 @@ export function VideoSpatialPanel({ validation }: VideoSpatialPanelProps) {
         </div>
         <figure className="vd-spatial-wide-figure">
           <ZoomableImage
-            src="/figures/task2_two_point_xi.png"
+            src={figuresUrl('task2_two_point_xi.png')}
             alt="ξ(r) 剖面 + 子块 MC ±1σ"
             loading="eager"
           />
@@ -107,7 +108,7 @@ export function VideoSpatialPanel({ validation }: VideoSpatialPanelProps) {
 
         <figure className="vd-spatial-boot-figure">
           <ZoomableImage
-            src="/figures/task2_bootstrap_ci.png"
+            src={figuresUrl('task2_bootstrap_ci.png')}
             alt="Moran I 与 ξ bootstrap CI"
             loading="eager"
           />

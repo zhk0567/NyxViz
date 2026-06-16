@@ -31,7 +31,17 @@ export function useVideoScene() {
   const setScene = useCallback(
     (id: VideoSceneId) => {
       if (recordMode) {
-        window.location.href = sceneUrl(id, true);
+        const params = new URLSearchParams(window.location.search);
+        params.set('record', '1');
+        if (id === 'intro') {
+          params.delete('scene');
+        } else {
+          params.set('scene', id);
+        }
+        const q = params.toString();
+        window.location.href = q
+          ? `${window.location.pathname}?${q}`
+          : window.location.pathname;
         return;
       }
       const params = new URLSearchParams(window.location.search);

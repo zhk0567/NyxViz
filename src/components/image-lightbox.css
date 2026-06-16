@@ -15,9 +15,12 @@
 }
 
 .image-lightbox-panel {
-  width: min(92vw, 920px);
-  max-height: 86vh;
-  overflow: auto;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(96vw, 1280px);
+  max-height: 90vh;
+  overflow: hidden;
   cursor: default;
   box-sizing: border-box;
   /* Portal 到 body，需自带 video-dashboard 主题变量 */
@@ -93,6 +96,67 @@
   margin: 0;
 }
 
+.vd-lightbox-figure--zoom {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: min(82vh, 860px);
+}
+
+.image-lightbox .vd-lightbox-zoom-hint {
+  flex-shrink: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  color: var(--vd-muted);
+  background: rgba(4, 8, 18, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+  white-space: nowrap;
+  align-self: center;
+}
+
+.vd-lightbox-zoom-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(78, 196, 255, 0.35);
+  color: var(--vd-cyan);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.vd-lightbox-zoom-stage {
+  position: relative;
+  flex: 1 1 0;
+  width: 100%;
+  min-height: 240px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.vd-lightbox-zoom-stage:active {
+  cursor: grabbing;
+}
+
+.vd-lightbox-zoom-inner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
 .vd-lightbox-img {
   display: block;
   width: 100%;
@@ -100,4 +164,43 @@
   max-height: 82vh;
   object-fit: contain;
   border-radius: 4px;
+}
+
+.vd-lightbox-img--native {
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  image-rendering: auto;
+}
+
+html.image-lightbox-open .vd-vtk-interact-hint,
+html.image-lightbox-open .vd-vtk-focus-badge,
+html.image-lightbox-open .vd-brush-hist-hint {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* video.html：隐藏 lightbox 底部操作提示；非 findings 禁用缩略图放大 */
+html.video-dashboard .vd-lightbox-zoom-hint {
+  display: none !important;
+}
+
+html.video-dashboard .video-dashboard:not(.video-scene-findings) .vd-zoomable {
+  pointer-events: none;
+  cursor: default;
+}
+
+html.video-dashboard .video-dashboard:not(.video-scene-findings) .vd-zoomable:hover {
+  filter: none;
+}
+
+/* lightbox 打开时隐藏背后页面底部杂字 */
+html.image-lightbox-open.video-dashboard .video-dashboard .vd-footer,
+html.image-lightbox-open.video-dashboard .video-dashboard figure > figcaption,
+html.image-lightbox-open.video-dashboard .video-dashboard .vd-vtk-interact-hint,
+html.image-lightbox-open.video-dashboard .video-dashboard .vd-brush-hist-hint,
+html.image-lightbox-open.video-dashboard .video-dashboard .vd-finding-enlarge-hint {
+  visibility: hidden;
+  pointer-events: none;
 }

@@ -1,14 +1,19 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { CosmicBackdrop } from '@/components/CosmicBackdrop';
 import { CosmicPosterLayout } from '@/dashboard/CosmicPosterLayout';
+import { CosmicPosterRepresentative } from '@/dashboard/CosmicPosterRepresentative';
 import { PosterHeroVolume } from '@/dashboard/PosterHeroVolume';
 import { InteractiveBrushLab } from '@/dashboard/InteractiveBrushLab';
 import { DiscoveryCards } from '@/dashboard/DiscoveryCards';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { useDashboardInteraction } from '@/dashboard/useDashboardInteraction';
+import { useVolumeVisualProfile } from '@/hooks/useVolumeVisualProfile';
 import { MARK_STEPS } from '@/dashboard/evolutionPhase';
+import { VIDEO_CAMERA_ZOOM } from '@/volume/renderSpec';
 import type { TimelineData } from '@/data/types';
 import { TIMESTEP_COUNT } from '@/data/types';
+import type { VideoStatsBundle } from '@/data/statsLoader';
+import { usePosterAutoSave } from '@/dashboard/usePosterAutoSave';
 
 const VolumeScene = lazy(() =>
   import('@/volume/VolumeScene').then((m) => ({ default: m.VolumeScene })),
@@ -33,6 +38,7 @@ export interface DashboardCoreProps {
   loading: boolean;
   error: string | null;
   embedded?: boolean;
+  videoStats?: VideoStatsBundle;
 }
 
 export function DashboardCore({
@@ -41,14 +47,27 @@ export function DashboardCore({
   loading,
   error,
   embedded = false,
+  videoStats,
 }: DashboardCoreProps) {
   const posterCapture =
     typeof window !== 'undefined' &&
     new URLSearchParams(window.location.search).has('posterCapture');
+  const representative =
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).has('representative');
+  const savePoster =
+    typeof window !== 'undefined' &&
+    (new URLSearchParams(window.location.search).has('savePoster') ||
+      (import.meta.env.DEV &&
+        new URLSearchParams(window.location.search).has('representative')));
   const [exploreOpen, setExploreOpen] = useState(false);
+  const [posterVolumeReady, setPosterVolumeReady] = useState(false);
 
   const ix = useDashboardInteraction(timeline, densityData, loading, {
     onPresetBrush: () => setExploreOpen(true),
+    instantVolume: true,
+    defaultHighQuality: false,
+    idleBoostDelayMs: 1200,
   });
 
   const {
@@ -69,6 +88,7 @@ export function DashboardCore({
     volumeQuality,
     highlight,
     applyTop1,
+    onVolumeCameraActivity,
     applyBottom1,
     applyFilament,
     clearBrush,
@@ -76,6 +96,22 @@ export function DashboardCore({
     selectTimestep,
     volumeRatio,
   } = ix;
+
+  const visualProfile = useVolumeVisualProfile(timeline, timestep);
+  const volumeHighlightMin = highlight.highlightMin ?? visualProfile.highlightMin;
+  const volumeHighlightMax = highlight.highlightMax ?? visualProfile.highlightMax;
+
+  const { saveState, savePoster: triggerSavePoster } = usePosterAutoSave({
+    enabled: import.meta.env.DEV,
+    representative: representative || posterCapture,
+    loading,
+    volumeReady: posterVolumeReady,
+    autoOnLoad: savePoster,
+  });
+
+  useEffect(() => {
+    setPosterVolumeReady(false);
+  }, [timestep]);
 
   const scrollToSection = (id: (typeof SECTION_IDS)[number]) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -89,13 +125,19 @@ export function DashboardCore({
           <VolumeScene
             data={densityData}
             timestep={timestep}
-            dataMin={dataMin}
-            dataMax={dataMax}
-            tfParams={tfParams}
+            dataMin={visualProfile.dataMin}
+            dataMax={visualProfile.dataMax}
+            tfParams={visualProfile.tfParams}
             quality={volumeQuality}
+            cameraZoom={VIDEO_CAMERA_ZOOM}
             renderActive={exploreOpen}
+            interactiveCamera={exploreOpen}
+            adaptivePrecisionZoom
+            visualStyle="cinematic"
             onRendered={() => setVolumeReady(true)}
-            {...highlight}
+            onCameraActivity={onVolumeCameraActivity}
+            highlightMin={volumeHighlightMin}
+            highlightMax={volumeHighlightMax}
             className="vtk-panel"
           />
         </Suspense>
@@ -110,13 +152,15 @@ export function DashboardCore({
       densityData={densityData}
       loading={loading}
       timestep={timestep}
-      dataMin={dataMin}
-      dataMax={dataMax}
-      tfParams={tfParams}
+      dataMin={visualProfile.dataMin}
+      dataMax={visualProfile.dataMax}
+      tfParams={visualProfile.tfParams}
       quality={volumeQuality}
-      highlightMin={highlight.highlightMin}
-      highlightMax={highlight.highlightMax}
+      highlightMin={volumeHighlightMin}
+      highlightMax={volumeHighlightMax}
       paused={exploreOpen}
+      onCameraActivity={onVolumeCameraActivity}
+      onRendered={() => setPosterVolumeReady(true)}
     />
   );
 
@@ -124,12 +168,15 @@ export function DashboardCore({
     <div
       className={`cosmic-poster cosmic-poster-layout cosmic-page-frame${
         embedded ? ' cosmic-poster-embed' : ''
-      }${posterCapture ? ' poster-capture-mode' : ''}`}
+      }${posterCapture ? ' poster-capture-mode' : ''}${
+        representative ? ' poster-representative-mode' : ''
+      }`}
     >
       <CosmicBackdrop variant="poster" intensity="full" fixed={!posterCapture} />
+      {!representative && (
       <header className="poster-top-bar">
         <span className="poster-top-kicker pl-text-gradient-cyan">Nyx 128³ · 宇宙网诞生记</span>
-        {!posterCapture && (
+        {!posterCapture && !representative && (
           <>
             <button
               type="button"
@@ -146,8 +193,9 @@ export function DashboardCore({
           </>
         )}
       </header>
+      )}
 
-      {!posterCapture && (
+      {!posterCapture && !representative && (
       <nav className="poster-rail" aria-label="章节">
         {SECTION_IDS.map((id, i) => (
           <button
@@ -163,14 +211,31 @@ export function DashboardCore({
       )}
 
       <main className="poster-main">
-        <CosmicPosterLayout
-          timeline={timeline}
-          dataMin={dataMin}
-          dataMax={dataMax}
-          timestep={timestep}
-          onSelectTimestep={selectTimestep}
-          heroSlot={posterHero}
-        />
+        {representative ? (
+          <CosmicPosterRepresentative
+            timeline={timeline}
+            dataMin={dataMin}
+            dataMax={dataMax}
+            timestep={timestep}
+            onSelectTimestep={selectTimestep}
+            heroSlot={posterHero}
+            showToolbar={!posterCapture}
+            onExplore={() => setExploreOpen(true)}
+            onSavePoster={import.meta.env.DEV ? triggerSavePoster : undefined}
+            saveState={saveState}
+          />
+        ) : (
+          <CosmicPosterLayout
+            timeline={timeline}
+            dataMin={dataMin}
+            dataMax={dataMax}
+            timestep={timestep}
+            onSelectTimestep={selectTimestep}
+            heroSlot={posterHero}
+            loading={loading}
+            validationExtended={videoStats?.validationExtended ?? null}
+          />
+        )}
       </main>
 
       {exploreOpen && (
@@ -237,7 +302,7 @@ export function DashboardCore({
         </div>
       )}
 
-      {!posterCapture && (
+      {!posterCapture && !representative && (
       <aside className="control-dock" aria-label="交互控制">
         <div className="dock-row">
           <span className="dock-title">时间步</span>

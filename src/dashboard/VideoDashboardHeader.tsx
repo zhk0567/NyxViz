@@ -36,10 +36,13 @@ export function VideoDashboardHeader({
   const phase = evolutionPhase(timestep);
   const activePhaseIdx =
     phase.id === 'linear' ? 0 : phase.id === 'nonlinear' ? 1 : 2;
-  const compactRecord = recordMode && sceneId !== 'intro';
+  const compactRecord = recordMode;
+  const introRecord = recordMode && sceneId === 'intro';
 
   return (
-    <header className={`vd-header${compactRecord ? ' vd-header--record-compact' : ''}`}>
+    <header
+      className={`vd-header${compactRecord ? ' vd-header--record-compact' : ''}${introRecord ? ' vd-header--record-intro' : ''}`}
+    >
       <div className="vd-header-left">
         <span className="vd-brand">NyxViz v2.0</span>
         <div className="vd-meta-chips">
@@ -54,7 +57,7 @@ export function VideoDashboardHeader({
       <div className="vd-header-center">
         <h1 className="vd-title">宇宙网诞生记</h1>
         <p className="vd-subtitle">从近乎均匀的涨落到支配宇宙的大尺度结构</p>
-        {!compactRecord && (
+        {!recordMode && (
           <div className="vd-phase-pills" role="tablist" aria-label="演化阶段">
             {PHASES.map((p, i) => (
               <span
@@ -97,10 +100,10 @@ export function VideoDashboardHeader({
             </button>
           ))}
         </div>
-        {stats && (!recordMode || sceneId !== 'intro') && (
+        {stats && (
           <span className="vd-header-stats">
-            σ={stats.std.toFixed(4)} · p99={stats.p99.toFixed(4)}
-            {!recordMode && ` · μ=${stats.mean.toFixed(2)}`}
+            sigma={stats.std.toFixed(4)} · p99={stats.p99.toFixed(4)}
+            {!recordMode && ` · mu=${stats.mean.toFixed(2)}`}
           </span>
         )}
       </div>

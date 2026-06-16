@@ -25,7 +25,7 @@ PANEL_BORDER = 2
 PANEL_PAD = 16
 PANEL_GAP = 20
 SECTION_GAP = 32
-LABEL_BAR_H = 32
+LABEL_BAR_H = 44
 TITLE_BAR_H = 52
 SHADOW_OFFSET = 4
 SHADOW_ALPHA = 72
@@ -108,14 +108,22 @@ def _draw_panel_shadow(canvas: Image.Image, x: int, y: int, w: int, h: int) -> N
     canvas.paste(shadow, (x - 1, y + 1), shadow)
 
 
-def _draw_corner_badge(canvas: Image.Image, letter: str, x: int, y: int) -> None:
+def _draw_corner_badge(
+    canvas: Image.Image,
+    letter: str,
+    x: int,
+    y: int,
+    *,
+    font_size: int = 28,
+) -> None:
     """Bold panel letter badge at top-left of subplot content (e.g. (a))."""
     text = letter if letter.startswith("(") else f"({letter.lower()})"
     draw = ImageDraw.Draw(canvas)
-    font = load_ui_font(28, bold=True)
+    font = load_ui_font(font_size, bold=True)
     tw = int(draw.textlength(text, font=font))
-    pad_x, pad_y = 12, 8
-    bw, bh = tw + pad_x * 2, 36
+    pad_x = max(12, int(font_size * 0.38))
+    bh = int(font_size * 1.55)
+    bw = tw + pad_x * 2
     _rounded_rect(
         draw,
         (x, y, x + bw - 1, y + bh - 1),
@@ -124,7 +132,11 @@ def _draw_corner_badge(canvas: Image.Image, letter: str, x: int, y: int) -> None
         outline=(120, 220, 255, 255),
         width=3,
     )
-    draw.text((x + pad_x, y + pad_y - 4), text, fill=(255, 255, 255, 255), font=font)
+    bbox = draw.textbbox((0, 0), text, font=font)
+    th = bbox[3] - bbox[1]
+    tx = x + (bw - tw) // 2
+    ty = y + (bh - th) // 2 - bbox[1]
+    draw.text((tx, ty), text, fill=(255, 255, 255, 255), font=font)
 
 
 def split_panel_label(label: str) -> tuple[str | None, str]:
@@ -148,6 +160,13 @@ def wrap_panel(
     accent: str = THEME["cyan"],
     content_height: int | None = None,
     max_content_width: int | None = None,
+    label_font_size: int = 26,
+    subtitle_font_size: int = 18,
+    corner_font_size: int = 28,
+    header: Literal["bottom", "inline"] = "bottom",
+    header_content_gap: int = 6,
+    subtitle_gap: int = 4,
+    subtitle_tail_pad: int = 12,
 ) -> Image.Image:
     """Wrap image in a rounded card with optional label bar."""
     if isinstance(img, (Path, str)):
@@ -168,13 +187,103 @@ def wrap_panel(
             Image.Resampling.LANCZOS,
         )
 
-    label_h = LABEL_BAR_H if label else 0
-    sub_h = 18 if subtitle and label else 0
-    bar_h = label_h + sub_h
     inner_w = content.width
     inner_h = content.height
+    _probe = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
+
+    if header == "inline" and (corner_letter or label):
+        letter_font = load_ui_font(corner_font_size, bold=True)
+        title_font = load_ui_font(label_font_size, bold=True)
+        sub_font = load_ui_font(subtitle_font_size) if subtitle else None
+        letter_text = (
+            corner_letter
+            if not corner_letter or corner_letter.startswith("(")
+            else f"({corner_letter.lower()})"
+        )
+        lb = _probe.textbbox((0, 0), letter_text, font=letter_font)
+        badge_w = (lb[2] - lb[0]) + max(24, corner_font_size // 2)
+        badge_h = int(corner_font_size * 1.55)
+        title_h = 0
+        if label:
+            tb = _probe.textbbox((0, 0), label, font=title_font)
+            title_h = tb[3] - tb[1]
+        row_h = max(badge_h, title_h) + 14
+        sub_h = 0
+        if subtitle and sub_font:
+            sb = _probe.textbbox((0, 0), subtitle, font=sub_font)
+            sub_h = subtitle_gap + (sb[3] - sb[1]) + subtitle_tail_pad
+        header_total = row_h + sub_h + header_content_gap
+        card_w = inner_w + PANEL_PAD * 2
+        card_h = inner_h + PANEL_PAD * 2 + header_total
+
+        card = Image.new("RGBA", (card_w, card_h), (0, 0, 0, 0))
+        _draw_panel_shadow(card, 0, 0, card_w, card_h)
+        body = Image.new("RGBA", (card_w, card_h), (*hex_to_rgb(PANEL_BG), 255))
+        bd = ImageDraw.Draw(body)
+        _rounded_rect(
+            bd,
+            (0, 0, card_w - 1, card_h - 1),
+            PANEL_RADIUS,
+            outline=(*hex_to_rgb("#3a4558"), 255),
+            width=PANEL_BORDER,
+        )
+        body.paste(content, (PANEL_PAD, PANEL_PAD + header_total), content)
+        card.paste(body, (0, 0), body)
+
+        hdr = ImageDraw.Draw(card)
+        bx = PANEL_PAD + 8
+        by = PANEL_PAD + 6
+        if corner_letter:
+            _rounded_rect(
+                hdr,
+                (bx, by, bx + badge_w - 1, by + badge_h - 1),
+                8,
+                fill=(10, 16, 32, 250),
+                outline=(120, 220, 255, 255),
+                width=3,
+            )
+            lbb = hdr.textbbox((0, 0), letter_text, font=letter_font)
+            ltw = lbb[2] - lbb[0]
+            lth = lbb[3] - lbb[1]
+            hdr.text(
+                (bx + (badge_w - ltw) // 2, by + (badge_h - lth) // 2 - lbb[1]),
+                letter_text,
+                fill=(255, 255, 255, 255),
+                font=letter_font,
+            )
+        tx = bx + (badge_w + 12 if corner_letter else 0)
+        if label:
+            tb = hdr.textbbox((0, 0), label, font=title_font)
+            ty = PANEL_PAD + (row_h - (tb[3] - tb[1])) // 2 - tb[1]
+            hdr.text((tx, ty), label, fill=(230, 237, 243, 255), font=title_font)
+        if subtitle and sub_font:
+            sb = hdr.textbbox((0, 0), subtitle, font=sub_font)
+            hdr.text(
+                (PANEL_PAD + 8, PANEL_PAD + row_h + subtitle_gap - sb[1]),
+                subtitle,
+                fill=(*hex_to_rgb(THEME["muted"]), 255),
+                font=sub_font,
+            )
+        return card
+
+    label_font = load_ui_font(label_font_size, bold=True) if label else None
+    sub_font = load_ui_font(subtitle_font_size) if subtitle and label else None
+    label_pad_y = max(18, label_font_size // 5)
+    if label and label_font:
+        lb = _probe.textbbox((0, 0), label, font=label_font)
+        label_h = (lb[3] - lb[1]) + label_pad_y * 2
+    else:
+        label_h = 0
+    if subtitle and label and sub_font:
+        sb = _probe.textbbox((0, 0), subtitle, font=sub_font)
+        sub_h = (sb[3] - sb[1]) + 12
+    else:
+        sub_h = 0
+    bar_h = label_h + sub_h
+    badge_h = int(corner_font_size * 1.55) if corner_letter else 0
+    badge_reserve = badge_h + PANEL_PAD + 28 if corner_letter else 0
     card_w = inner_w + PANEL_PAD * 2
-    card_h = inner_h + PANEL_PAD * 2 + bar_h
+    card_h = inner_h + PANEL_PAD * 2 + bar_h + badge_reserve
 
     card = Image.new("RGBA", (card_w, card_h), (0, 0, 0, 0))
     _draw_panel_shadow(card, 0, 0, card_w, card_h)
@@ -188,27 +297,62 @@ def wrap_panel(
         outline=(*hex_to_rgb("#3a4558"), 255),
         width=PANEL_BORDER,
     )
-    body.paste(content, (PANEL_PAD, PANEL_PAD), content)
+    body.paste(content, (PANEL_PAD, PANEL_PAD + badge_reserve), content)
     card.paste(body, (0, 0), body)
 
     if corner_letter:
-        _draw_corner_badge(card, corner_letter, PANEL_PAD + 8, PANEL_PAD + 8)
+        _draw_corner_badge(
+            card,
+            corner_letter,
+            PANEL_PAD + 8,
+            PANEL_PAD + 8,
+            font_size=corner_font_size,
+        )
 
     if bar_h:
         bar_y = card_h - bar_h
         bar = Image.new("RGBA", (card_w, bar_h), (0, 0, 0, 0))
         bar_draw = ImageDraw.Draw(bar)
-        bar_draw.rectangle((0, 0, 4, bar_h), fill=(*hex_to_rgb(accent), 255))
         bar_draw.rectangle((0, 0, card_w, bar_h), fill=(*hex_to_rgb("#1a2240"), 230))
         bar_draw.rectangle((0, 0, 4, bar_h), fill=(*hex_to_rgb(accent), 255))
-        font = load_ui_font(16, bold=True)
-        sub_font = load_ui_font(12)
-        bar_draw.text((16, 6 if not sub_h else 4), label or "", fill=(230, 237, 243, 255), font=font)
+        font = label_font or load_ui_font(label_font_size, bold=True)
+        sub_font = sub_font or load_ui_font(subtitle_font_size)
+        text_x = max(22, label_font_size // 2)
+        lb = bar_draw.textbbox((0, 0), label or "", font=font)
+        lh = lb[3] - lb[1]
+        label_y = label_pad_y - lb[1]
         if subtitle:
-            bar_draw.text((16, 20), subtitle, fill=(*hex_to_rgb(THEME["muted"]), 255), font=sub_font)
+            label_y = 12 - lb[1]
+        bar_draw.text((text_x, label_y), label or "", fill=(230, 237, 243, 255), font=font)
+        if subtitle:
+            bar_draw.text(
+                (text_x, label_y + lh + 8),
+                subtitle,
+                fill=(*hex_to_rgb(THEME["muted"]), 255),
+                font=sub_font,
+            )
         card.paste(bar, (0, bar_y), bar)
 
     return card
+
+
+def _wrap_text_lines(text: str, font, max_width: int) -> list[str]:
+    """按像素宽度折行（适用于中英文混排）。"""
+    probe = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
+    lines: list[str] = []
+    cur = ""
+    for ch in text:
+        test = cur + ch
+        bb = probe.textbbox((0, 0), test, font=font)
+        if bb[2] - bb[0] <= max_width:
+            cur = test
+        else:
+            if cur:
+                lines.append(cur)
+            cur = ch
+    if cur:
+        lines.append(cur)
+    return lines or [text]
 
 
 def render_kpi_card(
@@ -217,35 +361,192 @@ def render_kpi_card(
     accent: str,
     *,
     width: int = 420,
-    height: int = 520,
+    height: int | None = None,
+    title_font_size: int = 18,
+    body_font_size: int = 15,
+    line_spacing: int = 36,
+    border: bool = True,
+    pad_x: int = 20,
+    pad_y: int = 20,
+    layout: Literal["list", "grid"] = "list",
 ) -> Image.Image:
     """KPI bullet card for brush rows."""
-    card = Image.new("RGBA", (width, height), (*hex_to_rgb(PANEL_BG), 255))
-    draw = ImageDraw.Draw(card)
-    _rounded_rect(
-        draw,
-        (0, 0, width - 1, height - 1),
-        PANEL_RADIUS,
-        outline=(*hex_to_rgb("#3a4558"), 255),
-        width=PANEL_BORDER,
-    )
-    draw.rectangle((0, 0, 5, height), fill=(*hex_to_rgb(accent), 255))
-    title_font = load_ui_font(18, bold=True)
-    body_font = load_ui_font(15)
-    draw.text((20, 24), title, fill=(*hex_to_rgb(accent), 255), font=title_font)
-    y = 72
+    title_font = load_ui_font(title_font_size, bold=True)
+    body_font = load_ui_font(body_font_size)
+    probe = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
+    text_w = width - pad_x * 2
+
+    if layout == "grid" and len(bullets) >= 4:
+        title_lines = _wrap_text_lines(title, title_font, text_w)
+        title_line_h = []
+        for ln in title_lines:
+            tb = probe.textbbox((0, 0), ln, font=title_font)
+            title_line_h.append(tb[3] - tb[1])
+        title_block_h = sum(title_line_h) + max(0, len(title_lines) - 1) * 4
+        col_w = max(1, (text_w - 12) // 2)
+        rows = [(bullets[0], bullets[1]), (bullets[2], bullets[3])]
+        row_h = []
+        for left, right in rows:
+            lb = probe.textbbox((0, 0), f"• {left}", font=body_font)
+            rb = probe.textbbox((0, 0), f"• {right}", font=body_font)
+            row_h.append(max(lb[3] - lb[1], rb[3] - rb[1]))
+        grid_h = sum(row_h) + 10
+        inner_h = pad_y + title_block_h + 10 + grid_h + pad_y
+        card_h = height if height is not None and height > inner_h else inner_h
+        card = Image.new("RGBA", (width, card_h), (*hex_to_rgb(PANEL_BG), 255))
+        draw = ImageDraw.Draw(card)
+        if border:
+            _rounded_rect(
+                draw,
+                (0, 0, width - 1, card_h - 1),
+                PANEL_RADIUS,
+                outline=(*hex_to_rgb("#3a4558"), 255),
+                width=PANEL_BORDER,
+            )
+            draw.rectangle((0, 0, 5, card_h), fill=(*hex_to_rgb(accent), 255))
+        else:
+            draw.rectangle((0, 0, 4, card_h), fill=(*hex_to_rgb(accent), 255))
+        y = pad_y
+        for i, ln in enumerate(title_lines):
+            draw.text((pad_x, y), ln, fill=(*hex_to_rgb(accent), 255), font=title_font)
+            y += title_line_h[i] + (4 if i < len(title_lines) - 1 else 0)
+        y += 10
+        for ri, (left, right) in enumerate(rows):
+            draw.text((pad_x + 2, y), f"• {left}", fill=(230, 237, 243, 255), font=body_font)
+            draw.text((pad_x + col_w + 12, y), f"• {right}", fill=(230, 237, 243, 255), font=body_font)
+            y += row_h[ri] + (10 if ri < len(rows) - 1 else 0)
+        return card
+
+    title_lines = _wrap_text_lines(title, title_font, text_w)
+    title_line_h = []
+    for ln in title_lines:
+        tb = probe.textbbox((0, 0), ln, font=title_font)
+        title_line_h.append(tb[3] - tb[1])
+    title_block_h = sum(title_line_h) + max(0, len(title_lines) - 1) * 4
+    bullet_heights = []
     for line in bullets:
-        draw.text((24, y), f"• {line}", fill=(230, 237, 243, 255), font=body_font)
-        y += 36
+        bb = probe.textbbox((0, 0), f"• {line}", font=body_font)
+        bullet_heights.append(bb[3] - bb[1])
+    inner_h = (
+        pad_y
+        + title_block_h
+        + 12
+        + sum(bullet_heights)
+        + line_spacing * max(0, len(bullets) - 1)
+        + pad_y
+    )
+    card_h = height if height is not None and height > inner_h else inner_h
+
+    card = Image.new("RGBA", (width, card_h), (*hex_to_rgb(PANEL_BG), 255))
+    draw = ImageDraw.Draw(card)
+    if border:
+        _rounded_rect(
+            draw,
+            (0, 0, width - 1, card_h - 1),
+            PANEL_RADIUS,
+            outline=(*hex_to_rgb("#3a4558"), 255),
+            width=PANEL_BORDER,
+        )
+        draw.rectangle((0, 0, 5, card_h), fill=(*hex_to_rgb(accent), 255))
+    else:
+        draw.rectangle((0, 0, 4, card_h), fill=(*hex_to_rgb(accent), 255))
+    y = pad_y
+    for i, ln in enumerate(title_lines):
+        draw.text((pad_x, y), ln, fill=(*hex_to_rgb(accent), 255), font=title_font)
+        y += title_line_h[i] + (4 if i < len(title_lines) - 1 else 0)
+    y += 12
+    for i, line in enumerate(bullets):
+        draw.text((pad_x + 4, y), f"• {line}", fill=(230, 237, 243, 255), font=body_font)
+        y += bullet_heights[i] + (line_spacing if i < len(bullets) - 1 else 0)
     return card
+
+
+def center_crop_box(w: int, h: int, crop_ratio: float) -> tuple[int, int, int, int]:
+    """Center square crop box (x1, y1, x2, y2) — matches render_inset_panel."""
+    cx, cy = w // 2, h // 2
+    half = int(min(w, h) * crop_ratio)
+    return (max(0, cx - half), max(0, cy - half), min(w, cx + half), min(h, cy + half))
+
+
+def estimate_inline_header_h(
+    label: str | None,
+    subtitle: str | None,
+    *,
+    corner_font_size: int,
+    label_font_size: int,
+    subtitle_font_size: int,
+) -> int:
+    """Match wrap_panel inline header height."""
+    probe = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
+    letter_font = load_ui_font(corner_font_size, bold=True)
+    title_font = load_ui_font(label_font_size, bold=True)
+    sub_font = load_ui_font(subtitle_font_size) if subtitle else None
+    badge_h = int(corner_font_size * 1.55)
+    title_h = 0
+    if label:
+        tb = probe.textbbox((0, 0), label, font=title_font)
+        title_h = tb[3] - tb[1]
+    row_h = max(badge_h, title_h) + 14
+    sub_h = 0
+    if subtitle and sub_font:
+        sb = probe.textbbox((0, 0), subtitle, font=sub_font)
+        sub_h = (sb[3] - sb[1]) + 10
+    return row_h + sub_h
+
+
+def draw_zoom_crop_marker(
+    img: Image.Image,
+    rect: tuple[int, int, int, int],
+    accent: str,
+    *,
+    line_w: int = 2,
+) -> Image.Image:
+    """Draw transparent zoom region — outline only, no fill."""
+    out = img.convert("RGBA").copy()
+    draw = ImageDraw.Draw(out)
+    ac = hex_to_rgb(accent)
+    _rounded_rect(draw, rect, 6, outline=(*ac, 235), width=line_w)
+    return out
+
+
+def draw_zoom_connector_lines(
+    draw: ImageDraw.ImageDraw,
+    src_box: tuple[int, int, int, int],
+    dst_box: tuple[int, int, int, int],
+    accent: str,
+    *,
+    line_w: int = 2,
+) -> None:
+    """Connect source crop box corners to inset content corners (zoom funnel)."""
+    sx1, sy1, sx2, sy2 = src_box
+    dx1, dy1, dx2, dy2 = dst_box
+    src_pts = ((sx1, sy1), (sx2, sy1), (sx2, sy2), (sx1, sy2))
+    dst_pts = ((dx1, dy1), (dx2, dy1), (dx2, dy2), (dx1, dy2))
+    ac = hex_to_rgb(accent)
+    shadow = (0, 0, 0, 90)
+    for src, dst in zip(src_pts, dst_pts):
+        draw.line([src, dst], fill=shadow, width=line_w + 2)
+    for src, dst in zip(src_pts, dst_pts):
+        draw.line([src, dst], fill=(*ac, 215), width=line_w)
+    r = 3
+    for pt in src_pts + dst_pts:
+        x, y = pt
+        draw.ellipse((x - r, y - r, x + r, y + r), fill=(*ac, 240), outline=(255, 255, 255, 180))
 
 
 def render_inset_panel(
     img: Image.Image | Path | str,
     *,
     label: str = "局部放大",
+    subtitle: str | None = None,
     accent: str = THEME["cyan"],
     crop_ratio: float = 0.2,
+    content_height: int | None = None,
+    header: Literal["bottom", "inline"] = "inline",
+    corner_letter: str | None = None,
+    label_font_size: int = 26,
+    subtitle_font_size: int = 18,
+    corner_font_size: int = 28,
 ) -> Image.Image:
     """Center crop inset wrapped as panel."""
     if isinstance(img, (Path, str)):
@@ -253,10 +554,19 @@ def render_inset_panel(
     else:
         source = img.convert("RGBA")
     w, h = source.size
-    cx, cy = w // 2, h // 2
-    half = int(min(w, h) * crop_ratio)
-    crop = source.crop((max(0, cx - half), max(0, cy - half), min(w, cx + half), min(h, cy + half)))
-    return wrap_panel(crop, label=label, accent=accent, content_height=400)
+    crop = source.crop(center_crop_box(w, h, crop_ratio))
+    return wrap_panel(
+        crop,
+        label=label,
+        subtitle=subtitle,
+        accent=accent,
+        content_height=content_height,
+        header=header,
+        corner_letter=corner_letter,
+        label_font_size=label_font_size,
+        subtitle_font_size=subtitle_font_size,
+        corner_font_size=corner_font_size,
+    )
 
 
 def compose_sheet(
@@ -269,6 +579,12 @@ def compose_sheet(
     max_width: int = 4800,
     footer: Image.Image | None = None,
     bg: str = VIZ_BG,
+    title_font_size: int = 36,
+    subtitle_font_size: int = 22,
+    title_pad_y: int = 28,
+    title_pad_x: int = 24,
+    title_subtitle_gap: int = 20,
+    title_align: Literal["left", "center"] = "left",
 ) -> Image.Image:
     """Compose title bar + panel row/column + optional footer."""
     if not panels:
@@ -298,7 +614,17 @@ def compose_sheet(
     lines = [title]
     if subtitle:
         lines.append(subtitle)
-    banner = render_text_banner(lines, row.width, bg=bg, align="left")
+    banner = render_text_banner(
+        lines,
+        row.width,
+        bg=bg,
+        align=title_align,
+        title_font_size=title_font_size,
+        subtitle_font_size=subtitle_font_size,
+        pad_y=title_pad_y,
+        pad_x=title_pad_x,
+        title_subtitle_gap=title_subtitle_gap,
+    )
     footer_h = footer.height + 12 if footer else 0
     total_h = banner.height + 8 + row.height + footer_h
     canvas = Image.new("RGBA", (row.width, total_h), (*hex_to_rgb(bg), 255))
@@ -412,11 +738,45 @@ def apply_dark_theme() -> None:
     )
 
 
-def style_axes(ax) -> None:
+def style_axes(ax, *, labelsize: int = 11) -> None:
     ax.set_facecolor(PANEL_BG)
     ax.grid(True, alpha=GRID_ALPHA)
+    ax.tick_params(colors=THEME["muted"], labelsize=labelsize)
+    if hasattr(ax, "xaxis") and ax.xaxis.label:
+        ax.xaxis.label.set_color(THEME["muted"])
+        ax.xaxis.label.set_size(labelsize + 1)
+    if hasattr(ax, "yaxis") and ax.yaxis.label:
+        ax.yaxis.label.set_color(THEME["muted"])
+        ax.yaxis.label.set_size(labelsize + 1)
     for spine in ax.spines.values():
         spine.set_edgecolor((78 / 255, 196 / 255, 255 / 255, 0.22))
+
+
+def set_tick_density(ax, *, factor: float = 2.5, axes: str = "xy") -> None:
+    """Major tick interval ÷ factor (finer scale); label size unchanged."""
+    from matplotlib.ticker import LogLocator, MaxNLocator, MultipleLocator
+
+    for name in axes:
+        if name not in "xyz":
+            continue
+        if name == "z" and not hasattr(ax, "zaxis"):
+            continue
+        axis = ax.xaxis if name == "x" else (ax.yaxis if name == "y" else ax.zaxis)
+        if axis.get_scale() == "log":
+            axis.set_major_locator(LogLocator(base=10, numticks=max(12, int(5 * factor))))
+            axis.set_minor_locator(LogLocator(base=10, subs=tuple(range(2, 10))))
+            continue
+        lim = getattr(ax, f"get_{name}lim")()
+        span = lim[1] - lim[0]
+        if span <= 0:
+            continue
+        ticks = axis.get_majorticklocs()
+        if len(ticks) >= 2:
+            step = float(abs(ticks[1] - ticks[0]))
+            if step > 0:
+                axis.set_major_locator(MultipleLocator(step / factor))
+                continue
+        axis.set_major_locator(MaxNLocator(nbins=int(5 * factor), min_n_ticks=3))
 
 
 def save_figure(
@@ -426,12 +786,14 @@ def save_figure(
     has_suptitle: bool = False,
     pad: float = 0.14,
     dpi: int | None = None,
+    skip_tight: bool = False,
 ) -> None:
     """Save with bbox_inches=tight so titles and suptitles are not clipped."""
-    if has_suptitle:
-        fig.tight_layout(rect=[0, 0, 1, 0.90])
-    else:
-        fig.tight_layout()
+    if not skip_tight:
+        if has_suptitle:
+            fig.tight_layout(rect=[0, 0, 1, 0.90])
+        else:
+            fig.tight_layout()
     fig.savefig(
         path,
         dpi=dpi or FIG_DPI,
@@ -463,6 +825,69 @@ def _fit_height(img: Image.Image, height: int) -> Image.Image:
         ratio = height / img.height
         return img.resize((max(1, int(img.width * ratio)), height), Image.Resampling.LANCZOS)
     return img
+
+
+def fit_panel_contain(
+    img: Image.Image,
+    max_w: int,
+    max_h: int,
+    *,
+    bg: str = VIZ_BG,
+    valign: Literal["top", "center"] = "top",
+    allow_upscale: bool = False,
+) -> Image.Image:
+    """Scale to fit cell (preserve aspect), pad to exact size — top-aligned."""
+    ratio = min(max_w / img.width, max_h / img.height)
+    if not allow_upscale:
+        ratio = min(ratio, 1.0)
+    if ratio < 1.0:
+        scaled = img.resize(
+            (max(1, int(img.width * ratio)), max(1, int(img.height * ratio))),
+            Image.Resampling.LANCZOS,
+        )
+    else:
+        scaled = img
+    bg_rgb = hex_to_rgb(bg)
+    canvas = Image.new("RGBA", (max_w, max_h), (*bg_rgb, 255))
+    x = (max_w - scaled.width) // 2
+    if valign == "top":
+        y = 0
+    else:
+        y = (max_h - scaled.height) // 2
+    canvas.paste(scaled.convert("RGBA"), (x, y), scaled.convert("RGBA"))
+    return canvas
+
+
+def pad_panel_to_height(img: Image.Image, height: int, *, bg: str = VIZ_BG) -> Image.Image:
+    """Pad panel bottom with background — avoids scaling text/KPI cards."""
+    if img.height >= height:
+        return img
+    canvas = Image.new("RGBA", (img.width, height), (*hex_to_rgb(bg), 255))
+    canvas.paste(img.convert("RGBA"), (0, 0), img)
+    return canvas
+
+
+def fit_panel_height(img: Image.Image, height: int) -> Image.Image:
+    """Scale panel to exact height (up or down), preserving aspect."""
+    if img.height == height:
+        return img
+    ratio = height / img.height
+    return img.resize((max(1, int(img.width * ratio)), height), Image.Resampling.LANCZOS)
+
+
+def fit_panel_width(img: Image.Image, width: int) -> Image.Image:
+    """Scale panel to exact width, preserving aspect ratio."""
+    if img.width == width:
+        return img
+    ratio = width / img.width
+    return img.resize((width, max(1, int(img.height * ratio))), Image.Resampling.LANCZOS)
+
+
+def fit_panel_size(img: Image.Image, width: int, height: int) -> Image.Image:
+    """Scale panel to exact width × height."""
+    if img.size == (width, height):
+        return img
+    return img.resize((width, height), Image.Resampling.LANCZOS)
 
 
 def stitch_panels_png(
@@ -561,6 +986,72 @@ def stitch_panels_png(
     return canvas
 
 
+def stitch_panels_flow(
+    panels: list[Image.Image],
+    *,
+    gap: int = 12,
+    arrow_w: int = 44,
+    bg: str = VIZ_BG,
+    arrow_color: str = THEME["gold"],
+    uniform_height: int | None = None,
+) -> Image.Image:
+    """Horizontal stitch with arrow connectors between panels."""
+    if not panels:
+        raise ValueError("stitch_panels_flow: no panels")
+    if len(panels) == 1:
+        return panels[0].convert("RGBA")
+
+    if uniform_height:
+        panels = [fit_panel_height(p.convert("RGBA"), uniform_height) for p in panels]
+    else:
+        panels = [p.convert("RGBA") for p in panels]
+        row_h = max(p.height for p in panels)
+        panels = [fit_panel_height(p, row_h) for p in panels]
+
+    bg_rgb = hex_to_rgb(bg)
+    ac = hex_to_rgb(arrow_color)
+    row_h = panels[0].height
+    n_arrows = len(panels) - 1
+    total_w = sum(p.width for p in panels) + gap * n_arrows + arrow_w * n_arrows
+    canvas = Image.new("RGBA", (total_w, row_h), (*bg_rgb, 255))
+    draw = ImageDraw.Draw(canvas)
+    x = 0
+    for i, p in enumerate(panels):
+        canvas.paste(p, (x, (row_h - p.height) // 2), p)
+        x += p.width + gap
+        if i < n_arrows:
+            cy = row_h // 2
+            x0, x1 = x + 4, x + arrow_w - 12
+            draw.line([(x0, cy), (x1, cy)], fill=(*ac, 210), width=3)
+            draw.polygon(
+                [(x + arrow_w - 10, cy), (x + arrow_w - 26, cy - 10), (x + arrow_w - 26, cy + 10)],
+                fill=(*ac, 210),
+            )
+            x += arrow_w
+    return canvas
+
+
+def flow_connector_vertical(
+    width: int,
+    *,
+    height: int = 48,
+    bg: str = VIZ_BG,
+    arrow_color: str = THEME["gold"],
+) -> Image.Image:
+    """Downward flow arrow centered in width."""
+    bg_rgb = hex_to_rgb(bg)
+    ac = hex_to_rgb(arrow_color)
+    canvas = Image.new("RGBA", (width, height), (*bg_rgb, 255))
+    draw = ImageDraw.Draw(canvas)
+    cx = width // 2
+    draw.line([(cx, 6), (cx, height - 18)], fill=(*ac, 200), width=2)
+    draw.polygon(
+        [(cx, height - 8), (cx - 10, height - 22), (cx + 10, height - 22)],
+        fill=(*ac, 200),
+    )
+    return canvas
+
+
 def render_text_banner(
     lines: list[str],
     width: int,
@@ -571,11 +1062,23 @@ def render_text_banner(
     pad_y: int = 28,
     align: Literal["left", "center"] = "left",
     pad_x: int = 24,
+    title_font_size: int = 36,
+    subtitle_font_size: int = 22,
+    title_subtitle_gap: int = 20,
 ) -> Image.Image:
-    title_font = load_ui_font(22, bold=True)
-    sub_font = load_ui_font(14)
-    line_heights = [32, 26]
-    height = pad_y * 2 + sum(line_heights[: len(lines)])
+    title_font = load_ui_font(title_font_size, bold=True)
+    sub_font = load_ui_font(subtitle_font_size)
+    probe = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
+    block_heights: list[int] = []
+    for i, line in enumerate(lines):
+        font = title_font if i == 0 else sub_font
+        bb = probe.textbbox((0, 0), line, font=font)
+        block_heights.append(bb[3] - bb[1])
+    inner_h = block_heights[0]
+    if len(lines) > 1:
+        inner_h += title_subtitle_gap + sum(block_heights[1:])
+    ascent_pad = max(4, title_font_size // 10)
+    height = pad_y * 2 + inner_h + ascent_pad
     img = Image.new("RGBA", (width, height), (*hex_to_rgb(bg), 255))
     draw = ImageDraw.Draw(img)
     y = pad_y
@@ -588,8 +1091,12 @@ def render_text_banner(
             x = (width - tw) / 2
         else:
             x = pad_x
-        draw.text((x, y), line, fill=(*rgb, 255), font=font)
-        y += line_heights[i] if i < len(line_heights) else 26
+        bb = probe.textbbox((0, 0), line, font=font)
+        draw.text((x, y - bb[1]), line, fill=(*rgb, 255), font=font)
+        if i == 0 and len(lines) > 1:
+            y += block_heights[i] + title_subtitle_gap
+        else:
+            y += block_heights[i]
     return img
 
 
@@ -652,14 +1159,16 @@ def render_meta_badges(
     *,
     width: int = 180,
     accent: str = THEME["cyan"],
+    font_size: int = 14,
+    badge_h: int | None = None,
+    gap: int = 12,
 ) -> Image.Image:
     """Vertical metadata badge column for hero poster."""
-    badge_h = 52
-    gap = 12
+    badge_h = badge_h or (font_size + 36)
     height = len(lines) * badge_h + gap * (len(lines) - 1)
     img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    font = load_ui_font(14, bold=True)
+    font = load_ui_font(font_size, bold=True)
     for i, line in enumerate(lines):
         y = i * (badge_h + gap)
         _rounded_rect(
@@ -671,7 +1180,12 @@ def render_meta_badges(
             width=1,
         )
         tw = draw.textlength(line, font=font)
-        draw.text(((width - tw) / 2, y + 16), line, fill=(*hex_to_rgb(accent), 255), font=font)
+        draw.text(
+            ((width - tw) / 2, y + (badge_h - font_size) // 2 - 2),
+            line,
+            fill=(*hex_to_rgb(accent), 255),
+            font=font,
+        )
     return img
 
 

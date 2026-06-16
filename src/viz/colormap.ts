@@ -15,6 +15,28 @@ export const COSMIC_COLOR_STOPS: ReadonlyArray<
   [1.0, 0.98, 0.92, 0.78],
 ];
 
+/** Deep-space cinematic colormap — void + nebula + gold filaments. */
+export const CINEMATIC_COLOR_STOPS: ReadonlyArray<
+  readonly [t: number, r: number, g: number, b: number]
+> = [
+  [0.0, 0.01, 0.02, 0.06],
+  [0.12, 0.02, 0.04, 0.12],
+  [0.25, 0.04, 0.07, 0.2],
+  [0.45, 0.15, 0.22, 0.55],
+  [0.65, 0.35, 0.48, 0.78],
+  [0.8, 0.95, 0.72, 0.35],
+  [0.88, 1.0, 0.82, 0.42],
+  [0.92, 1.0, 0.9, 0.58],
+  [0.96, 1.0, 0.96, 0.86],
+  [1.0, 1.0, 1.0, 0.96],
+];
+
+export type ColormapStyle = 'cosmic' | 'cinematic';
+
+export function getColorStops(style: ColormapStyle = 'cinematic') {
+  return style === 'cinematic' ? CINEMATIC_COLOR_STOPS : COSMIC_COLOR_STOPS;
+}
+
 export const BRUSH_HIGHLIGHT_RGB: readonly [number, number, number] = [
   0.96, 0.78, 0.26,
 ];
@@ -40,9 +62,12 @@ export function densityToUnit(
   return Math.max(0, Math.min(1, (v - min) / (max - min)));
 }
 
-export function sampleCosmicRgb(t: number): [number, number, number] {
+export function sampleColormapRgb(
+  t: number,
+  style: ColormapStyle = 'cinematic',
+): [number, number, number] {
   const x = Math.max(0, Math.min(1, t));
-  const stops = COSMIC_COLOR_STOPS;
+  const stops = getColorStops(style);
   for (let i = 0; i < stops.length - 1; i++) {
     const a = stops[i]!;
     const b = stops[i + 1]!;
@@ -57,6 +82,10 @@ export function sampleCosmicRgb(t: number): [number, number, number] {
   }
   const last = stops[stops.length - 1]!;
   return [last[1], last[2], last[3]];
+}
+
+export function sampleCosmicRgb(t: number): [number, number, number] {
+  return sampleColormapRgb(t, 'cosmic');
 }
 
 export function sampleCosmicCss(t: number): string {
@@ -78,10 +107,18 @@ export function buildCosmicLut256(): Uint8ClampedArray {
   return lut;
 }
 
-export function cosmicLegendGradient(): string {
-  const stops = COSMIC_COLOR_STOPS.map(
+export function colormapLegendGradient(style: ColormapStyle = 'cinematic'): string {
+  const stops = getColorStops(style).map(
     ([t, r, g, b]) =>
       `rgb(${Math.round(r * 255)},${Math.round(g * 255)},${Math.round(b * 255)}) ${t * 100}%`,
   );
   return `linear-gradient(90deg, ${stops.join(', ')})`;
+}
+
+export function cosmicLegendGradient(): string {
+  return colormapLegendGradient('cosmic');
+}
+
+export function cinematicLegendGradient(): string {
+  return colormapLegendGradient('cinematic');
 }

@@ -102,21 +102,21 @@
   },
   "benchmark": {
     "top1_earlyExit": {
-      "elapsedMs": 39.75,
+      "elapsedMs": 39.2,
       "stride": 2,
       "maxPoints": 8000,
       "hitsSampled": 2669,
       "countAll": false
     },
     "top1_fullCount": {
-      "elapsedMs": 318.49,
+      "elapsedMs": 276.18,
       "stride": 1,
       "maxPoints": 2097152,
       "hitsSampled": 20972,
       "countAll": true
     },
     "filament_earlyExit": {
-      "elapsedMs": 12.0,
+      "elapsedMs": 9.04,
       "stride": 2,
       "maxPoints": 8000,
       "hitsSampled": 8000,

@@ -1,16 +1,20 @@
-import { cosmicLegendGradient } from './transferFunction';
+import { cinematicLegendGradient, cosmicLegendGradient } from './transferFunction';
 
 interface DensityColorLegendProps {
   min: number;
   max: number;
+  cinematic?: boolean;
 }
 
-export function DensityColorLegend({ min, max }: DensityColorLegendProps) {
+export function DensityColorLegend({ min, max, cinematic = true }: DensityColorLegendProps) {
   return (
-    <div className="density-legend" aria-label="密度色标">
+    <div
+      className={`density-legend${cinematic ? ' density-legend--cinematic' : ''}`}
+      aria-label="密度色标"
+    >
       <div
         className="density-legend-bar"
-        style={{ background: cosmicLegendGradient() }}
+        style={{ background: cinematic ? cinematicLegendGradient() : cosmicLegendGradient() }}
       />
       <div className="density-legend-labels">
         <span>{min.toFixed(2)}</span>
