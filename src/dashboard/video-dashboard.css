@@ -3707,6 +3707,25 @@ html.video-dashboard .vd-brush-hist-hint {
   font-size: 1.75rem;
 }
 
+.video-poster-capture-mode .vd-header--record-intro .vd-phase-pills {
+  margin-top: 5px;
+}
+
+/* 代表图截屏：header 与交互页一致（渐变标题 + 标准字号，非录屏白字） */
+.video-poster-capture-mode .vd-header--record-intro .vd-title {
+  font-size: var(--vd-fs-title);
+  background: var(--vd-gradient-title);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  filter: none;
+}
+
+.video-poster-capture-mode .vd-header--record-compact {
+  padding: 8px 16px 10px;
+}
+
 .video-record-mode .vd-header-stats {
   font-size: var(--vd-fs-sm);
 }
@@ -4467,5 +4486,155 @@ html.video-dashboard .vd-brush-hist-hint {
 
 .video-poster-capture-mode .vd-footer {
   display: none !important;
+}
+
+/* 代表图截屏：intro 录屏首页含 header + 三栏 + 四卡发现区（整页） */
+.video-poster-capture-mode.video-scene-intro .vd-main-stack > .vd-bottom:has(.vd-findings) {
+  display: flex !important;
+  flex: 0 0 auto;
+  height: auto;
+  max-height: none;
+}
+
+.video-poster-capture-mode.video-scene-intro .vd-findings {
+  flex: 0 0 auto;
+  min-height: var(--vd-findings-h);
+  height: auto;
+  max-height: none;
+}
+
+.video-poster-capture-mode:not(.video-scene-intro) .vd-bottom {
+  display: none !important;
+}
+
+/* 截屏页 shrink-wrap：避免左/右栏被中栏体渲染撑出底部空白 */
+html:has(.video-poster-capture-mode),
+html:has(.video-poster-capture-mode) body {
+  height: auto;
+  overflow: visible;
+}
+
+.video-poster-capture-mode.video-dashboard {
+  height: auto;
+  max-height: none;
+  min-height: 0;
+  overflow: visible;
+  grid-template-rows: auto auto;
+}
+
+.video-poster-capture-mode .vd-main-stack {
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+.video-poster-capture-mode .vd-main-stack > .vd-body {
+  flex: 0 0 auto;
+  min-height: 0;
+  height: auto;
+}
+
+.video-poster-capture-mode .vd-body {
+  align-items: stretch;
+}
+
+.video-poster-capture-mode .vd-panel-left,
+.video-poster-capture-mode .vd-panel-right,
+.video-poster-capture-mode .vd-panel-center {
+  align-self: stretch;
+  min-height: 0;
+  max-height: none;
+}
+
+.video-poster-capture-mode .vd-panel-left {
+  justify-content: flex-start;
+}
+
+.video-poster-capture-mode .vd-panel-left .vd-panel-hist,
+.video-poster-capture-mode.video-record-mode .vd-panel-left .vd-panel-hist {
+  flex: 1 1 auto;
+  min-height: 148px;
+  max-height: none;
+  height: auto;
+}
+
+.video-poster-capture-mode .vd-panel-right {
+  justify-content: flex-start;
+  min-height: 0;
+}
+
+.video-poster-capture-mode .vd-panel-brush-hist,
+.video-poster-capture-mode.video-record-mode .vd-panel-right .vd-panel-brush-hist {
+  flex: 1.4 1 0;
+  min-height: 120px;
+  max-height: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.video-poster-capture-mode .vd-panel-brush-hist .chart-responsive {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
+.video-poster-capture-mode .vd-band-previews,
+.video-poster-capture-mode.video-record-mode .vd-panel-right .vd-band-previews {
+  flex: 1 1 0;
+  min-height: 72px;
+  max-height: none;
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.video-poster-capture-mode .vd-band-media {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.video-poster-capture-mode .vd-panel-center .vd-volume-keepalive {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.video-poster-capture-mode .vd-panel-center .vd-vtk-frame {
+  flex: 1 1 auto;
+  min-height: 380px;
+  max-height: none;
+  height: auto;
+}
+
+.video-poster-capture-mode .vd-vtk-canvas-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* 截屏模式 KPI 用纯色字，避免 background-clip 在 PNG 里变成色块 */
+.video-poster-capture-mode .vd-kpi-value {
+  background: none !important;
+  background-image: none !important;
+  -webkit-background-clip: border-box !important;
+  background-clip: border-box !important;
+  -webkit-text-fill-color: #ffe082 !important;
+  color: #ffe082 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+
+.video-poster-capture-mode .vd-kpi-card.tone-orange .vd-kpi-value {
+  -webkit-text-fill-color: #ffcc80 !important;
+  color: #ffcc80 !important;
+}
+
+.video-poster-capture-mode .vd-kpi-card.tone-cyan .vd-kpi-value {
+  -webkit-text-fill-color: #b8ecff !important;
+  color: #b8ecff !important;
+}
+
+.video-poster-capture-mode .vd-kpi-card.tone-gold .vd-kpi-value {
+  -webkit-text-fill-color: #ffe082 !important;
+  color: #ffe082 !important;
+}
+
+.video-poster-capture-mode .vd-kpi-card.tone-blue .vd-kpi-value {
+  -webkit-text-fill-color: #a8d4ff !important;
+  color: #a8d4ff !important;
 }
 

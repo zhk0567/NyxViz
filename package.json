@@ -21,6 +21,7 @@
     "showcase:offline": "python tools/python/build_showcase_html.py --embed-steps 0,99",
     "capture-volumes": "node tools/node/capture_volumes.mjs",
     "capture-app-poster": "node tools/node/capture_representative_poster.mjs",
+    "figures:infographic": "python tools/python/generate_infographic_dashboard.py",
     "save-poster": "node tools/node/snapshot_app_poster_once.mjs",
     "record-morph-video": "node tools/node/record_morph_video.mjs",
     "export-docx": "python tools/python/export_docx.py",

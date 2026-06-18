@@ -14,6 +14,10 @@ const EMPTY_STATS: VideoStatsBundle = {
   brushValidation: null,
 };
 
+if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('staticOnly') === '1') {
+  window.__NYX_STATIC_ONLY__ = true;
+}
+
 export function VideoApp() {
   const [timeline, setTimeline] = useState<TimelineData | null>(null);
   const [videoStats, setVideoStats] = useState<VideoStatsBundle>(EMPTY_STATS);

@@ -17,7 +17,7 @@
 | 5 | [02 名词词典](./guide/02-专业名词词典.md) | 遇到不懂的词随时查 |
 | 6 | [04 Word 逐章解读](./guide/04-Word正文逐章解读.md) | docx 每一图、每一表的白话说明 |
 
-答辩前可加读：[09 复现与答辩清单](./guide/09-本地复现与答辩清单.md)。
+答辩前可加读：[09 复现与答辩清单](./guide/09-本地复现与答辩清单.md)、[10 答辩代码讲解](./guide/10-答辩代码讲解.md)（总索引）及子章 [10a](./guide/10a-体渲染与VTK代码.md)–[10e](./guide/10e-Python配图代码.md)（**含全部可视化源码摘录**）。
 
 ---
 
@@ -62,6 +62,18 @@ ChinaVis 2026 赛道 1-II（Nyx）；128³×100 步数据是什么；任务一�
 ### [09 · 本地复现与答辩清单](./guide/09-本地复现与答辩清单.md)
 
 `python run.py`、录屏前检查、提交自检、常见评委问答（FAQ）。
+
+### [10 · 答辩代码讲解](./guide/10-答辩代码讲解.md)
+
+按赛题四任务 + 全局 store 联动，讲清**关键文件、函数与口述稿**；评委追问「代码怎么做的」时对照本章。
+
+| 子章 | 内容 |
+|------|------|
+| [10a 体渲染与 VTK](./guide/10a-体渲染与VTK代码.md) | nyxLoader → Worker → VolumeScene → 传递函数 |
+| [10b 直方图与 D3](./guide/10b-直方图与D3代码.md) | DensityHistogram、brush、趋势图 |
+| [10c 刷选与 Worker](./guide/10c-刷选与Worker代码.md) | store、联动钩子、三个 Worker |
+| [10d 投影与录屏 UI](./guide/10d-投影空间与录屏组件代码.md) | Canvas 投影、video-scenes、长卷组件 |
+| [10e Python 配图](./guide/10e-Python配图代码.md) | precompute、generate_figures、viz_style |
 
 ---
 

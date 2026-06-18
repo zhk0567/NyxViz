@@ -184,6 +184,7 @@ export function VideoDashboard({
           timestepCount={timestepCount}
           stats={stats}
           recordMode={recordMode}
+          posterCapture={posterCapture}
           sceneId={sceneId}
           onSliderChange={setSliderStep}
           onSliderDragStart={() => setSliderDragging(true)}

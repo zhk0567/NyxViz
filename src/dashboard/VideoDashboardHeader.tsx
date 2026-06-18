@@ -14,6 +14,7 @@ export interface VideoDashboardHeaderProps {
   timestepCount: number;
   stats: TimelineData['timesteps'][0] | undefined;
   recordMode: boolean;
+  posterCapture?: boolean;
   sceneId?: VideoSceneId;
   onSliderChange: (v: number) => void;
   onSliderDragStart: () => void;
@@ -27,6 +28,7 @@ export function VideoDashboardHeader({
   timestepCount,
   stats,
   recordMode,
+  posterCapture = false,
   sceneId,
   onSliderChange,
   onSliderDragStart,
@@ -38,6 +40,7 @@ export function VideoDashboardHeader({
     phase.id === 'linear' ? 0 : phase.id === 'nonlinear' ? 1 : 2;
   const compactRecord = recordMode;
   const introRecord = recordMode && sceneId === 'intro';
+  const showHeaderExtras = !recordMode || posterCapture;
 
   return (
     <header
@@ -57,7 +60,7 @@ export function VideoDashboardHeader({
       <div className="vd-header-center">
         <h1 className="vd-title">宇宙网诞生记</h1>
         <p className="vd-subtitle">从近乎均匀的涨落到支配宇宙的大尺度结构</p>
-        {!recordMode && (
+        {showHeaderExtras && (
           <div className="vd-phase-pills" role="tablist" aria-label="演化阶段">
             {PHASES.map((p, i) => (
               <span
@@ -103,7 +106,7 @@ export function VideoDashboardHeader({
         {stats && (
           <span className="vd-header-stats">
             sigma={stats.std.toFixed(4)} · p99={stats.p99.toFixed(4)}
-            {!recordMode && ` · mu=${stats.mean.toFixed(2)}`}
+            {showHeaderExtras && ` · mu=${stats.mean.toFixed(2)}`}
           </span>
         )}
       </div>

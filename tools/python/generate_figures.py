@@ -755,6 +755,79 @@ def task3_bin_sensitivity(timeline: dict) -> None:
     save_figure(fig, OUT / "task3_bin_sensitivity.png", has_suptitle=True, pad=0.14)
 
 
+def task3_log_hist_bars(timeline: dict) -> None:
+    """128-bin log 直方图（柱状）t=0 vs t=99，供信息图/答辩一眼可认。"""
+    edges = np.array(timeline["logBinEdges"], dtype=float)
+    centers = np.array([np.sqrt(edges[i] * edges[i + 1]) for i in range(len(edges) - 1)])
+    widths = _log_hist_bin_widths(edges)
+    steps = timeline["timesteps"]
+
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5.4), facecolor=VIZ_BG)
+    bar_colors = {0: THEME["purple"], 99: THEME["coral"]}
+    for ax, t in zip(axes, [0, 99]):
+        ax.set_facecolor(PANEL_BG)
+        pct = np.array(timeline["histograms"][t], dtype=float) * 100.0
+        s = steps[t]
+        ax.bar(
+            centers,
+            pct,
+            width=widths,
+            align="center",
+            color=bar_colors[t],
+            alpha=0.88,
+            edgecolor=(1, 1, 1, 0.22),
+            linewidth=0.35,
+            zorder=2,
+        )
+        ax.set_xscale("log")
+        x_lo = float(s["p01"]) * 0.992
+        x_hi = float(s["p99"]) * 1.012
+        ax.set_xlim(x_lo, x_hi)
+        y_top = max(5.5, float(np.ceil((pct.max() + 0.6) * 10) / 10))
+        ax.set_ylim(0, y_top)
+        ax.set_title(f"t={t} · 128 bins", fontsize=13, color="#e6edf3", fontweight="bold", pad=10)
+        ax.set_xlabel("密度 ρ（log10 轴）", fontsize=12, color=THEME["muted"], labelpad=8)
+        if t == 0:
+            ax.set_ylabel("体素占比 %", fontsize=12, color=THEME["muted"], labelpad=10)
+        ticks, labels = _task4_hist_x_ticks(x_lo, x_hi)
+        ax.xaxis.set_major_locator(FixedLocator(ticks))
+        ax.xaxis.set_major_formatter(FixedFormatter(labels))
+        ax.tick_params(axis="x", which="minor", bottom=False)
+        style_axes(ax, labelsize=11)
+        pk = int(np.argmax(pct))
+        ax.annotate(
+            f"峰 {centers[pk]:.2f}\n{pct[pk]:.2f}%",
+            xy=(centers[pk], pct[pk]),
+            xytext=(12, 14),
+            textcoords="offset points",
+            fontsize=10,
+            color=bar_colors[t],
+            ha="left",
+            va="bottom",
+            bbox=dict(boxstyle="round,pad=0.3", fc=(12 / 255, 16 / 255, 28 / 255, 0.92), ec=bar_colors[t], lw=0.8),
+        )
+
+    fig.suptitle(
+        "任务三：密度对数直方图（128 bins · 全域统一边界）",
+        fontsize=16,
+        color="#f8fbff",
+        fontweight="bold",
+        y=0.98,
+    )
+    fig.text(
+        0.5,
+        0.91,
+        "早期峰更高更窄 → 末期展宽 · 团块化与两极分化",
+        ha="center",
+        va="top",
+        fontsize=12,
+        color=THEME["muted"],
+    )
+    fig.subplots_adjust(top=0.82, bottom=0.14, left=0.07, right=0.98, wspace=0.22)
+    save_figure(fig, OUT / "task3_log_hist_bars.png", pad=0.08, skip_tight=True)
+    print(f"Log hist bars: {OUT / 'task3_log_hist_bars.png'}")
+
+
 def task3_void_evolution(timeline: dict) -> None:
     """PIL 合成：双图竖排，子图保持自然比例不拉伸；主标题小于四联合成。"""
     steps = timeline["timesteps"]
@@ -824,6 +897,7 @@ def task3_figures(timeline: dict) -> None:
     colors = [THEME["purple"], THEME["blue"], THEME["cyan"], THEME["gold"], THEME["coral"]]
 
     task3_bin_sensitivity(timeline)
+    task3_log_hist_bars(timeline)
     task3_void_evolution(timeline)
 
     p50_0 = steps[0]["p50"]
@@ -4460,8 +4534,171 @@ def _render_horizontal_flow_strip(strip_w: int, strip_h: int, labels: list[str])
     )
 
 
+def _stitch_evo_thumbs_row() -> Image.Image | None:
+    """五帧 XY 投影缩略图（对齐 VideoFindingsStrip 卡 01）。"""
+    target_h = 132
+    gap = 10
+    label_h = 22
+    pieces: list[Image.Image] = []
+    for t in REP_STEPS:
+        path = OUT / f"task1_evo_t{t:04d}.png"
+        if not path.exists():
+            continue
+        img = Image.open(path).convert("RGBA")
+        scale = target_h / max(1, img.height)
+        w = max(1, int(img.width * scale))
+        pieces.append((t, img.resize((w, target_h), Image.Resampling.LANCZOS)))
+
+    if not pieces:
+        fallback = OUT / "task1_vol_strip.png"
+        if fallback.exists():
+            return Image.open(fallback).convert("RGBA")
+        return None
+
+    total_w = sum(im.width for _t, im in pieces) + gap * (len(pieces) - 1)
+    row = Image.new("RGBA", (total_w, target_h + label_h), (*hex_to_rgb(VIZ_BG), 255))
+    draw = ImageDraw.Draw(row)
+    font = load_ui_font(15)
+    x = 0
+    for t, thumb in pieces:
+        row.paste(thumb, (x, 0), thumb)
+        label = f"t={t}"
+        tw = draw.textlength(label, font=font)
+        draw.text(
+            (x + (thumb.width - tw) / 2, target_h + 2),
+            label,
+            fill=hex_to_rgb(THEME["muted"]),
+            font=font,
+        )
+        x += thumb.width + gap
+    return row
+
+
+def _findings_strip_card(
+    *,
+    num: str,
+    title: str,
+    subtitle: str | None,
+    content: Image.Image | None,
+    card_w: int,
+    card_h: int,
+) -> Image.Image:
+    """单张发现卡（录屏 vd-findings 横条风格）。"""
+    card = Image.new("RGBA", (card_w, card_h), (*hex_to_rgb("#121e38"), 255))
+    draw = ImageDraw.Draw(card)
+    border = hex_to_rgb(THEME["cyan"])
+    gold = hex_to_rgb(THEME["gold"])
+    draw.rounded_rectangle([0, 0, card_w - 1, card_h - 1], radius=12, outline=border, width=2)
+
+    pad = 14
+    num_font = load_ui_font(20, bold=True)
+    title_font = load_ui_font(18, bold=True)
+    sub_font = load_ui_font(14)
+    draw.text((pad, pad), num, fill=gold, font=num_font)
+    num_w = draw.textlength(num, font=num_font) + 10
+    title_y = pad + 1
+    if subtitle:
+        draw.text((pad + num_w, title_y), title, fill=(245, 249, 255), font=title_font)
+        draw.text(
+            (pad + num_w, title_y + 24),
+            subtitle,
+            fill=hex_to_rgb(THEME["muted"]),
+            font=sub_font,
+        )
+        body_top = pad + 52
+    else:
+        draw.text((pad + num_w, title_y + 2), title, fill=(245, 249, 255), font=title_font)
+        body_top = pad + 36
+
+    body_h = max(1, card_h - body_top - pad)
+    body_w = card_w - 2 * pad
+    if content is not None:
+        fitted = fit_panel_contain(content, body_w, body_h, bg="#121e38", allow_upscale=True)
+        px = pad + (body_w - fitted.width) // 2
+        py = body_top + (body_h - fitted.height) // 2
+        card.paste(fitted, (px, py), fitted)
+    return card
+
+
+def compose_findings_strip(timeline: dict) -> None:
+    """1×4 发现卡横条 — 对齐 video.html 底部 VideoFindingsStrip。"""
+    k = _story_kpis(timeline)
+    s99 = k["s99"]
+    card_w, card_h, gap = 900, 500, 16
+
+    evo = _stitch_evo_thumbs_row()
+    metrics_path = OUT / "task3_evolution_metrics.png"
+    metrics = Image.open(metrics_path).convert("RGBA") if metrics_path.exists() else None
+
+    mass_body = Image.new("RGBA", (420, 280), (*hex_to_rgb(VIZ_BG), 255))
+    pie_path = OUT / "task5_mass_pie.png"
+    if pie_path.exists():
+        pie = Image.open(pie_path).convert("RGBA")
+        left = pie.crop((0, 0, pie.width // 2, pie.height))
+        mass_body = fit_panel_contain(left, 420, 280, bg=VIZ_BG, allow_upscale=True)
+
+    top_v = OUT / "task4_brush_top1_viz.png"
+    bot_v = OUT / "task4_brush_bottom_hl.png"
+    verify_parts: list[Image.Image] = []
+    for path, cap in ((top_v, f"Top 1% · ρ≥{s99['p99']:.2f}"), (bot_v, f"Bottom 1% · ρ≤{s99['p01']:.2f}")):
+        if not path.exists():
+            continue
+        img = Image.open(path).convert("RGBA")
+        thumb = fit_panel_contain(img, 200, 200, bg=VIZ_BG, allow_upscale=True)
+        block = Image.new("RGBA", (220, 240), (*hex_to_rgb(VIZ_BG), 255))
+        d = ImageDraw.Draw(block)
+        cap_font = load_ui_font(13, bold=True)
+        tw = d.textlength(cap, font=cap_font)
+        d.text(((220 - tw) / 2, 4), cap, fill=hex_to_rgb(THEME["gold"]), font=cap_font)
+        block.paste(thumb, ((220 - thumb.width) // 2, 28), thumb)
+        verify_parts.append(block)
+    verify_body: Image.Image | None = None
+    if verify_parts:
+        verify_body = stitch_panels_png(verify_parts, direction="horizontal", gap=12, max_width=520)
+
+    cards = [
+        _findings_strip_card(
+            num="01",
+            title="宇宙网形成",
+            subtitle=None,
+            content=evo,
+            card_w=card_w,
+            card_h=card_h,
+        ),
+        _findings_strip_card(
+            num="02",
+            title="密度分布两极化",
+            subtitle=f"σ +{k['sigma_pct']:.1f}% · p99−p01 +{k['span_pct']:.1f}% · 右尾增厚",
+            content=metrics,
+            card_w=card_w,
+            card_h=card_h,
+        ),
+        _findings_strip_card(
+            num="03",
+            title=f"{k['tail_vol']:.2f}% 体积 · {k['tail_mass']:.2f}% 质量",
+            subtitle=None,
+            content=mass_body,
+            card_w=card_w,
+            card_h=card_h,
+        ),
+        _findings_strip_card(
+            num="04",
+            title="统计—空间验证",
+            subtitle=None,
+            content=verify_body,
+            card_w=card_w,
+            card_h=card_h,
+        ),
+    ]
+    strip = stitch_panels_png(cards, direction="horizontal", gap=gap, max_width=4000)
+    for name in ("_rep_findings_strip.png", "task2_findings_strip.png"):
+        save_pil_png(strip, OUT / name)
+    print(f"Findings strip: {OUT / '_rep_findings_strip.png'} ({strip.width}×{strip.height}px)")
+
+
 def representative_findings_summary(timeline: dict) -> None:
     """兼容旧入口：写入发现段中间产物（四幕海报不再依赖）。"""
+    compose_findings_strip(timeline)
     panel = _build_findings_panel(timeline, NARR_CANVAS_W, NARR_FINDINGS_MIN_H)
     save_pil_png(panel, OUT / "_rep_findings_summary.png")
     print(f"Findings summary: {OUT / '_rep_findings_summary.png'} ({panel.width}×{panel.height}px)")
@@ -4689,6 +4926,7 @@ def main() -> int:
     task3_story_panel(timeline)
     task1_hero_poster(timeline)
     task5_mass_pie(timeline)
+    compose_findings_strip(timeline)
     story_flow_chart()
     task6_story_poster(timeline)
     app_infographic_poster(timeline)

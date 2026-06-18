@@ -307,6 +307,8 @@ http://127.0.0.1:5173/video.html?record=1&scene=intro&posterCapture=1&t=99
 | 旁白标签 | `src/video/narrationLabels.ts` |
 | record 检测 | `src/video/useVideoScene.ts` |
 
+**答辩代码 walkthrough**（函数级讲解、口述稿、**真实源码**）→ [10 答辩代码讲解](./10-答辩代码讲解.md) · [10a](./10a-体渲染与VTK代码.md)–[10e](./10e-Python配图代码.md)
+
 ---
 
 [← 04 Word 解读](./04-Word正文逐章解读.md) · [下一章：05 交互页 app →](./05-交互页app说明.md)
